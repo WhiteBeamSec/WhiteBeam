@@ -1,0 +1,14 @@
+[package]
+name = "whitebeam"
+version = "0.0.2"
+authors = ["noproto"]
+edition = "2018"
+
+[lib]
+name = "whitebeam"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[target.'cfg(target_os = "linux")'.dependencies.libc]
+version = "0.2"
+default-features = false
