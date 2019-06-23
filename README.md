@@ -6,6 +6,7 @@ WhiteBeam is an OSS EDR application with cross platform application whitelisting
 
 ## Compilation (Linux)
 Requires Rust toolchain ([installation instructions](https://www.rust-lang.org/tools/install)):
+
 `make`
 
 ## Tests (Linux)
