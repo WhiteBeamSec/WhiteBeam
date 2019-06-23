@@ -26,7 +26,7 @@ macro_rules! hook {
                 static mut ONCE: Once = ONCE_INIT;
                 unsafe {
                     ONCE.call_once(|| {
-                        let sym = platforms::linux::hook::dlsym(-1isize as *const c_void, concat!(stringify!($ealname), "\0").as_ptr() as *const c_char);
+                        let sym = hook::dlsym(-1isize as *const c_void, concat!(stringify!($ealname), "\0").as_ptr() as *const c_char);
                         if sym.is_null() {
                             panic!("dlsym (ld_preload): Cannot find {}", stringify!($realname));
                         }
