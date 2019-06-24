@@ -7,7 +7,7 @@ test:
 	file $(shell pwd)/target/release/libwhitebeam.so
 	nm -g $(shell pwd)/target/release/libwhitebeam.so
 	@echo "Testing:"
-	LD_PRELOAD=$(shell pwd)/target/release/libwhitebeam.so id
+	LD_PRELOAD=$(shell pwd)/target/release/libwhitebeam.so /bin/bash -c "whoami"
 
 clean:
 	@echo "Cleaning up"

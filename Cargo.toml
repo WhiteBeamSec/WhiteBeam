@@ -1,6 +1,6 @@
 [package]
 name = "whitebeam"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["noproto"]
 edition = "2018"
 
