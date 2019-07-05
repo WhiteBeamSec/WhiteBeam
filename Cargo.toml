@@ -9,6 +9,9 @@ name = "whitebeam"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
+[dependencies]
+yaml-rust = "0.4"
+
 [target.'cfg(target_os = "linux")'.dependencies.libc]
 version = "0.2"
 default-features = false
