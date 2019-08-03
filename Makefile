@@ -12,7 +12,7 @@ install:
 	@cp $(shell pwd)/target/release/libwhitebeam.so /opt/whitebeam/libwhitebeam.so
 	@mkdir /opt/whitebeam/data/
 	@ln -s /opt/whitebeam/whitebeam /usr/local/bin/whitebeam
-	@ln -s /opt/whitebeam/libwhitebeam.so /etc/ld.so.preload
+	@echo "/opt/whitebeam/libwhitebeam.so" > /etc/ld.so.preload
 
 test:
 	@echo "libwhitebeam.so:"
