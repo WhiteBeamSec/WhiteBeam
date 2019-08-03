@@ -5,6 +5,15 @@ all:
 	cargo build --bin whitebeam --release
 	@echo "Complete"
 
+install:
+	@echo "Installing"
+	@mkdir -p /opt/whitebeam/
+	@cp $(shell pwd)/target/release/whitebeam /opt/whitebeam/whitebeam
+	@cp $(shell pwd)/target/release/libwhitebeam.so /opt/whitebeam/libwhitebeam.so
+	@mkdir /opt/whitebeam/data/
+	@ln -s /opt/whitebeam/whitebeam /usr/local/bin/whitebeam
+	@ln -s /opt/whitebeam/libwhitebeam.so /etc/ld.so.preload
+
 test:
 	@echo "libwhitebeam.so:"
 	@echo "\033[4mProperties\033[0m:"
