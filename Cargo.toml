@@ -9,8 +9,13 @@ name = "whitebeam"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
-[dependencies]
-yaml-rust = "0.4"
+[[bin]]
+name = "whitebeam"
+path = "src/main.rs"
+
+[dependencies.rusqlite]
+version = "0.20.0"
+features = ["bundled"]
 
 [target.'cfg(target_os = "linux")'.dependencies.libc]
 version = "0.2"
