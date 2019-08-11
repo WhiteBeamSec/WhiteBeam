@@ -2,11 +2,12 @@
 // https://raw.githubusercontent.com/carllerche/tower-web/master/examples/json.rs
 extern crate clap;
 
-use clap::{Arg, App};
+use clap::{Arg, App, AppSettings};
 
 fn main() {
     // TODO: Only view certain options unless user is authenticated
     let matches = App::new("WhiteBeam")
+        .setting(AppSettings::ArgRequiredElseHelp)
         .version(env!("CARGO_PKG_VERSION"))
         .about("Open source EDR ( https://github.com/noproto/WhiteBeam )")
         .arg(Arg::with_name("auth")
