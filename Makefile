@@ -1,9 +1,12 @@
-all:
+all:	library binary
+
+library:
 	@echo "Building library"
 	cargo build --lib --release
+
+binary:
 	@echo "Building binary"
 	cargo build --bin whitebeam --release --features=binaries
-	@echo "Complete"
 
 install:
 	@echo "Installing"
@@ -24,7 +27,7 @@ test:
 	@echo
 	@echo "whitebeam:"
 	@echo "\033[4mTesting\033[0m:"
-	@$(shell pwd)/target/release/whitebeam
+	@$(shell pwd)/target/release/whitebeam --help
 
 clean:
 	@echo "Cleaning up"
