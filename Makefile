@@ -2,7 +2,7 @@ all:
 	@echo "Building library"
 	cargo build --lib --release
 	@echo "Building binary"
-	cargo build --bin whitebeam --release
+	cargo build --bin whitebeam --release --features=binaries
 	@echo "Complete"
 
 install:

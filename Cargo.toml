@@ -1,9 +1,11 @@
+# General info
 [package]
 name = "whitebeam"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["noproto"]
 edition = "2018"
 
+# Build targets
 [lib]
 name = "whitebeam"
 path = "src/lib.rs"
@@ -12,11 +14,17 @@ crate-type = ["cdylib"]
 [[bin]]
 name = "whitebeam"
 path = "src/main.rs"
+required-features = ["binaries"]
 
-[dependencies.rusqlite]
-version = "0.20.0"
-features = ["bundled"]
+# Cross-platform dependencies
+[dependencies]
+tower-web = { version = "0.3.7", optional = true }
+rusqlite = { version = "0.20.0", optional = true, features = ["bundled"] }
 
+[features]
+binaries = ["tower-web", "rusqlite"]
+
+# Linux dependencies
 [target.'cfg(target_os = "linux")'.dependencies.libc]
 version = "0.2"
 default-features = false
