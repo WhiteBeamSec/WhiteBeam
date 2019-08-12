@@ -1,8 +1,6 @@
-// Service provided by a module under main.rs:
-// https://raw.githubusercontent.com/carllerche/tower-web/master/examples/json.rs
-extern crate clap;
-
 use clap::{Arg, App, AppSettings};
+
+pub mod application;
 
 fn main() {
     // TODO: Only view certain options unless user is authenticated
@@ -49,4 +47,19 @@ fn main() {
                  .takes_value(false)
                  .help("View status of the WhiteBeam client"))
         .get_matches();
+
+    if matches.is_present("start") {
+        run_start();
+    } else if matches.is_present("status") {
+        run_status();
+    }
+}
+
+fn run_start() {
+    println!("Starting WhiteBeam server");
+    application::common::api::serve();
+}
+
+fn run_status() {
+    println!("OK");
 }

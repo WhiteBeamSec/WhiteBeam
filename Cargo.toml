@@ -19,11 +19,11 @@ required-features = ["binaries"]
 # Cross-platform dependencies
 [dependencies]
 clap = { version = "2.33.0", optional = true }
-tower-web = { version = "0.3.7", optional = true }
+warp = { version = "0.1.18", optional = true }
 rusqlite = { version = "0.20.0", optional = true, features = ["bundled"] }
 
 [features]
-binaries = ["clap", "tower-web", "rusqlite"]
+binaries = ["clap", "warp", "rusqlite"]
 
 # Linux dependencies
 [target.'cfg(target_os = "linux")'.dependencies.libc]

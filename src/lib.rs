@@ -1,2 +1,2 @@
 #[macro_use]
-pub mod platforms;
+pub mod library;

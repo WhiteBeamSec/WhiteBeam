@@ -1,4 +1,4 @@
-// Load hook
+// Load OS-specific modules
 #[macro_use]
 mod hook;
 
