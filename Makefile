@@ -2,7 +2,7 @@ all:	library binary
 
 library:
 	@echo "Building library"
-	cargo build --lib --release
+	cargo build --lib --release --features=libraries
 	strip $(shell pwd)/target/release/libwhitebeam.so
 	@echo "Completed. Size:"
 	@du -h $(shell pwd)/target/release/libwhitebeam.so | cut -f1
