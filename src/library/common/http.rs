@@ -5,6 +5,8 @@ use std::time::Duration;
 use std::collections::HashMap;
 use std::fmt;
 
+// Based heavily on minreq
+
 pub type URL = String;
 
 #[derive(Clone, PartialEq, Debug)]
