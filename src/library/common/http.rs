@@ -1,11 +1,12 @@
-use std::env;
 use std::io::{BufReader, BufWriter, Error, ErrorKind, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt;
 
-// Based heavily on minreq
+// Based heavily on minreq (https://github.com/neonmoe/minreq)
+// One major difference is that WhiteBeam uses BTreeMap instead of a HashMap, otherwise bash
+// preloads the Rust cdylib and internally causes a double free (bug), which segfaults WhiteBeam.
 
 pub type URL = String;
 
@@ -30,7 +31,7 @@ pub struct Request {
     pub method: Method,
     pub host: URL,
     resource: URL,
-    headers: HashMap<String, String>,
+    headers: BTreeMap<String, String>,
     body: Option<String>,
     pub timeout: Option<u64>,
     pub redirects: Vec<URL>,
@@ -43,7 +44,7 @@ impl Request {
             method,
             host,
             resource,
-            headers: HashMap::new(),
+            headers: BTreeMap::new(),
             body: None,
             timeout: None,
             redirects: Vec::new(),
@@ -111,7 +112,7 @@ impl Request {
 pub struct Response {
     pub status_code: i32,
     pub reason_phrase: String,
-    pub headers: HashMap<String, String>,
+    pub headers: BTreeMap<String, String>,
     pub body: String,
     pub body_bytes: Vec<u8>,
 }
@@ -180,10 +181,10 @@ pub fn parse_status_line(http_response: &[u8]) -> (i32, String) {
     (503, "Server did not provide a status line".to_string())
 }
 
-fn parse_http_response_content(http_response: &[u8]) -> (HashMap<String, String>, Vec<u8>) {
+fn parse_http_response_content(http_response: &[u8]) -> (BTreeMap<String, String>, Vec<u8>) {
     let (headers_text, body) = split_at(http_response, "\r\n\r\n");
 
-    let mut headers = HashMap::new();
+    let mut headers = BTreeMap::new();
     let mut status_line = true;
     if let Ok(headers_text) = std::str::from_utf8(headers_text) {
         for line in headers_text.lines() {
@@ -227,12 +228,7 @@ pub struct Connection {
 
 impl Connection {
     pub fn new(request: Request) -> Connection {
-        let timeout = request
-            .timeout
-            .or_else(|| match env::var("WB_TIMEOUT") {
-                Ok(t) => t.parse::<u64>().ok(),
-                Err(_) => None,
-            });
+        let timeout = request.timeout;
         Connection { request, timeout }
     }
 
