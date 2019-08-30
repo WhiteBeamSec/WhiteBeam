@@ -11,3 +11,7 @@ Requires Rust toolchain ([installation instructions](https://www.rust-lang.org/t
 
 ## Tests (Linux)
 `make test`
+
+# Demonstration
+
+[![asciicast](https://asciinema.org/a/265102.svg)](https://asciinema.org/a/265102)
