@@ -21,15 +21,9 @@ hook! {
                     // Shells
                     "/bin/bash".to_string(),
                     "/bin/sh".to_string(),
-                    // Utilities
-                    "/bin/cat".to_string(),
-                    "/bin/rm".to_string(),
-                    "/bin/ls".to_string(),
-                    "/bin/ps".to_string(),
-                    "/usr/bin/whoami".to_string(),
-                    "/usr/bin/id".to_string(),
                     // Whitebeam
-                    "/opt/whitebeam/whitebeam".to_string()
+                    "/opt/whitebeam/whitebeam".to_string(),
+                    "/usr/local/bin/whitebeam".to_string()
                     ];
         if hardcoded_whitelist.contains(&program) {
             allow_exec = true;
