@@ -14,4 +14,4 @@ We would like to thank the following security researchers for their contribution
 
 | Version | Researcher(s)  | Description | Fix available |
 | ------- | -------------- | ----------- | ------------- |
-| 0.0.5   | gemini, brianx | If LD_PRELOAD or LD_AUDIT is defined to a nonexecutable shared object library, execution of non-whitelisted library functions is possible | ❌ |
+| 0.0.5   | gemini, brianx | If LD_PRELOAD or LD_AUDIT is defined to a nonexecutable shared object library, execution of non-whitelisted library functions is possible | ✅ |

@@ -1,7 +1,7 @@
 use sha3::{Digest, Sha3_256};
 use std::{fs, io};
 
-pub fn common_hash_algo() -> Sha3_256 {
+fn common_hash_algo() -> Sha3_256 {
     Sha3_256::new()
 }
 

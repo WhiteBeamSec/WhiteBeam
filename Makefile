@@ -29,7 +29,7 @@ test:
 	@objdump -T $(shell pwd)/target/release/libwhitebeam.so|grep 'execve'
 	@file -b $(shell pwd)/target/release/libwhitebeam.so
 	@echo "\033[4mTesting\033[0m:"
-	LD_PRELOAD=$(shell pwd)/target/release/libwhitebeam.so /bin/bash -c "whoami"
+	LD_PRELOAD=$(shell pwd)/target/release/libwhitebeam.so /bin/bash -c "whoami" || true
 	@echo
 	@echo "whitebeam:"
 	@echo "\033[4mTesting\033[0m:"
