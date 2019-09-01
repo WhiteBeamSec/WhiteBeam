@@ -25,7 +25,7 @@ fn parse_env(input: &[u8]) -> Option<(OsString, OsString)> {
 }
 
 fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>) -> bool {
-    // TODO: Reference /opt/whitebeam/cache.json
+    // TODO: Reference /opt/whitebeam/cache.json, use SHA3-256 hash
 
     let mut unsafe_env = false;
     let mut allow_exec = false;
@@ -57,6 +57,25 @@ fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>) -> bool {
     }
     allow_exec
 }
+
+/*
+       int execve(const char *filename, char *const argv[],
+                  char *const envp[]);
+       int execl(const char *path, const char *arg, ...
+                       /* (char  *) NULL */);
+       int execlp(const char *file, const char *arg, ...
+                       /* (char  *) NULL */);
+       int execle(const char *path, const char *arg, ...
+                       /*, (char *) NULL, char * const envp[] */);
+       int execv(const char *path, char *const argv[]);
+       int execvp(const char *file, char *const argv[]);
+       int execvpe(const char *file, char *const argv[],
+                       char *const envp[]);
+       int fexecve(int fd, char *const argv[], char *const envp[]);
+	   ?system
+	   ?popen
+	   ?syscall
+*/
 
 hook! {
     unsafe fn hooked_execve(filename: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int => execve {

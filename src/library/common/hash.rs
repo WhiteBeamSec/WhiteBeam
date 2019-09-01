@@ -5,6 +5,7 @@ fn common_hash_algo() -> Sha3_256 {
     Sha3_256::new()
 }
 
+// TODO: Error handling
 pub fn common_hash_file(path: &str) -> String {
     let mut file = fs::File::open(&path).unwrap();
     let mut hasher = common_hash_algo();
