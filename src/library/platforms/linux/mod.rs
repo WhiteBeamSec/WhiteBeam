@@ -11,6 +11,8 @@ use std::{ffi::OsString};
 use crate::library::common::hash;
 use crate::library::common::event;
 
+// TODO: Should we hook syscall()?
+
 fn parse_env(input: &[u8]) -> Option<(OsString, OsString)> {
 	if input.is_empty() {
 		return None;
@@ -245,8 +247,3 @@ hook! {
         }
     }
 }
-
-/*
-       ?popen
-       ?syscall
-*/
