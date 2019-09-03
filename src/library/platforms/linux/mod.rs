@@ -4,12 +4,12 @@ mod hook;
 mod system;
 
 use libc::{c_char, c_int};
+use std::ptr;
 use std::ffi::CStr;
-use crate::library::common::hash;
-use crate::library::common::event;
-// TODO: Need this?
 use std::{os::unix::ffi::OsStringExt};
 use std::{ffi::OsString};
+use crate::library::common::hash;
+use crate::library::common::event;
 
 fn parse_env(input: &[u8]) -> Option<(OsString, OsString)> {
 	if input.is_empty() {
@@ -22,6 +22,40 @@ fn parse_env(input: &[u8]) -> Option<(OsString, OsString)> {
 			OsStringExt::from_vec(input[p + 1..].to_vec()),
 		)
 	})
+}
+
+unsafe fn transform_parameters(path: *const c_char, envp: *const *const c_char, fd: c_int) -> (String, Vec<(OsString, OsString)>, String, u32) {
+	// TODO: GC
+
+	// Program, hexdigest
+	let (program, hexdigest) = if !(path.is_null()) {
+		let program_c_str: &CStr = CStr::from_ptr(path);
+		let program_str_slice: &str = program_c_str.to_str().unwrap();
+		let prog: String = program_str_slice.to_owned(); // If necessary
+		let hash_prog = hash::common_hash_file(&prog);
+		(prog, hash_prog)
+	} else {
+		let prog: String = format!("fd://{}", fd);
+		let hash_prog = hash::common_hash_file(&prog);
+		(prog, hash_prog)
+	};
+
+	// Environment variables
+	let mut env: Vec<(OsString, OsString)> = Vec::new();
+	if !(envp.is_null()) {
+		let mut envp_iter = envp;
+		while !(*envp_iter).is_null() {
+				if let Some(key_value) = parse_env(CStr::from_ptr(*envp_iter).to_bytes()) {
+					env.push(key_value);
+				}
+				envp_iter = envp_iter.offset(1);
+		}
+	}
+
+	// User ID
+	let uid = system::get_current_uid();
+
+	(program, env, hexdigest, uid)
 }
 
 fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>) -> bool {
@@ -59,53 +93,16 @@ fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>) -> bool {
 }
 
 /*
-       int execve(const char *filename, char *const argv[],
+       int execve(const char *path, char *const argv[],
                   char *const envp[]);
-       int execl(const char *path, const char *arg, ...
-                       /* (char  *) NULL */);
-       int execlp(const char *file, const char *arg, ...
-                       /* (char  *) NULL */);
-       int execle(const char *path, const char *arg, ...
-                       /*, (char *) NULL, char * const envp[] */);
-       int execv(const char *path, char *const argv[]);
-       int execvp(const char *file, char *const argv[]);
-       int execvpe(const char *file, char *const argv[],
-                       char *const envp[]);
-       int fexecve(int fd, char *const argv[], char *const envp[]);
-	   ?system
-	   ?popen
-	   ?syscall
 */
-
 hook! {
-    unsafe fn hooked_execve(filename: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int => execve {
-        // TODO: Garbage collection
-
-        // Program
-        let program_c_str: &CStr = CStr::from_ptr(filename);
-        let program_str_slice: &str = program_c_str.to_str().unwrap();
-        let program: String = program_str_slice.to_owned(); // If necessary
-
-        // Environment variables
-        let mut envp_new = envp;
-        let mut env: Vec<(OsString, OsString)> = Vec::new();
-        while !(*envp_new).is_null() {
-                if let Some(key_value) = parse_env(CStr::from_ptr(*envp_new).to_bytes()) {
-                    env.push(key_value);
-                }
-                envp_new = envp_new.offset(1);
-        }
-
-        // Program hexdigest
-        let hexdigest = hash::common_hash_file(&program);
-
-        // User ID
-        let uid = system::get_current_uid();
-
+    unsafe fn hooked_execve(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int => execve {
+		let (program, env, hexdigest, uid) = transform_parameters(path, envp, -1);
         // Permit/deny execution
         if is_whitelisted(&program, &env) {
             event::send_exec_event(uid, &program, &hexdigest, true);
-            real!(hooked_execve)(filename, argv, envp)
+            real!(hooked_execve)(path, argv, envp)
         } else {
             event::send_exec_event(uid, &program, &hexdigest, false);
             *system::errno_location() = system::EACCES;
@@ -113,3 +110,144 @@ hook! {
         }
     }
 }
+
+/*
+       int execle(const char *path, const char *arg, ...
+                       /*, (char *) NULL, char * const envp[] */);
+*/
+hook! {
+    unsafe fn hooked_execle(path: *const c_char, arg: *const c_char, envp: *const *const c_char) -> c_int => execle {
+		let (program, env, hexdigest, uid) = transform_parameters(path, envp, -1);
+        // Permit/deny execution
+        if is_whitelisted(&program, &env) {
+            event::send_exec_event(uid, &program, &hexdigest, true);
+            real!(hooked_execle)(path, arg, envp)
+        } else {
+            event::send_exec_event(uid, &program, &hexdigest, false);
+            *system::errno_location() = system::EACCES;
+            return -1
+        }
+    }
+}
+
+/*
+       int execvpe(const char *path, char *const argv[],
+                       char *const envp[]);
+*/
+hook! {
+    unsafe fn hooked_execvpe(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int => execvpe {
+		let (program, env, hexdigest, uid) = transform_parameters(path, envp, -1);
+        // Permit/deny execution
+        if is_whitelisted(&program, &env) {
+            event::send_exec_event(uid, &program, &hexdigest, true);
+            real!(hooked_execvpe)(path, argv, envp)
+        } else {
+            event::send_exec_event(uid, &program, &hexdigest, false);
+            *system::errno_location() = system::EACCES;
+            return -1
+        }
+    }
+}
+
+/*
+       int fexecve(int fd, char *const argv[], char *const envp[]);
+*/
+hook! {
+    unsafe fn hooked_fexecve(fd: c_int, argv: *const *const c_char, envp: *const *const c_char) -> c_int => fexecve {
+		let path: *const c_char = ptr::null();
+		let (program, env, hexdigest, uid) = transform_parameters(path, envp, fd);
+        // Permit/deny execution
+        if is_whitelisted(&program, &env) {
+            event::send_exec_event(uid, &program, &hexdigest, true);
+            real!(hooked_fexecve)(fd, argv, envp)
+        } else {
+            event::send_exec_event(uid, &program, &hexdigest, false);
+            *system::errno_location() = system::EACCES;
+            return -1
+        }
+    }
+}
+
+/*
+       int execl(const char *path, const char *arg, ...
+                       /* (char  *) NULL */);
+*/
+hook! {
+    unsafe fn hooked_execl(path: *const c_char, arg: *const c_char) -> c_int => execl {
+		let envp: *const *const c_char = ptr::null();
+		let (program, env, hexdigest, uid) = transform_parameters(path, envp, -1);
+        // Permit/deny execution
+        if is_whitelisted(&program, &env) {
+            event::send_exec_event(uid, &program, &hexdigest, true);
+            real!(hooked_execl)(path, arg)
+        } else {
+            event::send_exec_event(uid, &program, &hexdigest, false);
+            *system::errno_location() = system::EACCES;
+            return -1
+        }
+    }
+}
+
+/*
+       int execlp(const char *path, const char *arg, ...
+                       /* (char  *) NULL */);
+*/
+hook! {
+    unsafe fn hooked_execlp(path: *const c_char, arg: *const c_char) -> c_int => execlp {
+		let envp: *const *const c_char = ptr::null();
+		let (program, env, hexdigest, uid) = transform_parameters(path, envp, -1);
+        // Permit/deny execution
+        if is_whitelisted(&program, &env) {
+            event::send_exec_event(uid, &program, &hexdigest, true);
+            real!(hooked_execlp)(path, arg)
+        } else {
+            event::send_exec_event(uid, &program, &hexdigest, false);
+            *system::errno_location() = system::EACCES;
+            return -1
+        }
+    }
+}
+
+/*
+       int execv(const char *path, char *const argv[]);
+*/
+hook! {
+    unsafe fn hooked_execv(path: *const c_char, argv: *const *const c_char) -> c_int => execv {
+		let envp: *const *const c_char = ptr::null();
+		let (program, env, hexdigest, uid) = transform_parameters(path, envp, -1);
+        // Permit/deny execution
+        if is_whitelisted(&program, &env) {
+            event::send_exec_event(uid, &program, &hexdigest, true);
+            real!(hooked_execv)(path, argv)
+        } else {
+            event::send_exec_event(uid, &program, &hexdigest, false);
+            *system::errno_location() = system::EACCES;
+            return -1
+        }
+    }
+}
+
+/*
+       int execvp(const char *file, char *const argv[]);
+*/
+hook! {
+    unsafe fn hooked_execvp(path: *const c_char, argv: *const *const c_char) -> c_int => execvp {
+		let envp: *const *const c_char = ptr::null();
+		let (program, env, hexdigest, uid) = transform_parameters(path, envp, -1);
+        // Permit/deny execution
+        if is_whitelisted(&program, &env) {
+            event::send_exec_event(uid, &program, &hexdigest, true);
+            real!(hooked_execvp)(path, argv)
+        } else {
+            event::send_exec_event(uid, &program, &hexdigest, false);
+            *system::errno_location() = system::EACCES;
+            return -1
+        }
+    }
+}
+
+/*
+       ?system
+       ?popen
+       ?syscall
+*/

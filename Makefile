@@ -26,7 +26,7 @@ install:
 test:
 	@echo "libwhitebeam.so:"
 	@echo "\033[4mProperties\033[0m:"
-	@objdump -T $(shell pwd)/target/release/libwhitebeam.so|grep 'execve'
+	@objdump -T -j .text $(shell pwd)/target/release/libwhitebeam.so
 	@file -b $(shell pwd)/target/release/libwhitebeam.so
 	@echo "\033[4mTesting\033[0m:"
 	LD_PRELOAD=$(shell pwd)/target/release/libwhitebeam.so /bin/bash -c "whoami" || true
