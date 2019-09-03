@@ -11,8 +11,6 @@ use std::{ffi::OsString};
 use crate::library::common::hash;
 use crate::library::common::event;
 
-// TODO: Should we hook syscall()?
-
 fn parse_env(input: &[u8]) -> Option<(OsString, OsString)> {
 	if input.is_empty() {
 		return None;
@@ -95,6 +93,9 @@ fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>) -> bool {
 }
 
 /*
+Primary hook
+*/
+/*
        int execve(const char *path, char *const argv[],
                   char *const envp[]);
 */
@@ -113,6 +114,9 @@ hook! {
     }
 }
 
+/*
+Secondary hooks
+*/
 /*
        int execle(const char *path, const char *arg, ...
                        /*, (char *) NULL, char * const envp[] */);
