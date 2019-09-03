@@ -247,7 +247,6 @@ hook! {
 }
 
 /*
-       ?system
        ?popen
        ?syscall
 */
