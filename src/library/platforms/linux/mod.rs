@@ -108,7 +108,7 @@ hook! {
             real!(hooked_execve)(path, argv, envp)
         } else {
             event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = system::EACCES;
+            *system::errno_location() = libc::EACCES;
             return -1
         }
     }
@@ -130,7 +130,7 @@ hook! {
             real!(hooked_execle)(path, arg, envp)
         } else {
             event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = system::EACCES;
+            *system::errno_location() = libc::EACCES;
             return -1
         }
     }
@@ -143,13 +143,20 @@ hook! {
 hook! {
     unsafe fn hooked_execvpe(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int => execvpe {
 		let (program, env, hexdigest, uid) = transform_parameters(path, envp, -1);
+		let which_abs_pathbuf = match which::which(&program) {
+            Err(_why) => {
+				*system::errno_location() = libc::ENOENT;
+				return -1 },
+            Ok(prog_path) => prog_path
+        };
+		let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
         // Permit/deny execution
-        if is_whitelisted(&program, &env) {
-            event::send_exec_event(uid, &program, &hexdigest, true);
+        if is_whitelisted(abs_prog_str, &env) {
+            event::send_exec_event(uid, abs_prog_str, &hexdigest, true);
             real!(hooked_execvpe)(path, argv, envp)
         } else {
-            event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = system::EACCES;
+            event::send_exec_event(uid, abs_prog_str, &hexdigest, false);
+            *system::errno_location() = libc::EACCES;
             return -1
         }
     }
@@ -168,7 +175,7 @@ hook! {
             real!(hooked_fexecve)(fd, argv, envp)
         } else {
             event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = system::EACCES;
+            *system::errno_location() = libc::EACCES;
             return -1
         }
     }
@@ -188,7 +195,7 @@ hook! {
             real!(hooked_execl)(path, arg)
         } else {
             event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = system::EACCES;
+            *system::errno_location() = libc::EACCES;
             return -1
         }
     }
@@ -202,13 +209,20 @@ hook! {
     unsafe fn hooked_execlp(path: *const c_char, arg: *const c_char) -> c_int => execlp {
 		let envp: *const *const c_char = ptr::null();
 		let (program, env, hexdigest, uid) = transform_parameters(path, envp, -1);
+		let which_abs_pathbuf = match which::which(&program) {
+            Err(_why) => {
+				*system::errno_location() = libc::ENOENT;
+				return -1 },
+            Ok(prog_path) => prog_path
+        };
+		let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
         // Permit/deny execution
-        if is_whitelisted(&program, &env) {
-            event::send_exec_event(uid, &program, &hexdigest, true);
+        if is_whitelisted(abs_prog_str, &env) {
+            event::send_exec_event(uid, abs_prog_str, &hexdigest, true);
             real!(hooked_execlp)(path, arg)
         } else {
-            event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = system::EACCES;
+            event::send_exec_event(uid, abs_prog_str, &hexdigest, false);
+            *system::errno_location() = libc::EACCES;
             return -1
         }
     }
@@ -227,7 +241,7 @@ hook! {
             real!(hooked_execv)(path, argv)
         } else {
             event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = system::EACCES;
+            *system::errno_location() = libc::EACCES;
             return -1
         }
     }
@@ -240,13 +254,20 @@ hook! {
     unsafe fn hooked_execvp(path: *const c_char, argv: *const *const c_char) -> c_int => execvp {
 		let envp: *const *const c_char = ptr::null();
 		let (program, env, hexdigest, uid) = transform_parameters(path, envp, -1);
+		let which_abs_pathbuf = match which::which(&program) {
+            Err(_why) => {
+				*system::errno_location() = libc::ENOENT;
+				return -1 },
+            Ok(prog_path) => prog_path
+        };
+		let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
         // Permit/deny execution
-        if is_whitelisted(&program, &env) {
-            event::send_exec_event(uid, &program, &hexdigest, true);
+        if is_whitelisted(abs_prog_str, &env) {
+            event::send_exec_event(uid, abs_prog_str, &hexdigest, true);
             real!(hooked_execvp)(path, argv)
         } else {
-            event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = system::EACCES;
+            event::send_exec_event(uid, abs_prog_str, &hexdigest, false);
+            *system::errno_location() = libc::EACCES;
             return -1
         }
     }

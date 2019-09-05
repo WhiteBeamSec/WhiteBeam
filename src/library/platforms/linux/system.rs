@@ -1,7 +1,5 @@
 use libc::{c_int};
 
-pub const EACCES: i32 = 13;
-
 pub unsafe fn errno_location() -> *mut c_int {
     libc::__errno_location()
 }
