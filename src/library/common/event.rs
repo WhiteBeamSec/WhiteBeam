@@ -2,21 +2,20 @@ use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::library::common::http;
 
-// TODO: Unify common objects among library and binary
 #[derive(Deserialize, Serialize)]
 struct LogExecObject {
     program: String,
     hash: String,
     uid: u32,
-    ts: u64,
+    ts: u32,
     success: bool
 }
 
-pub fn get_timestamp() -> u64 {
+pub fn get_timestamp() -> u32 {
         let start = SystemTime::now();
         let since_the_epoch = start.duration_since(UNIX_EPOCH)
             .expect("Time went backwards");
-        since_the_epoch.as_secs()
+        since_the_epoch.as_secs() as u32
 }
 
 pub fn send_exec_event(uid: u32, program: &str, hash: &str, success: bool) -> () {

@@ -1,20 +1,14 @@
-use serde::{Serialize, Deserialize};
 use warp::Filter;
 
-// TODO: Unify common objects among library and binary
-#[derive(Deserialize, Serialize)]
-struct LogExecObject {
-    program: String,
-    hash: String,
-    uid: u32,
-    ts: u64,
-    success: bool
-}
+// Database
+mod db;
 
 // POST /log/exec
-fn log_exec(exec: LogExecObject) -> impl warp::Reply {
+fn log_exec(exec: db::LogExecObject) -> impl warp::Reply {
     // Input to this function is untrusted
     eprintln!("UID: {} Program: {} Hash: {} Unix TS: {} Permitted: {}", exec.uid, exec.program, exec.hash, exec.ts, exec.success);
+    let conn: rusqlite::Connection = db::open();
+    db::insert_exec(&conn, exec);
     return Ok(warp::reply());
 }
 
