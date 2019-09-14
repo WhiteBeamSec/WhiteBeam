@@ -32,7 +32,7 @@ macro_rules! hook {
 
                 unsafe {
                     ONCE.call_once(|| {
-                        REAL = hook::dlsym_next(concat!(stringify!($hook_fn), "\0"));
+                        REAL = crate::library::platforms::linux::hook::dlsym_next(concat!(stringify!($hook_fn), "\0"));
                     });
                     ::std::mem::transmute(REAL)
                 }

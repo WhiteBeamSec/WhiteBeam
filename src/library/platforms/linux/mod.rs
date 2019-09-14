@@ -1,15 +1,21 @@
 // Load OS-specific modules
 #[macro_use]
 mod hook;
-mod system;
+mod hooks;
 
 use libc::{c_char, c_int};
-use std::ptr;
 use std::ffi::CStr;
 use std::{os::unix::ffi::OsStringExt};
 use std::{ffi::OsString};
 use crate::library::common::hash;
-use crate::library::common::event;
+
+pub unsafe fn errno_location() -> *mut c_int {
+    libc::__errno_location()
+}
+
+pub fn get_current_uid() -> u32 {
+    unsafe { libc::getuid() }
+}
 
 fn parse_env(input: &[u8]) -> Option<(OsString, OsString)> {
 	if input.is_empty() {
@@ -56,7 +62,7 @@ fn get_hash_and_uid(program: &str) -> (String, u32) {
 	let hexdigest = hash::common_hash_file(&program);
 
 	// User ID
-	let uid = system::get_current_uid();
+	let uid = get_current_uid();
 
 	(hexdigest, uid)
 }
@@ -93,193 +99,4 @@ fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>) -> bool {
         }
     }
     allow_exec
-}
-
-/*
-Primary hook
-*/
-/*
-       int execve(const char *path, char *const argv[],
-                  char *const envp[]);
-*/
-hook! {
-    unsafe fn hooked_execve(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int => execve {
-		let (program, env) = transform_parameters(path, envp, -1);
-		let (hexdigest, uid) = get_hash_and_uid(&program);
-        // Permit/deny execution
-        if is_whitelisted(&program, &env) {
-            event::send_exec_event(uid, &program, &hexdigest, true);
-            real!(hooked_execve)(path, argv, envp)
-        } else {
-            event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = libc::EACCES;
-            return -1
-        }
-    }
-}
-
-/*
-Secondary hooks
-*/
-/*
-       int execle(const char *path, const char *arg, ...
-                       /*, (char *) NULL, char * const envp[] */);
-*/
-hook! {
-    unsafe fn hooked_execle(path: *const c_char, arg: *const c_char, envp: *const *const c_char) -> c_int => execle {
-		let (program, env) = transform_parameters(path, envp, -1);
-		let (hexdigest, uid) = get_hash_and_uid(&program);
-        // Permit/deny execution
-        if is_whitelisted(&program, &env) {
-            event::send_exec_event(uid, &program, &hexdigest, true);
-            real!(hooked_execle)(path, arg, envp)
-        } else {
-            event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = libc::EACCES;
-            return -1
-        }
-    }
-}
-
-/*
-       int execvpe(const char *path, char *const argv[],
-                       char *const envp[]);
-*/
-hook! {
-    unsafe fn hooked_execvpe(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int => execvpe {
-		let (program, env) = transform_parameters(path, envp, -1);
-		let which_abs_pathbuf = match which::which(&program) {
-            Err(_why) => {
-				*system::errno_location() = libc::ENOENT;
-				return -1 },
-            Ok(prog_path) => prog_path
-        };
-		let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
-		let (hexdigest, uid) = get_hash_and_uid(abs_prog_str);
-        // Permit/deny execution
-        if is_whitelisted(&abs_prog_str, &env) {
-            event::send_exec_event(uid, &abs_prog_str, &hexdigest, true);
-            real!(hooked_execvpe)(path, argv, envp)
-        } else {
-            event::send_exec_event(uid, &abs_prog_str, &hexdigest, false);
-            *system::errno_location() = libc::EACCES;
-            return -1
-        }
-    }
-}
-
-/*
-       int fexecve(int fd, char *const argv[], char *const envp[]);
-*/
-hook! {
-    unsafe fn hooked_fexecve(fd: c_int, argv: *const *const c_char, envp: *const *const c_char) -> c_int => fexecve {
-		let path: *const c_char = ptr::null();
-		let (program, env) = transform_parameters(path, envp, fd);
-		let (hexdigest, uid) = get_hash_and_uid(&program);
-        // Permit/deny execution
-        if is_whitelisted(&program, &env) {
-            event::send_exec_event(uid, &program, &hexdigest, true);
-            real!(hooked_fexecve)(fd, argv, envp)
-        } else {
-            event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = libc::EACCES;
-            return -1
-        }
-    }
-}
-
-/*
-       int execl(const char *path, const char *arg, ...
-                       /* (char  *) NULL */);
-*/
-hook! {
-    unsafe fn hooked_execl(path: *const c_char, arg: *const c_char) -> c_int => execl {
-		let envp: *const *const c_char = ptr::null();
-		let (program, env) = transform_parameters(path, envp, -1);
-		let (hexdigest, uid) = get_hash_and_uid(&program);
-        // Permit/deny execution
-        if is_whitelisted(&program, &env) {
-            event::send_exec_event(uid, &program, &hexdigest, true);
-            real!(hooked_execl)(path, arg)
-        } else {
-            event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = libc::EACCES;
-            return -1
-        }
-    }
-}
-
-/*
-       int execlp(const char *path, const char *arg, ...
-                       /* (char  *) NULL */);
-*/
-hook! {
-    unsafe fn hooked_execlp(path: *const c_char, arg: *const c_char) -> c_int => execlp {
-		let envp: *const *const c_char = ptr::null();
-		let (program, env) = transform_parameters(path, envp, -1);
-		let which_abs_pathbuf = match which::which(&program) {
-            Err(_why) => {
-				*system::errno_location() = libc::ENOENT;
-				return -1 },
-            Ok(prog_path) => prog_path
-        };
-		let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
-		let (hexdigest, uid) = get_hash_and_uid(abs_prog_str);
-        // Permit/deny execution
-        if is_whitelisted(&abs_prog_str, &env) {
-            event::send_exec_event(uid, &abs_prog_str, &hexdigest, true);
-            real!(hooked_execlp)(path, arg)
-        } else {
-            event::send_exec_event(uid, &abs_prog_str, &hexdigest, false);
-            *system::errno_location() = libc::EACCES;
-            return -1
-        }
-    }
-}
-
-/*
-       int execv(const char *path, char *const argv[]);
-*/
-hook! {
-    unsafe fn hooked_execv(path: *const c_char, argv: *const *const c_char) -> c_int => execv {
-		let envp: *const *const c_char = ptr::null();
-		let (program, env) = transform_parameters(path, envp, -1);
-		let (hexdigest, uid) = get_hash_and_uid(&program);
-        // Permit/deny execution
-        if is_whitelisted(&program, &env) {
-            event::send_exec_event(uid, &program, &hexdigest, true);
-            real!(hooked_execv)(path, argv)
-        } else {
-            event::send_exec_event(uid, &program, &hexdigest, false);
-            *system::errno_location() = libc::EACCES;
-            return -1
-        }
-    }
-}
-
-/*
-       int execvp(const char *file, char *const argv[]);
-*/
-hook! {
-    unsafe fn hooked_execvp(path: *const c_char, argv: *const *const c_char) -> c_int => execvp {
-		let envp: *const *const c_char = ptr::null();
-		let (program, env) = transform_parameters(path, envp, -1);
-		let which_abs_pathbuf = match which::which(&program) {
-            Err(_why) => {
-				*system::errno_location() = libc::ENOENT;
-				return -1 },
-            Ok(prog_path) => prog_path
-        };
-		let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
-		let (hexdigest, uid) = get_hash_and_uid(abs_prog_str);
-        // Permit/deny execution
-        if is_whitelisted(&abs_prog_str, &env) {
-            event::send_exec_event(uid, &abs_prog_str, &hexdigest, true);
-            real!(hooked_execvp)(path, argv)
-        } else {
-            event::send_exec_event(uid, &abs_prog_str, &hexdigest, false);
-            *system::errno_location() = libc::EACCES;
-            return -1
-        }
-    }
 }
