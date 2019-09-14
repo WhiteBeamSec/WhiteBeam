@@ -14,7 +14,7 @@ mod execv;
 mod execvp;
 
 /*
-TODO: Protect mem and other system files using mode
+TODO: Protect mem and other system files using mode of open
 O_RDWR or O_WRONLY is prohibited, including implicitly (creat)
 */
 // mod creat
