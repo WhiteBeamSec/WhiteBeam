@@ -16,12 +16,12 @@ binary:
 
 install:
 	@echo "Installing"
-	@mkdir -p /opt/whitebeam/
-	@cp $(shell pwd)/target/release/whitebeam /opt/whitebeam/whitebeam
-	@cp $(shell pwd)/target/release/libwhitebeam.so /opt/whitebeam/libwhitebeam.so
-	@mkdir /opt/whitebeam/data/
-	@ln -s /opt/whitebeam/whitebeam /usr/local/bin/whitebeam
-	@echo "/opt/whitebeam/libwhitebeam.so" > /etc/ld.so.preload
+	@mkdir -p /opt/WhiteBeam/
+	@cp $(shell pwd)/target/release/whitebeam /opt/WhiteBeam/whitebeam
+	@cp $(shell pwd)/target/release/libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so
+	@mkdir /opt/WhiteBeam/data/
+	@ln -s /opt/WhiteBeam/whitebeam /usr/local/bin/whitebeam
+	@echo "/opt/WhiteBeam/libwhitebeam.so" > /etc/ld.so.preload
 
 test:
 	@echo "libwhitebeam.so:"

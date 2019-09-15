@@ -1,3 +1,5 @@
+// Whitelist
+pub mod whitelist;
 // Hashing algorithm
 pub mod hash;
 // Event data

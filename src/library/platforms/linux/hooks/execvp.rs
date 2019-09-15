@@ -1,6 +1,7 @@
 use libc::{c_char, c_int};
 use std::ptr;
 use crate::library::platforms::linux;
+use crate::library::common::whitelist;
 use crate::library::common::event;
 
 /*
@@ -19,7 +20,7 @@ hook! {
 		let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
 		let (hexdigest, uid) = linux::get_hash_and_uid(abs_prog_str);
         // Permit/deny execution
-        if linux::is_whitelisted(&abs_prog_str, &env) {
+        if whitelist::is_whitelisted(&abs_prog_str, &env) {
             event::send_exec_event(uid, &abs_prog_str, &hexdigest, true);
             real!(hooked_execvp)(path, argv)
         } else {

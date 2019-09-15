@@ -7,7 +7,12 @@ use libc::{c_char, c_int};
 use std::ffi::CStr;
 use std::{os::unix::ffi::OsStringExt};
 use std::{ffi::OsString};
+use std::path::Path;
 use crate::library::common::hash;
+
+pub fn get_cache_file() -> &'static Path {
+    Path::new("/opt/WhiteBeam/data/cache.json")
+}
 
 pub unsafe fn errno_location() -> *mut c_int {
     libc::__errno_location()
@@ -65,38 +70,4 @@ fn get_hash_and_uid(program: &str) -> (String, u32) {
 	let uid = get_current_uid();
 
 	(hexdigest, uid)
-}
-
-fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>) -> bool {
-    // TODO: Reference /opt/whitebeam/cache.json, use SHA3-256 hash
-
-    let mut unsafe_env = false;
-    let mut allow_exec = false;
-    let env_blacklist = [
-            "LD_PRELOAD",
-            "LD_AUDIT",
-            "LD_LIBRARY_PATH"
-    ];
-    let whitelist = [
-        // Tuple of (permitted program, allow unsafe environment variables)
-        // Shells
-        ("/bin/bash", false),
-        ("/bin/sh", false),
-        // Whitebeam
-        ("/opt/whitebeam/whitebeam", false),
-        ("/usr/local/bin/whitebeam", false)
-    ];
-    for env_var in env {
-        if env_blacklist.contains(&env_var.0.to_str().unwrap()) {
-            unsafe_env = true;
-            break;
-        }
-    }
-    for (allowed_program, allow_unsafe) in whitelist.iter() {
-        if (&program == allowed_program) && (&unsafe_env == allow_unsafe) {
-            allow_exec = true;
-            break;
-        }
-    }
-    allow_exec
 }

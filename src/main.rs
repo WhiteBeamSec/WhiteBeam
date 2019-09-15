@@ -43,7 +43,7 @@ fn main() {
         .arg(Arg::with_name("stop")
                  .long("stop")
                  .takes_value(false)
-                 .help("Stop the Whitebeam service (+auth)"))
+                 .help("Stop the WhiteBeam service (+auth)"))
         .arg(Arg::with_name("baseline")
                  .long("baseline")
                  .takes_value(false)

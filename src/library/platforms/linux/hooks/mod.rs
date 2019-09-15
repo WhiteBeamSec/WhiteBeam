@@ -1,3 +1,6 @@
+// Only the exec hooks are needed to safely run WhiteBeam for most unprivileged services
+// The rest are for protecting WhiteBeam against root
+
 /*
 exec hooks
 */
@@ -5,16 +8,17 @@ exec hooks
 mod execve;
 
 // Secondary hooks
-mod execle;
-mod execvpe;
-mod fexecve;
 mod execl;
 mod execlp;
+mod execle;
 mod execv;
 mod execvp;
+mod execvpe;
+mod fexecve;
 
 /*
-TODO: Protect mem and other system files using mode of open
+TODO: open hooks
+Protect mem, disk, and other system files using open mode
 O_RDWR or O_WRONLY is prohibited, including implicitly (creat)
 */
 // mod creat
@@ -28,4 +32,8 @@ O_RDWR or O_WRONLY is prohibited, including implicitly (creat)
 // mod openat
 // mod openat64
 // mod open_by_handle_at
-// TODO: are fd functions necessary? They depend on above.
+
+/*
+TODO: (sym)link/unlink*, *chmod*, rename*, makedev/makenod*, mount,
+attr/acl hooks for various filesystems, *init_module, chroot
+*/

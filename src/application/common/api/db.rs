@@ -35,7 +35,7 @@ pub fn insert_exec(conn: &Connection, exec: LogExecObject) {
 
 pub fn open() -> Connection {
     #[cfg(target_os = "linux")]
-    let dbpath: &Path = Path::new("/opt/whitebeam/data/database.sqlite");
+    let dbpath: &Path = Path::new("/opt/WhiteBeam/data/database.sqlite");
     let run_init: bool = !dbpath.exists();
     let conn: Connection = Connection::open(dbpath).unwrap();
     if run_init {
