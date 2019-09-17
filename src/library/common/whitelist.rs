@@ -7,9 +7,7 @@ use crate::library::platforms::linux as platform;
 use crate::library::platforms::macos as platform;
 use std::{ffi::OsString};
 
-pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>) -> bool {
-    // TODO: Use SHA3-256 hash
-
+pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest: &str) -> bool {
     let mut unsafe_env = false;
     let mut allow_exec = false;
     let env_blacklist = [
@@ -18,13 +16,13 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>) -> bool {
             "LD_LIBRARY_PATH"
     ];
     let whitelist = [
-        // Tuple of (permitted program, allow unsafe environment variables)
+        // Tuple of (permitted program, allow unsafe environment variables, SHA3-256 hexdigest)
         // Shells
-        ("/bin/bash", false),
-        ("/bin/sh", false),
+        ("/bin/bash", false, "ANY"),
+        ("/bin/sh", false, "ANY"),
         // WhiteBeam
-        ("/opt/WhiteBeam/whitebeam", false),
-        ("/usr/local/bin/whitebeam", false)
+        ("/opt/WhiteBeam/whitebeam", false, "ANY"),
+        ("/usr/local/bin/whitebeam", false, "ANY")
     ];
     // TODO: Parse cache file
     let _cache_file = platform::get_cache_file();
@@ -34,8 +32,10 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>) -> bool {
             break;
         }
     }
-    for (allowed_program, allow_unsafe) in whitelist.iter() {
-        if (&program == allowed_program) && (&unsafe_env == allow_unsafe) {
+    for (allowed_program, allow_unsafe, allowed_hash) in whitelist.iter() {
+        if  (&program == allowed_program) &&
+            (&unsafe_env == allow_unsafe) &&
+            ((&hexdigest == allowed_hash) || (hexdigest == "ANY")) {
             allow_exec = true;
             break;
         }

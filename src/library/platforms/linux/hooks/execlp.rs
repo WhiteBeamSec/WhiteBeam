@@ -21,7 +21,7 @@ hook! {
 		let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
 		let (hexdigest, uid) = linux::get_hash_and_uid(abs_prog_str);
         // Permit/deny execution
-        if whitelist::is_whitelisted(&abs_prog_str, &env) {
+        if whitelist::is_whitelisted(&abs_prog_str, &env, &hexdigest) {
             event::send_exec_event(uid, &abs_prog_str, &hexdigest, true);
             real!(hooked_execlp)(path, arg)
         } else {
