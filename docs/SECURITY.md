@@ -6,7 +6,7 @@ Current security vulnerability rewards (will be provided at the discretion of th
 
 | Vulnerability       | Reward  |
 | ------------------- | ------- |
-| Bypass whitelisting | Credits |
+| Bypass whitelisting | $100    |
 
 ---
 
