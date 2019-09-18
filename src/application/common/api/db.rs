@@ -29,7 +29,7 @@ pub fn insert_exec(conn: &Connection, exec: LogExecObject) {
     let _res = conn.execute(
         "INSERT INTO logs (program, hash, uid, ts, success)
                   VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![exec.uid, exec.program, exec.hash, exec.ts, exec.success],
+        params![exec.program, exec.hash, exec.uid, exec.ts, exec.success],
     );
 }
 
