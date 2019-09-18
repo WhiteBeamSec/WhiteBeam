@@ -31,6 +31,7 @@ which = { version = "2.0.1", optional = true }
 
 [features]
 libraries = ["hex", "sha3", "which"]
+whitelist_test = ["hex", "sha3", "which"]
 binaries = ["clap", "warp", "rusqlite"]
 
 # Linux dependencies

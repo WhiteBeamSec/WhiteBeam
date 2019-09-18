@@ -13,6 +13,7 @@ static ENV_BLACKLIST: &'static [&str] = &[
     "LD_LIBRARY_PATH"
 ];
 
+#[cfg(not(feature = "whitelist_test"))]
 static WHITELIST: &'static [(&str, bool, &str)] = &[
     // Tuple of (permitted program, allow unsafe environment variables, SHA3-256 hexdigest)
     // Shells
@@ -21,6 +22,10 @@ static WHITELIST: &'static [(&str, bool, &str)] = &[
     // WhiteBeam
     ("/opt/WhiteBeam/whitebeam", false, "ANY"),
     ("/usr/local/bin/whitebeam", false, "ANY")
+];
+#[cfg(feature = "whitelist_test")]
+static WHITELIST: &'static [(&str, bool, &str)] = &[
+    ("/usr/bin/whoami", true, "ANY")
 ];
 
 pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest: &str) -> bool {
@@ -37,7 +42,7 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest:
     for (allowed_program, allow_unsafe, allowed_hash) in WHITELIST.iter() {
         if  (&program == allowed_program) &&
             (&unsafe_env == allow_unsafe) &&
-            ((&hexdigest == allowed_hash) || (hexdigest == "ANY")) {
+            ((&hexdigest == allowed_hash) || (allowed_hash == &"ANY")) {
             allow_exec = true;
             break;
         }

@@ -7,6 +7,14 @@ library:
 	@echo "Completed. Size:"
 	@du -h $(shell pwd)/target/release/libwhitebeam.so | cut -f1
 
+library-test:
+	@echo "Building library-test"
+	cargo build --lib --release --features="libraries,whitelist_test"
+	strip $(shell pwd)/target/release/libwhitebeam.so
+	@echo "Completed. Size:"
+	@du -h $(shell pwd)/target/release/libwhitebeam.so | cut -f1
+
+
 binary:
 	@echo "Building binary"
 	cargo build --bin whitebeam --release --features=binaries
@@ -29,7 +37,10 @@ test:
 	@objdump -T -j .text $(shell pwd)/target/release/libwhitebeam.so
 	@file -b $(shell pwd)/target/release/libwhitebeam.so
 	@echo "\033[4mTesting\033[0m:"
-	LD_PRELOAD=$(shell pwd)/target/release/libwhitebeam.so /bin/bash -c "whoami" || true
+	@echo "Whitelisted binary"
+	LD_PRELOAD=$(shell pwd)/target/release/libwhitebeam.so /bin/bash -c 'if /usr/bin/whoami; then echo Success; else echo Fail; fi' || true
+	@echo "Non-whitelisted binary"
+	LD_PRELOAD=$(shell pwd)/target/release/libwhitebeam.so /bin/bash -c 'if ! /usr/bin/id; then echo Success; else echo Fail; fi' || true
 	@echo
 	@echo "whitebeam:"
 	@echo "\033[4mTesting\033[0m:"
