@@ -1,4 +1,4 @@
-How do I report a vulnerability to WhiteBeam?
+**How do I report a vulnerability to WhiteBeam?**
 
 For now the project is small enough that you can just submit an issue to our issue tracker. This will be changed in the future.
 
