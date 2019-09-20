@@ -7,14 +7,6 @@ library:
 	@echo "Completed. Size:"
 	@du -h $(shell pwd)/target/release/libwhitebeam.so | cut -f1
 
-library-test:
-	@echo "Building library-test"
-	cargo build --lib --release --features="libraries,whitelist_test"
-	strip $(shell pwd)/target/release/libwhitebeam.so
-	@echo "Completed. Size:"
-	@du -h $(shell pwd)/target/release/libwhitebeam.so | cut -f1
-
-
 binary:
 	@echo "Building binary"
 	cargo build --bin whitebeam --release --features=binaries
@@ -32,6 +24,11 @@ install:
 	@echo "/opt/WhiteBeam/libwhitebeam.so" > /etc/ld.so.preload
 
 test:
+	@echo "Building test library"
+	cargo build --lib --release --features="libraries,whitelist_test"
+	strip $(shell pwd)/target/release/libwhitebeam.so
+	@echo "Completed. Size:"
+	@du -h $(shell pwd)/target/release/libwhitebeam.so | cut -f1
 	@echo "libwhitebeam.so:"
 	@echo "\033[4mProperties\033[0m:"
 	@objdump -T -j .text $(shell pwd)/target/release/libwhitebeam.so
