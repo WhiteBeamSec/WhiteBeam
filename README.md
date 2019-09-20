@@ -16,7 +16,7 @@ Update src/library/common/whitelist.rs to reflect your whitelist. Dynamic whitel
 `git clone https://github.com/noproto/WhiteBeam.git; cd WhiteBeam; make; make install`
 
 ## Tests (Linux)
-`make library-test; make test`
+`make test`
 
 # In Action
 
