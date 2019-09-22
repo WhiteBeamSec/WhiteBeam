@@ -69,16 +69,6 @@ fn run_service() {
 
 fn run_start() {
     println!("Starting WhiteBeam server");
-
-    // Rust documentation says this about current_exe():
-    // "The output of this function should not be used in anything that might have security implications."
-    //
-    // 1. No alternative is provided
-    // 2. There are no clear implications in this context
-    //
-    // We will reward (based on the current security reward policy) the first researcher that can
-    // demonstrate bypassing WhiteBeam's whitelisting policy using current_exe().
-
     let prog = env::current_exe().ok().unwrap();
     Command::new(prog)
             .arg("--service")

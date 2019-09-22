@@ -38,3 +38,13 @@ binaries = ["clap", "warp", "rusqlite"]
 [target.'cfg(target_os = "linux")'.dependencies.libc]
 version = "0.2"
 default-features = false
+
+# MacOS dependencies
+[target.'cfg(target_os = "macos")'.dependencies.libc]
+version = "0.2"
+default-features = false
+
+# Windows dependencies
+[target.'cfg(target_os = "windows")'.dependencies.kernel32-sys]
+version = "0.2"
+default-features = false

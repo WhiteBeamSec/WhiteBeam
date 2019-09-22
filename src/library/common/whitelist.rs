@@ -31,14 +31,25 @@ static WHITELIST: &'static [(&str, bool, &str)] = &[
 pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest: &str) -> bool {
     let mut unsafe_env = false;
     let mut allow_exec = false;
-    // TODO: Parse cache file
-    let _cache_file = platform::get_cache_file();
     for env_var in env {
         if ENV_BLACKLIST.contains(&env_var.0.to_str().unwrap()) {
             unsafe_env = true;
             break;
         }
     }
+    // Introduced limitation:
+    // WhiteBeam is permissive for up to 5 minutes after boot to avoid interfering with the boot
+    // process. While attackers should not be able to reboot a system due to whitelisting policy,
+    // this is a weakness while WhiteBeam is actively developed. Alternatives include:
+    // 1. Whitelisting all binaries by default, including malware (other EDR software use
+    //    this approach, maintaining a large database of permitted executables)
+    // 2. Require a reboot to baseline systems (which may interfere with production systems)
+    // Feedback/ideas welcome: https://github.com/noproto/WhiteBeam/issues
+    if platform::get_uptime().unwrap().as_secs() < (60*5) {
+        allow_exec = true;
+    }
+    // TODO: Parse cache file
+    let _cache_file = platform::get_cache_file();
     for (allowed_program, allow_unsafe, allowed_hash) in WHITELIST.iter() {
         if  (&program == allowed_program) &&
             (&unsafe_env == allow_unsafe) &&

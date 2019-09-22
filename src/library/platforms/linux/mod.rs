@@ -4,14 +4,26 @@ mod hook;
 mod hooks;
 
 use libc::{c_char, c_int};
-use std::ffi::CStr;
-use std::{os::unix::ffi::OsStringExt};
-use std::{ffi::OsString};
-use std::path::Path;
+use std::{mem,
+          ffi::CStr,
+          ffi::OsString,
+          os::unix::ffi::OsStringExt,
+          path::Path,
+          time::Duration};
 use crate::library::common::hash;
 
 pub fn get_cache_file() -> &'static Path {
     Path::new("/opt/WhiteBeam/data/cache.json")
+}
+
+pub fn get_uptime() -> Result<Duration, String> {
+    let mut info: libc::sysinfo = unsafe { mem::zeroed() };
+    let ret = unsafe { libc::sysinfo(&mut info) };
+    if ret == 0 {
+        Ok(Duration::from_secs(info.uptime as u64))
+    } else {
+        Err("sysinfo() failed".to_string())
+    }
 }
 
 pub unsafe fn errno_location() -> *mut c_int {
