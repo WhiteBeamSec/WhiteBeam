@@ -21,6 +21,8 @@ install:
 	@cp $(shell pwd)/target/release/libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so
 	@mkdir /opt/WhiteBeam/data/
 	@ln -s /opt/WhiteBeam/whitebeam /usr/local/bin/whitebeam
+	@cp $(shell pwd)/src/extra/init.sh /etc/init.d/whitebeam
+	@ln -s /etc/init.d/whitebeam /etc/rc3.d/S01whitebeam
 	@echo "/opt/WhiteBeam/libwhitebeam.so" > /etc/ld.so.preload
 
 test:
