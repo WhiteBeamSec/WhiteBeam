@@ -1,3 +1,9 @@
+#[cfg(target_os = "windows")]
+use crate::library::platforms::windows as platform;
+#[cfg(target_os = "linux")]
+use crate::library::platforms::linux as platform;
+#[cfg(target_os = "macos")]
+use crate::library::platforms::macos as platform;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::library::common::http;
@@ -28,6 +34,10 @@ pub fn send_exec_event(uid: u32, program: &str, hash: &str, success: bool) -> ()
         ts: ts,
         success: success
     };
+    // https://github.com/noproto/WhiteBeam/blob/master/src/library/common/whitelist.rs#L40
+    if platform::get_uptime().unwrap().as_secs() < (60*5) {
+        return;
+    }
     if let Ok(_response) = http::post("http://127.0.0.1:11998/log/exec")
                                 // Prevents denial of service
                                 .with_timeout(1)
@@ -35,7 +45,7 @@ pub fn send_exec_event(uid: u32, program: &str, hash: &str, success: bool) -> ()
                                 .unwrap()
                                 .send() {
         ()
-    }/* else {
+    } else {
         eprintln!("Failed to communicate with WhiteBeam service");
-    }*/
+    }
 }
