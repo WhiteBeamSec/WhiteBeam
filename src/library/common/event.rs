@@ -35,7 +35,7 @@ pub fn send_exec_event(uid: u32, program: &str, hash: &str, success: bool) -> ()
                                 .unwrap()
                                 .send() {
         ()
-    } else {
+    }/* else {
         eprintln!("Failed to communicate with WhiteBeam service");
-    }
+    }*/
 }
