@@ -10,7 +10,8 @@ mod execve;
 // Secondary hooks
 mod execl;
 mod execlp;
-mod execle;
+// TODO: Troubleshooting execle, disable for now
+//mod execle;
 mod execv;
 mod execvp;
 mod execvpe;
