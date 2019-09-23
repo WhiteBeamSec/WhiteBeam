@@ -4,7 +4,7 @@
 # description: WhiteBeam service
 # processname: whitebeam
 
-SERVICE_PATH="/opt/WhiteBeam/whitebeam"
+SERVICE_PATH="/opt/WhiteBeam/"
 
 SERVICE=whitebeam
 SERVICEOPTS="--service"
