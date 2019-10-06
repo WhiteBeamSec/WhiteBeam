@@ -38,12 +38,7 @@ macro_rules! hook {
 
             #[no_mangle]
             pub unsafe extern "C" fn $real_fn ( $($v : $t),* ) -> $r {
-                // Assume library has initialized successfully
-                if true {
-                    ::std::panic::catch_unwind(|| $hook_fn ( $($v),* )).ok()
-                } else {
-                    None
-                }.unwrap_or_else(|| $real_fn.get() ( $($v),* ))
+                ::std::panic::catch_unwind(|| $hook_fn ( $($v),* )).ok().unwrap_or_else(|| $real_fn.get() ( $($v),* ))
             }
         }
 
