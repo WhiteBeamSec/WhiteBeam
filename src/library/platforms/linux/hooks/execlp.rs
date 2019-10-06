@@ -9,7 +9,7 @@ use crate::library::common::event;
                        /* (char  *) NULL */);
 */
 hook! {
-    unsafe fn hooked_execlp(path: *const c_char, arg: *const c_char) -> c_int => execlp {
+    unsafe fn hooked_execlp(path: *const c_char, arg: *const c_char, null: *const c_char) -> c_int => execlp {
 		let envp: *const *const c_char = ptr::null();
 		let (program, env) = linux::transform_parameters(path, envp, -1);
 		let which_abs_pathbuf = match which::which(&program) {
@@ -23,7 +23,7 @@ hook! {
         // Permit/deny execution
         if whitelist::is_whitelisted(&abs_prog_str, &env, &hexdigest) {
             event::send_exec_event(uid, &abs_prog_str, &hexdigest, true);
-            real!(hooked_execlp)(path, arg)
+            real!(hooked_execlp)(path, arg, null)
         } else {
             event::send_exec_event(uid, &abs_prog_str, &hexdigest, false);
             *linux::errno_location() = libc::EACCES;
