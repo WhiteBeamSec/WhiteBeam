@@ -25,10 +25,8 @@ macro_rules! hook {
 
         impl $real_fn {
             fn get(&self) -> unsafe extern fn ( $($v : $t),* ) -> $r {
-                use ::std::sync::{Once};
-
                 static mut REAL: *const u8 = 0 as *const u8;
-                static mut ONCE: Once = Once::new();
+                static mut ONCE: ::std::sync::Once = ::std::sync::Once::new();
 
                 unsafe {
                     ONCE.call_once(|| {
