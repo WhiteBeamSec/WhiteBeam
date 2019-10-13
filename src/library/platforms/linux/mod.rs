@@ -52,6 +52,7 @@ unsafe fn transform_parameters(path: *const c_char, envp: *const *const c_char, 
 
 	// Program
 	let program = if !(path.is_null()) {
+        // TODO: Segfaults execle when running /sbin/ifup -a --read-environment
 		let program_c_str: &CStr = CStr::from_ptr(path);
 		let program_str_slice: &str = program_c_str.to_str().unwrap();
 		program_str_slice.to_owned()
