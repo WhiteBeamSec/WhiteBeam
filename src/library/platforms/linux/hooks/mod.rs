@@ -1,13 +1,16 @@
-// Only the exec hooks are needed to safely run WhiteBeam for most unprivileged services
-// The rest are for protecting WhiteBeam against root
-
 /*
-exec hooks
+exec hooks: Required
++--------+-------------------------------------------------------------------------------------+
+| Letter |                                       Meaning                                       |
++--------+-------------------------------------------------------------------------------------+
+| e      | Takes an extra argument to provide the environment of the new program               |
+| l      | Takes the arguments of the new program as a variable-length argument list           |
+| p      | Searches the PATH environment variable to find the program if a path isn't provided |
+| v      | Takes an array parameter to specify the argv[] array of the new program             |
++--------+-------------------------------------------------------------------------------------+
 */
-// Primary hook
-mod execve;
 
-// Secondary hooks
+mod execve;
 mod execl;
 mod execlp;
 mod execle;
@@ -17,7 +20,7 @@ mod execvpe;
 mod fexecve;
 
 /*
-TODO: open hooks
+TODO: open hooks: Optional
 Protect mem, disk, and other system files using open mode
 O_RDWR or O_WRONLY is prohibited, including implicitly (creat)
 */
@@ -35,5 +38,5 @@ O_RDWR or O_WRONLY is prohibited, including implicitly (creat)
 
 /*
 TODO: (sym)link/unlink*, *chmod*, rename*, makedev/makenod*, mount,
-attr/acl hooks for various filesystems, *init_module, chroot
+attr/acl hooks for various filesystems, *init_module, chroot: Optional
 */
