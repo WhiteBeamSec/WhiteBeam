@@ -10,11 +10,11 @@ exec hooks: Required
 +--------+-------------------------------------------------------------------------------------+
 */
 
-mod execve;
 mod execl;
-mod execlp;
 mod execle;
+mod execlp;
 mod execv;
+mod execve;
 mod execvp;
 mod execvpe;
 mod fexecve;
