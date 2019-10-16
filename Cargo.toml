@@ -1,7 +1,7 @@
 # General info
 [package]
 name = "whitebeam"
-version = "0.0.7"
+version = "0.0.8"
 authors = ["noproto"]
 edition = "2018"
 
@@ -19,7 +19,6 @@ required-features = ["binaries"]
 
 # Cross-platform dependencies
 [dependencies]
-
 serde = { version = "1.0.99", features = ["derive"] }
 serde_json = { version = "1.0.40" }
 hex = { version = "0.3.2", optional = true }

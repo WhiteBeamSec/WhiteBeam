@@ -10,7 +10,6 @@ exec hooks: Required
 +--------+-------------------------------------------------------------------------------------+
 */
 
-// TODO: Limited support for variadic functions? (l)
 mod execl;
 mod execle;
 mod execlp;
