@@ -30,5 +30,5 @@ pub unsafe extern "C" fn execle(path: *const c_char, mut args: ...) -> c_int {
         });
     }
     let execve: unsafe extern "C" fn(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int = unsafe { std::mem::transmute(REAL) };
-    execve(path, argv, std::ptr::null())
+    execve(path, argv, envp)
 }
