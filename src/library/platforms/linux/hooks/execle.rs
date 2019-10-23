@@ -27,6 +27,6 @@ pub unsafe extern "C" fn execle(path: *const c_char, mut args: ...) -> c_int {
     ONCE.call_once(|| {
         REAL = crate::library::platforms::linux::hook::dlsym_next("execve\u{0}");
     });
-    let execve: unsafe extern "C" fn(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int = unsafe { std::mem::transmute(REAL) };
+    let execve: unsafe extern "C" fn(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int = std::mem::transmute(REAL);
     execve(path, argv, envp)
 }
