@@ -76,5 +76,11 @@ fn run_start() {
 }
 
 fn run_status() {
-    println!("OK");
+    if let Ok(_response) = application::common::http::get("http://127.0.0.1:11998/status")
+                                .with_timeout(1)
+                                .send() {
+        println!("OK");
+    } else {
+        eprintln!("Failed to communicate with WhiteBeam service");
+    }
 }
