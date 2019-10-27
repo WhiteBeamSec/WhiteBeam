@@ -11,7 +11,7 @@ Release binaries will be provided as of WhiteBeam 0.1.0.
 Update src/library/common/whitelist.rs to reflect your whitelist. Dynamic whitelists and baselines will be available by November 1st, 2019.
 
 1. Install Rust toolchain:
-`apt update; apt install -y build-essential git make; wget --https-only --secure-protocol=TLSv1_2 https://sh.rustup.rs -O rustup_init.sh; sh rustup_init.sh -y; rm rustup_init.sh; source $HOME/.cargo/env; rustup toolchain install nightly`
+`apt update; apt install -y build-essential git make; wget -q --https-only --secure-protocol=TLSv1_2 https://sh.rustup.rs -O - | sh /dev/stdin -y; source $HOME/.cargo/env; rustup toolchain install nightly`
 2. Download and install WhiteBeam:
 `git clone https://github.com/noproto/WhiteBeam.git; cd WhiteBeam; make; make install`
 
