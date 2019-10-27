@@ -68,7 +68,7 @@ fn run_service() {
 }
 
 fn run_start() {
-    println!("Starting WhiteBeam server");
+    println!("Starting WhiteBeam service");
     let prog = env::current_exe().ok().unwrap();
     Command::new(prog)
             .arg("--service")
