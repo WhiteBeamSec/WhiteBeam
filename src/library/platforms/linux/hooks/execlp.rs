@@ -8,14 +8,6 @@ use crate::library::common::event;
        int execlp(const char *path, const char *arg, ...
                        /* (char  *) NULL */);
 */
-/*
-TODO: On Linux, argv and envp can be specified as NULL.  In both cases,
-      this has the same effect as specifying the argument as a pointer to a
-      list containing a single null pointer.  Do not take advantage of this
-      nonstandard and nonportable misfeature!  On many other UNIX systems,
-      specifying argv as NULL will result in an error (EFAULT).  Some other
-      UNIX systems treat the envp==NULL case the same as Linux.
-*/
 #[no_mangle]
 pub unsafe extern "C" fn execlp(path: *const c_char, mut args: ...) -> c_int {
     // Populate argv
@@ -31,6 +23,7 @@ pub unsafe extern "C" fn execlp(path: *const c_char, mut args: ...) -> c_int {
     let argv: *const *const c_char = (&arg_vec).as_ptr() as *const *const c_char;
 
     // Populate envp
+    // TODO: Don't use null (only supported by Linux)
     let envp: *const *const c_char = ptr::null();
 
     let (program, env) = linux::transform_parameters(path, envp, -1);
