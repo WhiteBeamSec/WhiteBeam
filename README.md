@@ -7,13 +7,13 @@ WhiteBeam is an OSS EDR application with cross platform application whitelisting
 ## Binaries
 Release binaries will be provided as of WhiteBeam 0.1.0.
 
-## Compile (Linux/Debian)
+## Compile (Linux)
 Update src/library/common/whitelist.rs to reflect your whitelist. Dynamic whitelists and baselines will be available by November 1st, 2019.
 
-1. Install Rust toolchain:
-`apt update; apt install -y build-essential git; wget -q --https-only --secure-protocol=TLSv1_2 https://sh.rustup.rs -O - | sh /dev/stdin -y; source $HOME/.cargo/env; rustup toolchain install nightly`
-2. Download and install WhiteBeam:
-`git clone https://github.com/noproto/WhiteBeam.git; cd WhiteBeam; make; make install`
+1. Compile:
+`make`
+2. Install WhiteBeam:
+`make install`
 
 ## Tests (Linux)
 `make test`
