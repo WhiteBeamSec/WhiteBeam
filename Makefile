@@ -1,15 +1,15 @@
 # Requirements
 ifeq ($(shell which cc),)
-$(error "cc not found in PATH, consider running: apt update; apt install -y build-essential;")
+$(error "cc not found in PATH, consider running: apt update && apt install -y build-essential")
 endif
 ifeq ($(shell which rustup),)
-$(error "rustup not found in PATH, consider running: wget -q --https-only --secure-protocol=TLSv1_2 https://sh.rustup.rs -O - | sh /dev/stdin -y; source $HOME/.cargo/env;")
+$(error "rustup not found in PATH, consider running: wget -q --https-only --secure-protocol=TLSv1_2 https://sh.rustup.rs -O - | sh /dev/stdin -y && source $HOME/.cargo/env")
 endif
 ifeq ($(shell rustup show|grep stable),)
-$(error "No stable Rust found in toolchain, consider running: rustup toolchain install stable;")
+$(error "No stable Rust found in toolchain, consider running: rustup toolchain install stable")
 endif
 ifeq ($(shell rustup show|grep nightly),)
-$(error "No nightly Rust found in toolchain, consider running: rustup toolchain install nightly;")
+$(error "No nightly Rust found in toolchain, consider running: rustup toolchain install nightly")
 endif
 
 all:	library binary
