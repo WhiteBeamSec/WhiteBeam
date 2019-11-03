@@ -8,7 +8,7 @@ WhiteBeam is an OSS EDR application with cross platform application whitelisting
 Release binaries will be provided as of WhiteBeam 0.1.0.
 
 ## Compile (Linux)
-Update src/library/common/whitelist.rs to reflect your whitelist. Dynamic whitelists and baselines will be available by November 1st, 2019.
+Update src/library/common/whitelist.rs to reflect your whitelist. Dynamic whitelists and baselines will be available by December 1st, 2019.
 
 1. Compile:
 `make`
