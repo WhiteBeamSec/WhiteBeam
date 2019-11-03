@@ -1,7 +1,4 @@
 # Requirements
-ifeq ($(shell which make),)
-$(error "make not found in PATH, consider running: apt update; apt install -y build-essential;")
-endif
 ifeq ($(shell which cc),)
 $(error "cc not found in PATH, consider running: apt update; apt install -y build-essential;")
 endif
