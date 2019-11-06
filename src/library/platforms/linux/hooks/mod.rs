@@ -21,7 +21,7 @@ mod execvpe;
 mod fexecve;
 
 /*
-TODO: open hooks: Optional
+TODO: open hooks: Required
 Protect mem, disk, and other system files using open mode
 O_RDWR or O_WRONLY is prohibited, including implicitly (creat)
 */
