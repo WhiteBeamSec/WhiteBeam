@@ -10,6 +10,7 @@ exec hooks: Required
 +--------+-------------------------------------------------------------------------------------+
 */
 
+// TODO: Use FD's for all exec* functions
 mod execl;
 mod execle;
 mod execlp;
