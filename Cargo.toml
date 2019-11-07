@@ -19,14 +19,14 @@ required-features = ["binaries"]
 
 # Cross-platform dependencies
 [dependencies]
-serde = { version = "1.0.99", features = ["derive"] }
-serde_json = { version = "1.0.40" }
-hex = { version = "0.3.2", optional = true }
+serde = { version = "1.0.102", features = ["derive"] }
+serde_json = { version = "1.0.41" }
+hex = { version = "0.4.0", optional = true }
 sha3 = { version = "0.8.2", optional = true }
 clap = { version = "2.33.0", optional = true }
-warp = { version = "0.1.19", optional = true }
+warp = { version = "0.1.20", optional = true }
 rusqlite = { version = "0.20.0", optional = true, features = ["bundled"] }
-which = { version = "2.0.1", optional = true }
+which = { version = "3.1.0", optional = true }
 
 [features]
 libraries = ["hex", "sha3", "which"]
