@@ -49,6 +49,10 @@ fn db_init(conn: &Connection) {
     );
     #[cfg(target_os = "linux")]
     let config_path: &Path = Path::new("/opt/WhiteBeam/data/init.json");
+    #[cfg(target_os = "windows")]
+    let config_path: &Path = Path::new("C:\\Program Files\\WhiteBeam\\data\\init.json");
+    #[cfg(target_os = "macos")]
+    let config_path: &Path = Path::new("/Applications/WhiteBeam/data/init.json");
     let init_config: bool = !config_path.exists();
     if init_config {
         // TODO: Validate init.json
@@ -79,6 +83,10 @@ fn db_init(conn: &Connection) {
 pub fn open() -> Connection {
     #[cfg(target_os = "linux")]
     let db_path: &Path = Path::new("/opt/WhiteBeam/data/database.sqlite");
+    #[cfg(target_os = "windows")]
+    let db_path: &Path = Path::new("C:\\Program Files\\WhiteBeam\\data\\database.sqlite");
+    #[cfg(target_os = "macos")]
+    let db_path: &Path = Path::new("/Applications/WhiteBeam/data/database.sqlite");
     let run_init: bool = !db_path.exists();
     let conn: Connection = Connection::open(db_path).unwrap();
     if run_init {
