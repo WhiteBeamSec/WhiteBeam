@@ -6,7 +6,7 @@ WhiteBeam is an OSS EDR application with cross platform application whitelisting
 
 ## Binaries
 
-**Important**: Always ensure the downloaded file hash matches official hashes. ([How-to](https://github.com/noproto/WhiteBeam/wiki/Verifying-file-hashes))
+**Important**: Always ensure the downloaded file hash matches official hashes ([How-to](https://github.com/noproto/WhiteBeam/wiki/Verifying-file-hashes)).
 
 | Platform       | URL                                                                | Hash(es) |
 | -------------- | ------------------------------------------------------------------ | -------- |
