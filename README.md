@@ -5,9 +5,12 @@ WhiteBeam is an OSS EDR application with cross platform application whitelisting
 # Getting started
 
 ## Binaries
-**Linux (64-bit)**: https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.tar.gz
 
-**Hash**: https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.SHA256
+**Important**: Always ensure the downloaded file hash matches official hashes. ([How?](https://github.com/noproto/WhiteBeam/wiki/Verifying-file-hashes))
+
+| Platform       | URL                                                                | Hash(es) |
+| -------------- | ------------------------------------------------------------------ | -------- |
+| Linux (64-bit) | https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.tar.gz | [SHA-256](https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.SHA256)   |
 
 Installation: `./install.sh`
 
