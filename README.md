@@ -12,7 +12,8 @@ WhiteBeam is an OSS EDR application with cross platform application whitelisting
 | -------------- | ------------------------------------------------------------------ | -------- |
 | Linux (64-bit) | https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.tar.gz | [SHA-256](https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.SHA256) |
 
-⚠️ Do not install the latest builds until dynamic whitelists are available ⚠️
+⚠️ Do not install binaries until dynamic whitelists are available for configuration (est. ~1 week) ⚠️
+
 Installation: `./install.sh`
 
 ## Compile (Linux)
