@@ -4,6 +4,7 @@ use crate::library::platforms::windows as platform;
 use crate::library::platforms::linux as platform;
 #[cfg(target_os = "macos")]
 use crate::library::platforms::macos as platform;
+use crate::library::common::db;
 use std::{ffi::OsString};
 
 // Hardcoded whitelist data for setup
@@ -48,12 +49,19 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest:
     if platform::get_uptime().unwrap().as_secs() < (60*5) {
         allow_exec = true;
     }
-    // TODO: Parse cache file
-    let _cache_file = platform::get_cache_file();
     for (allowed_program, allow_unsafe, allowed_hash) in WHITELIST.iter() {
         if  (&program == allowed_program) &&
             (&unsafe_env == allow_unsafe) &&
             ((&hexdigest == allowed_hash) || (allowed_hash == &"ANY")) {
+            allow_exec = true;
+            break;
+        }
+    }
+    let conn = db::open();
+    for dyn_result in db::get_dyn_whitelist(&conn).iter() {
+        if  (&program == &dyn_result.program) &&
+            (&unsafe_env == &dyn_result.allow_unsafe) &&
+            ((&hexdigest == &dyn_result.hash) || (&dyn_result.hash == &"ANY")) {
             allow_exec = true;
             break;
         }

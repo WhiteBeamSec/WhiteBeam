@@ -11,6 +11,8 @@ exec hooks: Required
 */
 
 // TODO: Use FD's for all exec* functions
+// Internally call fexecve. Use open hooks to guard against TOCTOU.
+// TODO: Whitelist libraries
 mod execl;
 mod execle;
 mod execlp;

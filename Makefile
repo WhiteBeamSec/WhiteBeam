@@ -38,6 +38,7 @@ install:
 	@sudo cp $(shell pwd)/src/extra/init.sh /etc/init.d/whitebeam
 	@sudo ln -s /etc/init.d/whitebeam /etc/rc3.d/S01whitebeam
 	@echo "/opt/WhiteBeam/libwhitebeam.so" | sudo tee -a /etc/ld.so.preload
+	@sudo /opt/WhiteBeam/whitebeam --start
 	@echo "Complete"
 
 test:

@@ -14,9 +14,9 @@ gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys 4A3F1233C01563F808B8355125ECFD1
 
 **Current security vulnerability rewards** (will be provided at the discretion of the lead developers):
 
-| Vulnerability       | Reward        |
-| ------------------- | ------------- |
-| Bypass whitelisting | $100, Credits |
+| Vulnerability                                | Reward        |
+| -------------------------------------------- | ------------- |
+| Bypass whitelisting on chal.whitebeamsec.com | $100, Credits |
 
 Past security advisories can be found here: https://github.com/noproto/WhiteBeam/security/advisories
 

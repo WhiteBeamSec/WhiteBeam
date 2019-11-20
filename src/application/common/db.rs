@@ -1,3 +1,9 @@
+#[cfg(target_os = "windows")]
+use crate::application::platforms::windows as platform;
+#[cfg(target_os = "linux")]
+use crate::application::platforms::linux as platform;
+#[cfg(target_os = "macos")]
+use crate::application::platforms::macos as platform;
 use std::path::Path;
 use rusqlite::{params, Connection};
 use serde::{Serialize, Deserialize};
@@ -18,8 +24,8 @@ pub struct ConfigEntry {
     pub server_type: String
 }
 
-pub fn get_config(db: &Connection, config_param: String) -> String {
-    db.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0)).unwrap()
+pub fn get_config(conn: &Connection, config_param: String) -> String {
+    conn.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0)).unwrap()
 }
 
 pub fn insert_config(conn: &Connection, config_param: &str, config_value: &str) {
@@ -47,12 +53,27 @@ fn db_init(conn: &Connection) {
          )",
         rusqlite::NO_PARAMS,
     );
-    #[cfg(target_os = "linux")]
-    let config_path: &Path = Path::new("/opt/WhiteBeam/data/init.json");
-    #[cfg(target_os = "windows")]
-    let config_path: &Path = Path::new("C:\\Program Files\\WhiteBeam\\data\\init.json");
-    #[cfg(target_os = "macos")]
-    let config_path: &Path = Path::new("/Applications/WhiteBeam/data/init.json");
+    let _res = conn.execute(
+        "CREATE TABLE logs (
+            id INTEGER PRIMARY KEY,
+            program TEXT NOT NULL,
+            hash TEXT NOT NULL,
+            uid UNSIGNED INTEGER NOT NULL,
+            ts INTEGER NOT NULL,
+            success BOOLEAN NOT NULL
+         )",
+        rusqlite::NO_PARAMS,
+    );
+    let _res = conn.execute(
+        "CREATE TABLE whitelist (
+            id INTEGER PRIMARY KEY,
+            program TEXT NOT NULL,
+            allow_unsafe BOOLEAN DEFAULT FALSE,
+            hash TEXT NOT NULL
+         )",
+        rusqlite::NO_PARAMS,
+    );
+    let config_path: &Path = &platform::get_data_file_path("init.json");
     let init_config: bool = !config_path.exists();
     if init_config {
         // TODO: Validate init.json
@@ -67,26 +88,10 @@ fn db_init(conn: &Connection) {
         insert_config(conn, "server_key", "none");
         insert_config(conn, "server_type", "none");
     }
-    let _res = conn.execute(
-        "CREATE TABLE logs (
-            id INTEGER PRIMARY KEY,
-            program TEXT NOT NULL,
-            hash TEXT NOT NULL,
-            uid UNSIGNED INTEGER NOT NULL,
-            ts INTEGER NOT NULL,
-            success BOOLEAN NOT NULL
-         )",
-        rusqlite::NO_PARAMS,
-    );
 }
 
 pub fn open() -> Connection {
-    #[cfg(target_os = "linux")]
-    let db_path: &Path = Path::new("/opt/WhiteBeam/data/database.sqlite");
-    #[cfg(target_os = "windows")]
-    let db_path: &Path = Path::new("C:\\Program Files\\WhiteBeam\\data\\database.sqlite");
-    #[cfg(target_os = "macos")]
-    let db_path: &Path = Path::new("/Applications/WhiteBeam/data/database.sqlite");
+    let db_path: &Path = &platform::get_data_file_path("database.sqlite");
     let run_init: bool = !db_path.exists();
     let conn: Connection = Connection::open(db_path).unwrap();
     if run_init {

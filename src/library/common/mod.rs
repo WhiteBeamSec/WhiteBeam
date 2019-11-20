@@ -1,3 +1,5 @@
+// Database
+pub mod db;
 // Whitelist
 pub mod whitelist;
 // Hashing algorithm
