@@ -31,7 +31,7 @@ pub fn get_dyn_whitelist(conn: &Connection) -> Vec<WhitelistResult> {
     result_vec
 }
 
-pub fn open() -> Connection {
+pub fn db_open() -> Connection {
     let db_path: &Path = &platform::get_data_file_path("database.sqlite");
     let no_db: bool = !db_path.exists();
     if no_db {

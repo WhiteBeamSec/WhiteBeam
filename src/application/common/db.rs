@@ -90,12 +90,17 @@ fn db_init(conn: &Connection) {
     }
 }
 
-pub fn open() -> Connection {
+pub fn db_open() -> Connection {
+    let db_path: &Path = &platform::get_data_file_path("database.sqlite");
+    let conn: Connection = Connection::open(db_path).unwrap();
+    conn
+}
+
+pub fn db_optionally_init() {
     let db_path: &Path = &platform::get_data_file_path("database.sqlite");
     let run_init: bool = !db_path.exists();
-    let conn: Connection = Connection::open(db_path).unwrap();
+    let conn = db_open();
     if run_init {
         db_init(&conn)
     }
-    conn
 }

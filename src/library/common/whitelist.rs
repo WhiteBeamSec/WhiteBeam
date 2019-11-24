@@ -57,7 +57,7 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest:
             break;
         }
     }
-    let conn = db::open();
+    let conn = db::db_open();
     for dyn_result in db::get_dyn_whitelist(&conn).iter() {
         if  (&program == &dyn_result.program) &&
             (&unsafe_env == &dyn_result.allow_unsafe) &&

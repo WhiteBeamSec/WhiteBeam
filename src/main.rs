@@ -64,6 +64,7 @@ fn main() {
 }
 
 fn run_service() {
+    application::common::db::db_optionally_init();
     application::common::api::serve();
 }
 
