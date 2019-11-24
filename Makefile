@@ -14,6 +14,9 @@ endif
 ifeq ($(shell rustup show|grep nightly),)
 $(error "No nightly Rust found in toolchain, consider running: rustup toolchain install nightly")
 endif
+ifneq ($(shell which sudo),)
+sudo_pfx = sudo
+endif
 
 all:	library binary
 
@@ -33,15 +36,15 @@ binary:
 
 install:
 	@echo "Installing"
-	@sudo mkdir -p /opt/WhiteBeam/
-	@sudo cp $(shell pwd)/target/release/whitebeam /opt/WhiteBeam/whitebeam
-	@sudo cp $(shell pwd)/target/release/libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so
-	@sudo mkdir /opt/WhiteBeam/data/
-	@sudo ln -s /opt/WhiteBeam/whitebeam /usr/local/bin/whitebeam
-	@sudo cp $(shell pwd)/src/extra/init.sh /etc/init.d/whitebeam
-	@sudo ln -s /etc/init.d/whitebeam /etc/rc3.d/S01whitebeam
-	@echo "/opt/WhiteBeam/libwhitebeam.so" | sudo tee -a /etc/ld.so.preload
-	@sudo /opt/WhiteBeam/whitebeam --start
+	@$(sudo_pfx) mkdir -p /opt/WhiteBeam/
+	@$(sudo_pfx) cp $(shell pwd)/target/release/whitebeam /opt/WhiteBeam/whitebeam
+	@$(sudo_pfx) cp $(shell pwd)/target/release/libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so
+	@$(sudo_pfx) mkdir /opt/WhiteBeam/data/
+	@$(sudo_pfx) ln -s /opt/WhiteBeam/whitebeam /usr/local/bin/whitebeam
+	@$(sudo_pfx) cp $(shell pwd)/src/extra/init.sh /etc/init.d/whitebeam
+	@$(sudo_pfx) ln -s /etc/init.d/whitebeam /etc/rc3.d/S01whitebeam
+	@echo "/opt/WhiteBeam/libwhitebeam.so" | $(sudo_pfx) tee -a /etc/ld.so.preload
+	@$(sudo_pfx) /opt/WhiteBeam/whitebeam --start
 	@echo "Complete"
 
 test:
