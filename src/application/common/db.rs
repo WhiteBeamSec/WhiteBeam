@@ -74,7 +74,7 @@ fn db_init(conn: &Connection) {
         rusqlite::NO_PARAMS,
     );
     let config_path: &Path = &platform::get_data_file_path("init.json");
-    let init_config: bool = !config_path.exists();
+    let init_config: bool = config_path.exists();
     if init_config {
         // TODO: Validate init.json
         let init_file = std::fs::File::open(config_path).unwrap();
