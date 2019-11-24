@@ -1,5 +1,6 @@
 use libc::{c_char, c_int};
 use std::ptr;
+use std::{ffi::CString};
 use crate::library::platforms::linux;
 use crate::library::common::whitelist;
 use crate::library::common::event;
@@ -36,9 +37,13 @@ pub unsafe extern "C" fn execlp(path: *const c_char, mut args: ...) -> c_int {
     let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
     let (hexdigest, uid) = linux::get_hash_and_uid(abs_prog_str);
 
+    // Populate path
+    let abs_path_c_str = CString::new(abs_prog_str).unwrap();
+    let abs_path_c_char: *const c_char = abs_path_c_str.as_ptr() as *const c_char;
+
     // Permit/deny execution
-    if whitelist::is_whitelisted(&program, &env, &hexdigest) {
-        event::send_exec_event(uid, &program, &hexdigest, true);
+    if whitelist::is_whitelisted(abs_prog_str, &env, &hexdigest) {
+        event::send_exec_event(uid, abs_prog_str, &hexdigest, true);
         // Call execve
         static mut REAL: *const u8 = 0 as *const u8;
         static mut ONCE: ::std::sync::Once = ::std::sync::Once::new();
@@ -46,9 +51,9 @@ pub unsafe extern "C" fn execlp(path: *const c_char, mut args: ...) -> c_int {
             REAL = crate::library::platforms::linux::hook::dlsym_next("execve\u{0}");
         });
         let execve: unsafe extern "C" fn(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int = std::mem::transmute(REAL);
-        execve(path, argv, envp)
+        execve(abs_path_c_char, argv, envp)
     } else {
-        event::send_exec_event(uid, &program, &hexdigest, false);
+        event::send_exec_event(uid, abs_prog_str, &hexdigest, false);
         *linux::errno_location() = libc::EACCES;
         return -1
     }
