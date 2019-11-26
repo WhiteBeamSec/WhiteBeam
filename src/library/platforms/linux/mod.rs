@@ -4,7 +4,8 @@ mod hook;
 mod hooks;
 
 use libc::{c_char, c_int};
-use std::{mem,
+use std::{env,
+          mem,
           ffi::CStr,
           ffi::OsString,
           os::unix::ffi::OsStringExt,
@@ -35,6 +36,20 @@ pub unsafe fn errno_location() -> *mut c_int {
 
 pub fn get_current_uid() -> u32 {
     unsafe { libc::getuid() }
+}
+
+pub fn get_env_path() -> OsString {
+    let path_val: OsString;
+    match env::var_os("PATH") {
+        Some(val) => {
+            path_val = val;
+        }
+        None => {
+            // Use CS_PATH
+            path_val = OsString::from("/bin:/usr/bin");
+        }
+    }
+    path_val
 }
 
 fn parse_env(input: &[u8]) -> Option<(OsString, OsString)> {

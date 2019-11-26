@@ -1,4 +1,5 @@
 use libc::{c_char, c_int};
+use std::env;
 use std::ptr;
 use crate::library::platforms::linux;
 use crate::library::common::whitelist;
@@ -11,7 +12,9 @@ hook! {
     unsafe fn hooked_execvp(path: *const c_char, argv: *const *const c_char) -> c_int => execvp {
 		let envp: *const *const c_char = ptr::null();
 		let (program, env) = linux::transform_parameters(path, envp, -1);
-		let which_abs_pathbuf = match which::which(&program) {
+		let which_abs_pathbuf = match which::which_in(&program,
+                                                      Some(linux::get_env_path()),
+                                                      env::current_dir().unwrap()) {
             Err(_why) => {
 				*linux::errno_location() = libc::ENOENT;
 				return -1 },
