@@ -1,4 +1,5 @@
 use libc::{c_char, c_int};
+use std::env;
 use crate::library::platforms::linux;
 use crate::library::common::whitelist;
 use crate::library::common::event;
@@ -10,7 +11,9 @@ use crate::library::common::event;
 hook! {
     unsafe fn hooked_execvpe(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int => execvpe {
 		let (program, env) = linux::transform_parameters(path, envp, -1);
-		let which_abs_pathbuf = match which::which(&program) {
+        let which_abs_pathbuf = match which::which_in(&program,
+                                                      Some(linux::get_env_path()),
+                                                      env::current_dir().unwrap()) {
             Err(_why) => {
 				*linux::errno_location() = libc::ENOENT;
 				return -1 },
