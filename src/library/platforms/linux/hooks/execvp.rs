@@ -21,10 +21,6 @@ hook! {
             Ok(prog_path) => prog_path
         };
 		let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
-        // Ensure legacy versions of man-db use WhiteBeam versus seccomp
-        if abs_prog_str == "/usr/bin/man" {
-            env::set_var("MAN_DISABLE_SECCOMP", "1");
-        }
 		let (hexdigest, uid) = linux::get_hash_and_uid(abs_prog_str);
         // Permit/deny execution
         if whitelist::is_whitelisted(abs_prog_str, &env, &hexdigest) {
