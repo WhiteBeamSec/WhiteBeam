@@ -10,7 +10,7 @@ exec hooks: Required
 +--------+-------------------------------------------------------------------------------------+
 */
 
-// TODO: Use FD's for all exec* functions
+// TODO: Rewrite all exec* functions to use FD's
 // Internally call fexecve. Use open hooks to guard against TOCTOU.
 // TODO: Whitelist libraries
 mod execl;
