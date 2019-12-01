@@ -43,3 +43,7 @@ TODO: context hooks: Required
 (sym)link/unlink*, *chmod*, rename*, makedev/makenod*, mount,
 attr/acl hooks for various filesystems, *init_module, chroot: Optional
 */
+
+/*
+TODO: socket hooks: Optional
+*/
