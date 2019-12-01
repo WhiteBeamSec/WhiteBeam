@@ -26,17 +26,28 @@ static WHITELIST: &'static [(&str, bool, &str)] = &[
 ];
 #[cfg(feature = "whitelist_test")]
 static WHITELIST: &'static [(&str, bool, &str)] = &[
-    ("/usr/bin/whoami", true, "ANY")
+    ("/usr/bin/whoami", true, "ANY"),
+    // Test seccomp
+    ("/usr/bin/man", true, "ANY")
 ];
 
 pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest: &str) -> bool {
     let mut unsafe_env = false;
-    let mut allow_exec = false;
     for env_var in env {
         if ENV_BLACKLIST.contains(&env_var.0.to_str().unwrap()) {
             unsafe_env = true;
             break;
         }
+    }
+    for (allowed_program, allow_unsafe, allowed_hash) in WHITELIST.iter() {
+        if  (&program == allowed_program) &&
+            (&unsafe_env == allow_unsafe) &&
+            ((&hexdigest == allowed_hash) || (allowed_hash == &"ANY")) {
+            return true;
+        }
+    }
+    if cfg!(feature = "whitelist_test") {
+        return false;
     }
     // Introduced limitation:
     // WhiteBeam is permissive for up to 5 minutes after boot to avoid interfering with the boot
@@ -47,24 +58,15 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest:
     // 2. Require a reboot to baseline systems (which may interfere with production systems)
     // Feedback/ideas welcome: https://github.com/noproto/WhiteBeam/issues
     if platform::get_uptime().unwrap().as_secs() < (60*5) {
-        allow_exec = true;
-    }
-    for (allowed_program, allow_unsafe, allowed_hash) in WHITELIST.iter() {
-        if  (&program == allowed_program) &&
-            (&unsafe_env == allow_unsafe) &&
-            ((&hexdigest == allowed_hash) || (allowed_hash == &"ANY")) {
-            allow_exec = true;
-            break;
-        }
+        return true;
     }
     let conn = db::db_open();
     for dyn_result in db::get_dyn_whitelist(&conn).iter() {
         if  (&program == &dyn_result.program) &&
             (&unsafe_env == &dyn_result.allow_unsafe) &&
             ((&hexdigest == &dyn_result.hash) || (&dyn_result.hash == &"ANY")) {
-            allow_exec = true;
-            break;
+            return true;
         }
     }
-    allow_exec
+    false
 }
