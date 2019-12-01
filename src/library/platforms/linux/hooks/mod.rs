@@ -10,8 +10,7 @@ exec hooks: Required
 +--------+-------------------------------------------------------------------------------------+
 */
 
-// TODO: Rewrite all exec* functions to use FD's
-// Internally call fexecve. Use open hooks to guard against TOCTOU.
+// TODO: Rewrite exec hooks to be consistent, use context hooks to guard against TOCTOU.
 // TODO: Whitelist libraries
 mod execl;
 mod execle;
@@ -40,6 +39,7 @@ O_RDWR or O_WRONLY is prohibited, including implicitly (creat)
 // mod open_by_handle_at
 
 /*
-TODO: (sym)link/unlink*, *chmod*, rename*, makedev/makenod*, mount,
+TODO: context hooks: Required
+(sym)link/unlink*, *chmod*, rename*, makedev/makenod*, mount,
 attr/acl hooks for various filesystems, *init_module, chroot: Optional
 */
