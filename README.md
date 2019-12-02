@@ -16,7 +16,7 @@ WhiteBeam is an OSS EDR application with cross platform application whitelisting
 
 Install WhiteBeam: `./install.sh`
 
-### Compile from source (Linux)
+### Source (Linux)
 
 1. (Optional) Run tests:
 `make test`
@@ -27,7 +27,7 @@ Install WhiteBeam: `./install.sh`
 
 ## Configuring
 
-This will be integrated into the `whitebeam` command for the 0.1 release (local authentication required):
+This will soon be integrated into the `whitebeam` command for the 0.1 release (local authentication required):
 
 1. Add permitted applications:
 `sqlite3 /opt/WhiteBeam/data/database.sqlite "INSERT INTO whitelist (program, hash) VALUES ('/absolute/path/to/command','ANY');"`
