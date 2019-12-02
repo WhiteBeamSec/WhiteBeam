@@ -4,7 +4,9 @@ WhiteBeam is an OSS EDR application with cross platform application whitelisting
 
 # Getting started
 
-## Binaries
+## Installation
+
+### Binaries
 
 **Important**: Always ensure the downloaded file hash matches official hashes ([How-to](https://github.com/noproto/WhiteBeam/wiki/Verifying-file-hashes)).
 
@@ -12,20 +14,25 @@ WhiteBeam is an OSS EDR application with cross platform application whitelisting
 | -------------- | ------------------------------------------------------------------ | -------- |
 | Linux (64-bit) | https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.tar.gz | [SHA-256](https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.SHA256) |
 
-⚠️ Do not install binaries until dynamic whitelists are available for configuration (est. ~1 week) ⚠️
+Install WhiteBeam: `./install.sh`
 
-Installation: `./install.sh`
+### Compile from source (Linux)
 
-## Compile (Linux)
-Update src/library/common/whitelist.rs to reflect your whitelist. Dynamic whitelists and baselines will be available by December 1st, 2019.
-
-1. Compile:
+1. (Optional) Run tests:
+`make test`
+2. Compile:
 `make`
-2. Install WhiteBeam:
+3. Install WhiteBeam:
 `make install`
 
-## Tests (Linux)
-`make test`
+## Configuring
+
+This will be integrated into the `whitebeam` command for the 0.1 release (local authentication required):
+
+1. Add permitted applications:
+`sqlite3 /opt/WhiteBeam/data/database.sqlite "INSERT INTO whitelist (program, hash) VALUES ('/absolute/path/to/command','ANY');"`
+2. Enable WhiteBeam:
+`sqlite3 /opt/WhiteBeam/data/database.sqlite "UPDATE config SET config_value='true' WHERE config_param='enabled';"`
 
 # In Action
 
