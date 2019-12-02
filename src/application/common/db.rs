@@ -21,7 +21,8 @@ pub struct LogExecObject {
 pub struct ConfigEntry {
     pub server_ip: String,
     pub server_key: String,
-    pub server_type: String
+    pub server_type: String,
+    pub enabled: String
 }
 
 pub fn get_config(conn: &Connection, config_param: String) -> String {
@@ -82,11 +83,13 @@ fn db_init(conn: &Connection) {
         insert_config(conn, "server_ip", &json.server_ip);
         insert_config(conn, "server_key", &json.server_key);
         insert_config(conn, "server_type", &json.server_type);
+        insert_config(conn, "enabled", &json.enabled);
         std::fs::remove_file(config_path).unwrap();
     } else {
         insert_config(conn, "server_ip", "none");
         insert_config(conn, "server_key", "none");
         insert_config(conn, "server_type", "none");
+        insert_config(conn, "enabled", "false");
     }
 }
 

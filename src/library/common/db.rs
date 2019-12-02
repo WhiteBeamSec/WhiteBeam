@@ -15,6 +15,10 @@ pub struct WhitelistResult {
     pub hash: String
 }
 
+pub fn get_config(conn: &Connection, config_param: String) -> String {
+    conn.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0)).unwrap()
+}
+
 pub fn get_dyn_whitelist(conn: &Connection) -> Vec<WhitelistResult> {
     let mut result_vec: Vec<WhitelistResult> = Vec::new();
     let mut stmt = conn.prepare("SELECT program, allow_unsafe, hash FROM whitelist").unwrap();
@@ -29,6 +33,10 @@ pub fn get_dyn_whitelist(conn: &Connection) -> Vec<WhitelistResult> {
         result_vec.push(result.unwrap());
     }
     result_vec
+}
+
+pub fn get_enabled(conn: &Connection) -> bool {
+    get_config(conn, String::from("enabled")) == String::from("true")
 }
 
 pub fn db_open() -> Connection {

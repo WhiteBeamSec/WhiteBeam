@@ -39,6 +39,7 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest:
             break;
         }
     }
+    // Permit hardcoded application whitelist
     for (allowed_program, allow_unsafe, allowed_hash) in WHITELIST.iter() {
         if  (&program == allowed_program) &&
             (&unsafe_env == allow_unsafe) &&
@@ -61,6 +62,11 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest:
         return true;
     }
     let conn = db::db_open();
+    // Permit execution if running in disabled mode
+    if !(db::get_enabled(&conn)) {
+        return true;
+    }
+    // Permit user application whitelist
     for dyn_result in db::get_dyn_whitelist(&conn).iter() {
         if  (&program == &dyn_result.program) &&
             (&unsafe_env == &dyn_result.allow_unsafe) &&
@@ -68,5 +74,6 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest:
             return true;
         }
     }
+    // Deny by default
     false
 }
