@@ -29,6 +29,13 @@ pub fn get_config(conn: &Connection, config_param: String) -> String {
     conn.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0)).unwrap()
 }
 
+// TODO: get_seen_nonce (and corresponding nonce_hist table once datatype is determined)
+//pub fn get_seen_nonce(conn: &Connection, nonce: String) -> bool {
+//    conn.query_row("SELECT nonce FROM nonce_hist WHERE nonce = ?", params![nonce], |r| r.get(0)).unwrap()
+//    // If results..
+//    // Return bool
+//}
+
 pub fn insert_config(conn: &Connection, config_param: &str, config_value: &str) {
     let _res = conn.execute(
         "INSERT INTO config (config_param, config_value)
