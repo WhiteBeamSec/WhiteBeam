@@ -2,7 +2,9 @@ use clap::{Arg, App, AppSettings};
 use std::env;
 use std::process::Command;
 
-pub mod application;
+pub mod platforms;
+// Platform independent features
+pub mod common;
 
 fn main() {
     // TODO: Only view certain options unless user is authenticated
@@ -72,8 +74,8 @@ fn main() {
 }
 
 fn run_service() {
-    application::common::db::db_optionally_init();
-    application::common::api::serve();
+    common::db::db_optionally_init();
+    common::api::serve();
 }
 
 fn run_start() {
@@ -85,7 +87,7 @@ fn run_start() {
 }
 
 fn run_status() {
-    if let Ok(_response) = application::common::http::get("http://127.0.0.1:11998/status")
+    if let Ok(_response) = common::http::get("http://127.0.0.1:11998/status")
                                 .with_timeout(1)
                                 .send() {
         println!("OK");

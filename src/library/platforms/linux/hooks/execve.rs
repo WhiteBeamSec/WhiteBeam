@@ -1,7 +1,7 @@
 use libc::{c_char, c_int};
-use crate::library::platforms::linux;
-use crate::library::common::whitelist;
-use crate::library::common::event;
+use crate::platforms::linux;
+use crate::common::whitelist;
+use crate::common::event;
 
 /*
        int execve(const char *path, char *const argv[],

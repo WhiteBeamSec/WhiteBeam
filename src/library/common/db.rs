@@ -1,9 +1,9 @@
 #[cfg(target_os = "windows")]
-use crate::library::platforms::windows as platform;
+use crate::platforms::windows as platform;
 #[cfg(target_os = "linux")]
-use crate::library::platforms::linux as platform;
+use crate::platforms::linux as platform;
 #[cfg(target_os = "macos")]
-use crate::library::platforms::macos as platform;
+use crate::platforms::macos as platform;
 use std::path::Path;
 use rusqlite::{params, Connection};
 use serde::Deserialize;

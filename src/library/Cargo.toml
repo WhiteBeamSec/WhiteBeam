@@ -1,0 +1,31 @@
+# General info
+[package]
+name = "libwhitebeam"
+version = "0.0.9"
+authors = ["noproto"]
+edition = "2018"
+
+# Build targets
+[lib]
+name = "whitebeam"
+path = "lib.rs"
+crate-type = ["cdylib"]
+
+# Cross-platform dependencies
+[dependencies]
+libc = { version = "0.2" }
+sodiumoxide = { version = "0.2.5" }
+serde = { version = "1.0.104", features = ["derive"] }
+serde_json = { version = "1.0.44" }
+rusqlite = { version = "0.21.0", features = ["bundled"] }
+hex = { version = "0.4.0" }
+sha3 = { version = "0.8.2" }
+which = { version = "3.1.0" }
+
+# Windows dependencies
+[target.'cfg(target_os = "windows")'.dependencies.kernel32-sys]
+version = "0.2"
+default-features = false
+
+[features]
+whitelist_test = []

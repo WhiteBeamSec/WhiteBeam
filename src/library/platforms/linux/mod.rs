@@ -12,7 +12,7 @@ use std::{env,
           path::Path,
           path::PathBuf,
           time::Duration};
-use crate::library::common::hash;
+use crate::common::hash;
 
 pub fn get_data_file_path(data_file: &str) -> PathBuf {
     let data_path: String = String::from("/opt/WhiteBeam/data/");

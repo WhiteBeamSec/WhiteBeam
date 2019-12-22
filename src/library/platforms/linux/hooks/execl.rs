@@ -1,8 +1,8 @@
 use libc::{c_char, c_int};
 use std::ptr;
-use crate::library::platforms::linux;
-use crate::library::common::whitelist;
-use crate::library::common::event;
+use crate::platforms::linux;
+use crate::common::whitelist;
+use crate::common::event;
 
 /*
        int execl(const char *path, const char *arg, ...
@@ -36,7 +36,7 @@ pub unsafe extern "C" fn execl(path: *const c_char, mut args: ...) -> c_int {
         static mut REAL: *const u8 = 0 as *const u8;
         static mut ONCE: ::std::sync::Once = ::std::sync::Once::new();
         ONCE.call_once(|| {
-            REAL = crate::library::platforms::linux::hook::dlsym_next("execve\u{0}");
+            REAL = crate::platforms::linux::hook::dlsym_next("execve\u{0}");
         });
         let execve: unsafe extern "C" fn(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int = std::mem::transmute(REAL);
         execve(path, argv, envp)

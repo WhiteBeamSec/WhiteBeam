@@ -1,8 +1,8 @@
 use libc::{c_char, c_int};
 use std::ptr;
-use crate::library::platforms::linux;
-use crate::library::common::whitelist;
-use crate::library::common::event;
+use crate::platforms::linux;
+use crate::common::whitelist;
+use crate::common::event;
 
 /*
        int fexecve(int fd, char *const argv[], char *const envp[]);

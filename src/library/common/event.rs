@@ -1,12 +1,12 @@
 #[cfg(target_os = "windows")]
-use crate::library::platforms::windows as platform;
+use crate::platforms::windows as platform;
 #[cfg(target_os = "linux")]
-use crate::library::platforms::linux as platform;
+use crate::platforms::linux as platform;
 #[cfg(target_os = "macos")]
-use crate::library::platforms::macos as platform;
+use crate::platforms::macos as platform;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::library::common::http;
+use crate::common::http;
 
 #[derive(Deserialize, Serialize)]
 struct LogExecObject {

@@ -22,15 +22,13 @@ all:	library binary
 
 library:
 	@echo "Building library"
-	cargo +nightly build --lib --release --features=libraries
-	strip $(shell pwd)/target/release/libwhitebeam.so
+	RUSTFLAGS='-C link-arg=-s' cargo +nightly build --package libwhitebeam --lib --release
 	@echo "Completed. Size:"
 	@du -h $(shell pwd)/target/release/libwhitebeam.so | cut -f1
 
 binary:
 	@echo "Building binary"
-	cargo build --bin whitebeam --release --features=binaries
-	strip $(shell pwd)/target/release/whitebeam
+	RUSTFLAGS='-C link-arg=-s' cargo +stable build --package whitebeam --bin whitebeam --release
 	@echo "Completed. Size:"
 	@du -h $(shell pwd)/target/release/whitebeam | cut -f1
 
@@ -47,10 +45,10 @@ install:
 	@echo "/opt/WhiteBeam/libwhitebeam.so" | $(sudo_pfx) tee -a /etc/ld.so.preload
 	@echo "Complete"
 
+# TODO: Move into cargo test
 test:
 	@echo "Building test library"
-	cargo build --lib --release --features="libraries,whitelist_test"
-	strip $(shell pwd)/target/release/libwhitebeam.so
+	RUSTFLAGS='-C link-arg=-s' cargo +nightly build --package libwhitebeam --manifest-path $(shell pwd)/src/library/Cargo.toml --lib --release --features="whitelist_test"
 	@echo "Completed. Size:"
 	@du -h $(shell pwd)/target/release/libwhitebeam.so | cut -f1
 	@echo "libwhitebeam.so:"

@@ -1,5 +1,5 @@
 // Database
-use crate::application::common::db;
+use crate::common::db;
 
 // POST /log/exec
 pub fn log_exec(exec: db::LogExecObject) -> impl warp::Reply {

@@ -1,10 +1,10 @@
 #[cfg(target_os = "windows")]
-use crate::application::platforms::windows as platform;
+use crate::platforms::windows as platform;
 #[cfg(target_os = "linux")]
-use crate::application::platforms::linux as platform;
+use crate::platforms::linux as platform;
 #[cfg(target_os = "macos")]
-use crate::application::platforms::macos as platform;
-use crate::application::common::db;
+use crate::platforms::macos as platform;
+use crate::common::db;
 use serde::{Serialize, Deserialize};
 #[allow(unused_imports)]
 use serde_json::json;
