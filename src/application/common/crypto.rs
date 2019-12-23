@@ -131,7 +131,7 @@ fn nonce_array_from_slice(bytes: &[u8]) -> [u8; NONCEBYTES] {
 }
 
 fn decrypt_server_ciphertext(ciphertext: &[u8], nonce_bytes: &[u8]) -> Vec<u8> {
-    let (client_public_key, client_private_key) = get_client_public_private_key();
+    let (_client_public_key, client_private_key) = get_client_public_private_key();
     let server_public_key = get_server_public_key();
     let nonce_array: [u8; NONCEBYTES] = nonce_array_from_slice(nonce_bytes);
     let nonce = Nonce(nonce_array);
