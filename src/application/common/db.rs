@@ -29,12 +29,11 @@ pub fn get_config(conn: &Connection, config_param: String) -> String {
     conn.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0)).unwrap()
 }
 
-// TODO: get_seen_nonce (and corresponding nonce_hist table once datatype is determined)
-//pub fn get_seen_nonce(conn: &Connection, nonce: String) -> bool {
-//    conn.query_row("SELECT nonce FROM nonce_hist WHERE nonce = ?", params![nonce], |r| r.get(0)).unwrap()
-//    // If results..
-//    // Return bool
-//}
+pub fn get_seen_nonce(conn: &Connection, nonce: String) -> bool {
+    delete_all_expired_nonce(conn);
+    let count: i64 = conn.query_row("SELECT count(*) FROM nonce_hist WHERE nonce = ?", params![nonce], |r| r.get(0)).unwrap();
+    count > 0
+}
 
 pub fn insert_config(conn: &Connection, config_param: &str, config_value: &str) {
     let _res = conn.execute(
@@ -50,6 +49,11 @@ pub fn insert_exec(conn: &Connection, exec: LogExecObject) {
                   VALUES (?1, ?2, ?3, ?4, ?5)",
         params![exec.program, exec.hash, exec.uid, exec.ts, exec.success],
     );
+}
+
+fn delete_all_expired_nonce(conn: &Connection) {
+    conn.execute("DELETE FROM nonce_hist WHERE ts < strftime('%s','now')-3600",
+                 rusqlite::NO_PARAMS).unwrap();
 }
 
 fn db_init(conn: &Connection) {
@@ -78,6 +82,14 @@ fn db_init(conn: &Connection) {
             program TEXT NOT NULL,
             allow_unsafe BOOLEAN DEFAULT FALSE,
             hash TEXT NOT NULL
+         )",
+        rusqlite::NO_PARAMS,
+    );
+    let _res = conn.execute(
+        "CREATE TABLE nonce_hist (
+            id INTEGER PRIMARY KEY,
+            nonce TEXT NOT NULL,
+            ts INTEGER NOT NULL
          )",
         rusqlite::NO_PARAMS,
     );
