@@ -67,10 +67,10 @@ Encoding
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Message {
-    expires: u32,
-    version: String,
-    action: String,
-    parameters: Vec<String>
+    pub expires: u32,
+    pub version: String,
+    pub action: String,
+    pub parameters: Vec<String>
 }
 
 fn json_encode_message(action: String, parameters: Vec<String>) -> String {
@@ -95,9 +95,9 @@ fn json_decode_message(json: String) -> Message {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CryptoBox {
-    pubkey: String,
-    nonce: String,
-    ciphertext: String
+    pub pubkey: String,
+    pub nonce: String,
+    pub ciphertext: String
 }
 
 fn json_encode_crypto_box(pubkey: String, nonce: String, ciphertext: String) -> String {
@@ -109,6 +109,7 @@ fn json_encode_crypto_box(pubkey: String, nonce: String, ciphertext: String) -> 
     serde_json::to_string(&crypto_box_object).unwrap()
 }
 
+#[allow(dead_code)]
 fn json_decode_crypto_box(json: String) -> CryptoBox {
     let crypto_box_object: CryptoBox = serde_json::from_str(&json).unwrap();
     crypto_box_object
@@ -138,6 +139,15 @@ fn decrypt_server_ciphertext(ciphertext: &[u8], nonce: Nonce) -> Vec<u8> {
     box_::open(ciphertext, &nonce, &server_public_key, &client_private_key).unwrap()
 }
 
+/*
+Handlers
+*/
+
+pub fn get_client_public_key() -> PublicKey {
+    let (client_public_key, _client_private_key) = get_client_public_private_key();
+    client_public_key
+}
+
 pub fn generate_crypto_box_message(action: String, parameters: Vec<String>) -> String {
     let (client_public_key, _client_private_key) = get_client_public_private_key();
     let message = json_encode_message(action, parameters);
@@ -146,34 +156,17 @@ pub fn generate_crypto_box_message(action: String, parameters: Vec<String>) -> S
     json_encode_crypto_box(hex::encode(client_public_key), hex::encode(nonce), hex::encode(ciphertext))
 }
 
-/*
-Handlers
-*/
-
-fn process_server_message(message: Message) {
-    let expiry = (SystemTime::now()
-                            .duration_since(SystemTime::UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs() as u32)-3600;
-    if message.expires < expiry {
-        // Message has expired
-        return
-    }
-    /* TODO:
-    match message.action.as_ref() {
-        "managed_initialize" => managed_initialize(),
-        "set_console_secret" => set_console_secret(),
-        _ => unknown_action(),
+pub fn process_request(crypto_box_object: CryptoBox) -> Message {
+    let invalid_message = Message {
+        expires: 0,
+        version: String::from("0.0.0"),
+        action: String::from("invalid"),
+        parameters: Vec::new()
     };
-    */
-}
-
-pub fn process_request(request: String) {
     let conn: rusqlite::Connection = db::db_open();
-    let crypto_box_object = json_decode_crypto_box(request);
     // Ignore replayed messages
     if db::get_seen_nonce(&conn, &crypto_box_object.nonce) {
-        return
+        return invalid_message;
     }
     let nonce_array: [u8; NONCEBYTES] = nonce_array_from_slice(&hex::decode(crypto_box_object.nonce).unwrap());
     let nonce = Nonce(nonce_array);
@@ -186,5 +179,13 @@ pub fn process_request(request: String) {
         ).unwrap()
     );
     let server_message = json_decode_message(plaintext);
-    process_server_message(server_message);
+    let expiry = (SystemTime::now()
+                            .duration_since(SystemTime::UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs() as u32)-3600;
+    if server_message.expires < expiry {
+        // Message has expired
+        return invalid_message;
+    }
+    server_message
 }

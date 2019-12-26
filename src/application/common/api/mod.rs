@@ -3,6 +3,7 @@ use warp::Filter;
 // Endpoints
 mod status;
 mod log;
+mod service;
 
 pub fn serve() {
     // GET /status
@@ -19,6 +20,24 @@ pub fn serve() {
         .and(warp::body::json())
         .map(log::log_exec);
 
-    let routes = status_route.or(log_exec_route);
+    // GET /service/public_key
+    let service_public_key_route = warp::get2()
+        .and(warp::path("service"))
+        .and(warp::path("public_key"))
+        .and(warp::path::end())
+        .map(service::public_key);
+
+    // POST /service/encrypted {"pubkey":"..","nonce":"..","ciphertext":".."}
+    let service_encrypted_route = warp::post2()
+        .and(warp::path("service"))
+        .and(warp::path("encrypted"))
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .map(service::encrypted);
+
+    let routes = status_route
+                .or(log_exec_route)
+                .or(service_public_key_route)
+                .or(service_encrypted_route);
     warp::serve(routes).run(([0, 0, 0, 0], 11998));
 }

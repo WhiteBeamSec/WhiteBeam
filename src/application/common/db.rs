@@ -45,7 +45,7 @@ pub fn insert_config(conn: &Connection, config_param: &str, config_value: &str) 
 
 pub fn insert_exec(conn: &Connection, exec: LogExecObject) {
     let _res = conn.execute(
-        "INSERT INTO logs (program, hash, uid, ts, success)
+        "INSERT INTO exec_logs (program, hash, uid, ts, success)
                   VALUES (?1, ?2, ?3, ?4, ?5)",
         params![exec.program, exec.hash, exec.uid, exec.ts, exec.success],
     );
@@ -66,7 +66,7 @@ fn db_init(conn: &Connection) {
         rusqlite::NO_PARAMS,
     );
     let _res = conn.execute(
-        "CREATE TABLE logs (
+        "CREATE TABLE exec_logs (
             id INTEGER PRIMARY KEY,
             program TEXT NOT NULL,
             hash TEXT NOT NULL,
