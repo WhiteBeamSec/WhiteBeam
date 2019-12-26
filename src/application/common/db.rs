@@ -29,7 +29,7 @@ pub fn get_config(conn: &Connection, config_param: String) -> String {
     conn.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0)).unwrap()
 }
 
-pub fn get_seen_nonce(conn: &Connection, nonce: String) -> bool {
+pub fn get_seen_nonce(conn: &Connection, nonce: &str) -> bool {
     delete_all_expired_nonce(conn);
     let count: i64 = conn.query_row("SELECT count(*) FROM nonce_hist WHERE nonce = ?", params![nonce], |r| r.get(0)).unwrap();
     count > 0

@@ -112,17 +112,6 @@ fn json_decode_crypto_box(json: String) -> CryptoBox {
     crypto_box_object
 }
 
-/*
-Encryption
-*/
-
-fn generate_sealed_ciphertext(plaintext: &[u8]) -> Vec<u8> {
-    let (_public_key, private_key) = box_::gen_keypair();
-    let server_public_key = get_server_public_key();
-    let nonce = box_::gen_nonce();
-    box_::seal(plaintext, &nonce, &server_public_key, &private_key)
-}
-
 fn nonce_array_from_slice(bytes: &[u8]) -> [u8; NONCEBYTES] {
     let mut array = [0; NONCEBYTES];
     let bytes = &bytes[..array.len()]; // Panics if not enough data
@@ -130,28 +119,70 @@ fn nonce_array_from_slice(bytes: &[u8]) -> [u8; NONCEBYTES] {
     array
 }
 
-fn decrypt_server_ciphertext(ciphertext: &[u8], nonce_bytes: &[u8]) -> Vec<u8> {
+/*
+Encryption
+*/
+
+fn generate_ciphertext(plaintext: &[u8], nonce: Nonce) -> Vec<u8> {
     let (_client_public_key, client_private_key) = get_client_public_private_key();
     let server_public_key = get_server_public_key();
-    let nonce_array: [u8; NONCEBYTES] = nonce_array_from_slice(nonce_bytes);
-    let nonce = Nonce(nonce_array);
+    box_::seal(plaintext, &nonce, &server_public_key, &client_private_key)
+}
+
+fn decrypt_server_ciphertext(ciphertext: &[u8], nonce: Nonce) -> Vec<u8> {
+    let (_client_public_key, client_private_key) = get_client_public_private_key();
+    let server_public_key = get_server_public_key();
+    // Verification and decryption
     box_::open(ciphertext, &nonce, &server_public_key, &client_private_key).unwrap()
 }
 
-fn verify_server_message() {
-    // TODO: Verify nonce hasn't been seen in the past hour if valid server message
-    // db::
-    // Then, crypto_sign_open
-    ()
+pub fn generate_crypto_box_message(action: String, parameters: Vec<String>) -> String {
+    let (client_public_key, _client_private_key) = get_client_public_private_key();
+    let message = json_encode_message(action, parameters);
+    let nonce = box_::gen_nonce();
+    let ciphertext: Vec<u8> = generate_ciphertext(message.as_bytes(), nonce);
+    json_encode_crypto_box(hex::encode(client_public_key), hex::encode(nonce), hex::encode(ciphertext))
 }
 
-pub fn process_server_message(request: String) {
-    // JSON decode
-    // Verify server message
-    ()
+/*
+Handlers
+*/
+
+fn process_server_message(message: Message) {
+    let expiry = (SystemTime::now()
+                            .duration_since(SystemTime::UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs() as u32)-3600;
+    if message.expires < expiry {
+        // Message has expired
+        return
+    }
+    /* TODO:
+    match message.action.as_ref() {
+        "managed_initialize" => managed_initialize(),
+        "set_console_secret" => set_console_secret(),
+        _ => unknown_action(),
+    };
+    */
 }
 
-// TODO: For uploading logs
-//pub fn generate_ciphertext() {
-//    ()
-//}
+pub fn process_request(request: String) {
+    let conn: rusqlite::Connection = db::db_open();
+    let crypto_box_object = json_decode_crypto_box(request);
+    // Ignore replayed messages
+    if db::get_seen_nonce(&conn, &crypto_box_object.nonce) {
+        return
+    }
+    let nonce_array: [u8; NONCEBYTES] = nonce_array_from_slice(&hex::decode(crypto_box_object.nonce).unwrap());
+    let nonce = Nonce(nonce_array);
+    let plaintext: String = String::from(
+        std::str::from_utf8(
+            &decrypt_server_ciphertext(
+                &hex::decode(&crypto_box_object.ciphertext).unwrap(),
+                nonce
+            )
+        ).unwrap()
+    );
+    let server_message = json_decode_message(plaintext);
+    process_server_message(server_message);
+}
