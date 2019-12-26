@@ -19,6 +19,8 @@ use std::{io::prelude::*,
 use sodiumoxide::crypto::{box_,
                           box_::curve25519xsalsa20poly1305::*};
 
+// TODO: Handle errors to avoid denial of service
+
 /*
 Keys
 */
