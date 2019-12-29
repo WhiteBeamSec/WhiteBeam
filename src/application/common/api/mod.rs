@@ -12,13 +12,14 @@ pub fn serve() {
         .and(warp::path::end())
         .map(status::status);
 
-    // POST /log/exec {"program":"whoami","hash":"..","uid":1000,ts:1566162863}
+    // POST /log/exec {"program":"whoami","hash":"..","uid":1000,"ts":1566162863,"success":true}
     let log_exec_route = warp::post2()
         .and(warp::path("log"))
         .and(warp::path("exec"))
         .and(warp::path::end())
         .and(warp::body::json())
-        .map(log::log_exec);
+        .and(warp::addr::remote())
+        .and_then(log::log_exec);
 
     // GET /service/public_key
     let service_public_key_route = warp::get2()
