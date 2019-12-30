@@ -27,12 +27,10 @@ Install WhiteBeam: `./install.sh`
 
 ## Configuring
 
-This will soon be integrated into the `whitebeam` command for the 0.1 release (local authentication required):
-
 1. Add permitted applications:
-`sqlite3 /opt/WhiteBeam/data/database.sqlite "INSERT INTO whitelist (program, hash) VALUES ('/absolute/path/to/command','ANY');"`
+`whitebeam --add /absolute/path/to/command`
 2. Enable WhiteBeam:
-`sqlite3 /opt/WhiteBeam/data/database.sqlite "UPDATE config SET config_value='true' WHERE config_param='enabled';"`
+`whitebeam --enable`
 
 # In Action
 

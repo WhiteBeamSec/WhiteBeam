@@ -4,7 +4,9 @@ use crate::platforms::windows as platform;
 use crate::platforms::linux as platform;
 #[cfg(target_os = "macos")]
 use crate::platforms::macos as platform;
-use std::path::Path;
+use crate::common::hash;
+use std::{env,
+          path::Path};
 use rusqlite::{params, Connection};
 use serde::{Serialize, Deserialize};
 
@@ -29,6 +31,23 @@ pub fn get_config(conn: &Connection, config_param: String) -> String {
     conn.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0)).unwrap()
 }
 
+pub fn get_enabled(conn: &Connection) -> bool {
+    get_config(conn, String::from("enabled")) == String::from("true")
+}
+
+pub fn get_valid_auth(conn: &Connection) -> bool {
+    let auth: String = match env::var_os("WB_AUTH") {
+        Some(val) => {
+            val.into_string().unwrap()
+        }
+        None => {
+            return false;
+        }
+    };
+    let auth_hash: String = hash::common_hash_string(&auth);
+    get_config(conn, String::from("console_secret")) == String::from(auth_hash)
+}
+
 pub fn get_seen_nonce(conn: &Connection, nonce: &str) -> bool {
     delete_all_expired_nonce(conn);
     let count: i64 = conn.query_row("SELECT count(*) FROM nonce_hist WHERE nonce = ?", params![nonce], |r| r.get(0)).unwrap();
@@ -39,7 +58,15 @@ pub fn insert_config(conn: &Connection, config_param: &str, config_value: &str) 
     let _res = conn.execute(
         "INSERT INTO config (config_param, config_value)
                   VALUES (?1, ?2)",
-        params![config_param, config_value],
+        params![config_param, config_value]
+    );
+}
+
+pub fn insert_whitelist(conn: &Connection, program: &str, allow_unsafe: bool, hash: &str) {
+    let _res = conn.execute(
+        "INSERT INTO whitelist (program, allow_unsafe, hash)
+                  VALUES (?1, ?2, ?3)",
+        params![program, allow_unsafe, hash]
     );
 }
 
@@ -47,7 +74,7 @@ pub fn insert_exec(conn: &Connection, exec: LogExecObject) {
     let _res = conn.execute(
         "INSERT INTO exec_logs (program, hash, uid, ts, success)
                   VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![exec.program, exec.hash, exec.uid, exec.ts, exec.success],
+        params![exec.program, exec.hash, exec.uid, exec.ts, exec.success]
     );
 }
 
@@ -56,13 +83,18 @@ pub fn update_config(conn: &Connection, config_param: &str, config_value: &str) 
         "UPDATE config
                   SET config_value = ?2
                   WHERE config_param = ?1",
-        params![config_param, config_value],
+        params![config_param, config_value]
     );
 }
 
+pub fn delete_whitelist(conn: &Connection, program: &str) {
+    let _res = conn.execute("DELETE FROM whitelist WHERE program = ?1",
+                 params![program]);
+}
+
 fn delete_all_expired_nonce(conn: &Connection) {
-    conn.execute("DELETE FROM nonce_hist WHERE ts < strftime('%s','now')-3600",
-                 rusqlite::NO_PARAMS).unwrap();
+    let _res = conn.execute("DELETE FROM nonce_hist WHERE ts < strftime('%s','now')-3600",
+                 rusqlite::NO_PARAMS);
 }
 
 fn db_init(conn: &Connection) {
@@ -72,7 +104,7 @@ fn db_init(conn: &Connection) {
             config_param TEXT NOT NULL,
             config_value TEXT NOT NULL
          )",
-        rusqlite::NO_PARAMS,
+        rusqlite::NO_PARAMS
     );
     let _res = conn.execute(
         "CREATE TABLE exec_logs (
@@ -83,7 +115,7 @@ fn db_init(conn: &Connection) {
             ts INTEGER NOT NULL,
             success BOOLEAN NOT NULL
          )",
-        rusqlite::NO_PARAMS,
+        rusqlite::NO_PARAMS
     );
     let _res = conn.execute(
         "CREATE TABLE whitelist (
@@ -92,7 +124,7 @@ fn db_init(conn: &Connection) {
             allow_unsafe BOOLEAN DEFAULT FALSE,
             hash TEXT NOT NULL
          )",
-        rusqlite::NO_PARAMS,
+        rusqlite::NO_PARAMS
     );
     let _res = conn.execute(
         "CREATE TABLE nonce_hist (
@@ -100,7 +132,7 @@ fn db_init(conn: &Connection) {
             nonce TEXT NOT NULL,
             ts INTEGER NOT NULL
          )",
-        rusqlite::NO_PARAMS,
+        rusqlite::NO_PARAMS
     );
     let config_path: &Path = &platform::get_data_file_path("init.json");
     let init_config: bool = config_path.exists();

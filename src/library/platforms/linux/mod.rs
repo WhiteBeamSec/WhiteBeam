@@ -39,17 +39,15 @@ pub fn get_current_uid() -> u32 {
 }
 
 pub fn get_env_path() -> OsString {
-    let path_val: OsString;
     match env::var_os("PATH") {
         Some(val) => {
-            path_val = val;
+            val
         }
         None => {
             // Use CS_PATH
-            path_val = OsString::from("/bin:/usr/bin");
+            OsString::from("/bin:/usr/bin")
         }
     }
-    path_val
 }
 
 fn parse_env(input: &[u8]) -> Option<(OsString, OsString)> {

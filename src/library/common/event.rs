@@ -26,7 +26,6 @@ pub fn get_timestamp() -> u32 {
 
 pub fn send_exec_event(uid: u32, program: &str, hash: &str, success: bool) -> () {
     let ts = get_timestamp();
-    //eprintln!("UID: {} Program: {} Hash: {} Unix TS: {} Permitted: {}", uid, program.to_string(), hash.to_string(), ts, success);
     let log = LogExecObject {
         program: program.to_string(),
         hash: hash.to_string(),
@@ -46,6 +45,6 @@ pub fn send_exec_event(uid: u32, program: &str, hash: &str, success: bool) -> ()
                                 .send() {
         ()
     } else {
-        eprintln!("Failed to communicate with WhiteBeam service");
+        eprintln!("WhiteBeam: Failed to communicate with WhiteBeam service");
     }
 }
