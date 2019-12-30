@@ -51,6 +51,15 @@ pub fn insert_exec(conn: &Connection, exec: LogExecObject) {
     );
 }
 
+pub fn update_config(conn: &Connection, config_param: &str, config_value: &str) {
+    let _res = conn.execute(
+        "UPDATE config
+                  SET config_value = ?2
+                  WHERE config_param = ?1",
+        params![config_param, config_value],
+    );
+}
+
 fn delete_all_expired_nonce(conn: &Connection) {
     conn.execute("DELETE FROM nonce_hist WHERE ts < strftime('%s','now')-3600",
                  rusqlite::NO_PARAMS).unwrap();
@@ -103,12 +112,14 @@ fn db_init(conn: &Connection) {
         insert_config(conn, "server_key", &json.server_key);
         insert_config(conn, "server_type", &json.server_type);
         insert_config(conn, "enabled", &json.enabled);
+        insert_config(conn, "console_secret", "undefined");
         std::fs::remove_file(config_path).unwrap();
     } else {
-        insert_config(conn, "server_ip", "none");
-        insert_config(conn, "server_key", "none");
-        insert_config(conn, "server_type", "none");
+        insert_config(conn, "server_ip", "undefined");
+        insert_config(conn, "server_key", "undefined");
+        insert_config(conn, "server_type", "undefined");
         insert_config(conn, "enabled", "false");
+        insert_config(conn, "console_secret", "undefined");
     }
 }
 
