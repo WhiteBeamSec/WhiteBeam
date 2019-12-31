@@ -63,6 +63,7 @@ pub fn insert_config(conn: &Connection, config_param: &str, config_value: &str) 
 }
 
 pub fn insert_whitelist(conn: &Connection, program: &str, allow_unsafe: bool, hash: &str) {
+    // TODO: Verify no duplicate value exists
     let _res = conn.execute(
         "INSERT INTO whitelist (program, allow_unsafe, hash)
                   VALUES (?1, ?2, ?3)",
