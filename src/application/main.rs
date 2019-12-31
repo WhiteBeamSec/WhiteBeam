@@ -67,7 +67,7 @@ fn run_list() {
                 Cell::new(&result.allow_unsafe, justify_right)
             ]));
     }
-    let table = Table::new(table_vec, Default::default());
+    let table = Table::new(table_vec, cli_table::format::BORDER_COLUMN_TITLE);
     let _res = table.print_stdout();
 }
 
