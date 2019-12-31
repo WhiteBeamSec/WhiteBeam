@@ -17,7 +17,7 @@ Open source EDR with application whitelisting
 * Modern cryptography: SHA3-256 for hashing and libsodium for encryption
 * Highly compatible: Development focused on all platforms (incl. legacy) and architectures
 * Open source: Audits welcome
-* Tested: 100+ security researchers
+* Reviewed by security researchers with combined 100+ years of experience
 
 ---
 
