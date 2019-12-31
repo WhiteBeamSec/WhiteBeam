@@ -27,8 +27,30 @@ pub struct ConfigEntry {
     pub enabled: String
 }
 
+pub struct WhitelistResult {
+    pub program: String,
+    pub allow_unsafe: bool,
+    pub hash: String
+}
+
 pub fn get_config(conn: &Connection, config_param: String) -> String {
     conn.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0)).unwrap()
+}
+
+pub fn get_dyn_whitelist(conn: &Connection) -> Vec<WhitelistResult> {
+    let mut result_vec: Vec<WhitelistResult> = Vec::new();
+    let mut stmt = conn.prepare("SELECT program, allow_unsafe, hash FROM whitelist").unwrap();
+    let result_iter = stmt.query_map(params![], |row| {
+        Ok(WhitelistResult {
+            program: row.get(0).unwrap(),
+            allow_unsafe: row.get(1).unwrap(),
+            hash: row.get(2).unwrap()
+        })
+    }).unwrap();
+    for result in result_iter {
+        result_vec.push(result.unwrap());
+    }
+    result_vec
 }
 
 pub fn get_enabled(conn: &Connection) -> bool {

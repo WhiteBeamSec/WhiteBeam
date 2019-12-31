@@ -1,4 +1,6 @@
 use clap::{Arg, App, AppSettings};
+use cli_table::{format::{CellFormat, Justify},
+                Cell, Row, Table};
 use std::env;
 use std::process::Command;
 
@@ -7,6 +9,7 @@ pub mod platforms;
 pub mod common;
 
 fn run_auth() {
+    // TODO: Log
     let password = rpassword::read_password_from_tty(Some("Password: ")).unwrap();
     let conn: rusqlite::Connection = common::db::db_open();
     if !common::db::get_valid_auth_string(&conn, &password) {
@@ -18,6 +21,7 @@ fn run_auth() {
 }
 
 fn run_add(program: &str, allow_unsafe: bool) {
+    // TODO: Log
     let conn: rusqlite::Connection = common::db::db_open();
     if common::db::get_enabled(&conn) {
         if !common::db::get_valid_auth_env(&conn) {
@@ -36,6 +40,7 @@ fn run_add(program: &str, allow_unsafe: bool) {
 }
 
 fn run_remove(program: &str) {
+    // TODO: Log
     let conn: rusqlite::Connection = common::db::db_open();
     if common::db::get_enabled(&conn) {
         if !common::db::get_valid_auth_env(&conn) {
@@ -44,6 +49,26 @@ fn run_remove(program: &str) {
         }
     }
     common::db::delete_whitelist(&conn, program);
+}
+
+fn run_list() {
+    let conn: rusqlite::Connection = common::db::db_open();
+    let whitelist = common::db::get_dyn_whitelist(&conn);
+    let justify_right = CellFormat::builder().justify(Justify::Right).build();
+    let bold = CellFormat::builder().bold(true).build();
+    let mut table_vec: Vec<Row> = Vec::new();
+    table_vec.push(Row::new(vec![
+        Cell::new("Path", bold),
+        Cell::new("Unsafe Env", bold)
+    ]));
+    for result in whitelist {
+        table_vec.push(Row::new(vec![
+                Cell::new(&result.program, Default::default()),
+                Cell::new(&result.allow_unsafe, justify_right)
+            ]));
+    }
+    let table = Table::new(table_vec, Default::default());
+    let _res = table.print_stdout();
 }
 
 fn run_service() {
@@ -98,12 +123,10 @@ fn main() {
                  .takes_value(true)
                  .help("Remove a whitelisted path or executable (+auth when enabled)")
                  .value_name("path"))
-        /* TODO
         .arg(Arg::with_name("list")
                  .long("list")
                  .takes_value(false)
                  .help("View whitelist policy on this host"))
-        */
         /* TODO
         .arg(Arg::with_name("admin")
                  .long("admin")
@@ -152,6 +175,8 @@ fn main() {
         run_add(matches.value_of("add").unwrap(), matches.is_present("unsafe"));
     } else if matches.is_present("remove") {
         run_remove(matches.value_of("remove").unwrap());
+    } else if matches.is_present("list") {
+        run_list();
     } else if matches.is_present("service") {
         run_service();
     } else if matches.is_present("enable") {
