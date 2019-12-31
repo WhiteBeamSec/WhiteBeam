@@ -9,9 +9,9 @@
 Open source EDR with application whitelisting
 </p>
 
-## Features
-
 ---
+
+## Features
 
 * Block file-based malware, with planned support for fileless
 * Modern cryptography: SHA3-256 for hashing and libsodium for encryption
@@ -19,9 +19,9 @@ Open source EDR with application whitelisting
 * Open source: Audits welcome
 * Tested: 100+ security researchers
 
-## Installation
-
 ---
+
+## Installation
 
 ### From Binaries
 
@@ -42,14 +42,16 @@ Install WhiteBeam: `./install.sh`
 3. Install WhiteBeam:
 `make install`
 
-## How to Use
-
 ---
+
+## How to Use
 
 1. Add permitted applications:
 `whitebeam --add /absolute/path/to/command`
 2. Enable WhiteBeam:
 `whitebeam --enable`
+
+---
 
 ## In Action
 
