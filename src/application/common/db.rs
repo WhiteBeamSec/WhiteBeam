@@ -35,7 +35,12 @@ pub fn get_enabled(conn: &Connection) -> bool {
     get_config(conn, String::from("enabled")) == String::from("true")
 }
 
-pub fn get_valid_auth(conn: &Connection) -> bool {
+pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> bool {
+    let auth_hash: String = hash::common_hash_string(auth);
+    get_config(conn, String::from("console_secret")) == String::from(auth_hash)
+}
+
+pub fn get_valid_auth_env(conn: &Connection) -> bool {
     let auth: String = match env::var_os("WB_AUTH") {
         Some(val) => {
             val.into_string().unwrap()
@@ -44,8 +49,7 @@ pub fn get_valid_auth(conn: &Connection) -> bool {
             return false;
         }
     };
-    let auth_hash: String = hash::common_hash_string(&auth);
-    get_config(conn, String::from("console_secret")) == String::from(auth_hash)
+    get_valid_auth_string(conn, &auth)
 }
 
 pub fn get_seen_nonce(conn: &Connection, nonce: &str) -> bool {

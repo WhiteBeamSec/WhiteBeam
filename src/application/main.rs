@@ -6,10 +6,21 @@ pub mod platforms;
 // Platform independent features
 pub mod common;
 
+fn run_auth() {
+    let password = rpassword::read_password_from_tty(Some("Password: ")).unwrap();
+    let conn: rusqlite::Connection = common::db::db_open();
+    if !common::db::get_valid_auth_string(&conn, &password) {
+            eprintln!("WhiteBeam: Authorization failed");
+            return;
+    }
+    println!("WhiteBeam: Authorization successful");
+    env::set_var("WB_AUTH", &password);
+}
+
 fn run_add(program: &str, allow_unsafe: bool) {
     let conn: rusqlite::Connection = common::db::db_open();
     if common::db::get_enabled(&conn) {
-        if !common::db::get_valid_auth(&conn) {
+        if !common::db::get_valid_auth_env(&conn) {
             eprintln!("WhiteBeam: Authorization failed");
             return;
         }
@@ -27,7 +38,7 @@ fn run_add(program: &str, allow_unsafe: bool) {
 fn run_remove(program: &str) {
     let conn: rusqlite::Connection = common::db::db_open();
     if common::db::get_enabled(&conn) {
-        if !common::db::get_valid_auth(&conn) {
+        if !common::db::get_valid_auth_env(&conn) {
             eprintln!("WhiteBeam: Authorization failed");
             return;
         }
@@ -70,12 +81,10 @@ fn main() {
         .setting(AppSettings::ArgRequiredElseHelp)
         .version(env!("CARGO_PKG_VERSION"))
         .about("Open source EDR ( https://github.com/noproto/WhiteBeam )")
-        /* TODO
         .arg(Arg::with_name("auth")
                  .long("auth")
                  .takes_value(false)
                  .help("Authenticate for access to privileged commands"))
-        */
         .arg(Arg::with_name("add")
                  .long("add")
                  .takes_value(true)
@@ -138,7 +147,9 @@ fn main() {
                  .help("View status of the WhiteBeam client"))
         .get_matches();
 
-    if matches.is_present("add") {
+    if matches.is_present("auth") {
+        run_auth();
+    } else if matches.is_present("add") {
         run_add(matches.value_of("add").unwrap(), matches.is_present("unsafe"));
     } else if matches.is_present("remove") {
         run_remove(matches.value_of("remove").unwrap());
