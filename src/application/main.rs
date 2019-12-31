@@ -9,6 +9,7 @@ pub mod platforms;
 pub mod common;
 
 fn run_auth() {
+    // TODO: Set environment correctly
     // TODO: Log
     let password = rpassword::read_password_from_tty(Some("Password: ")).unwrap();
     let conn: rusqlite::Connection = common::db::db_open();
