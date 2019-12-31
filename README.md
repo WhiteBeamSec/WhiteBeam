@@ -2,11 +2,11 @@
 
 WhiteBeam is an OSS EDR application with cross platform application whitelisting. While it is in pre-release development, it should not be used in production environments.
 
-# Getting started
+# Getting Started
 
 ## Installation
 
-### Binaries
+### From Binaries
 
 **Important**: Always ensure the downloaded file hash matches official hashes ([How-to](https://github.com/noproto/WhiteBeam/wiki/Verifying-file-hashes)).
 
@@ -16,7 +16,7 @@ WhiteBeam is an OSS EDR application with cross platform application whitelisting
 
 Install WhiteBeam: `./install.sh`
 
-### Source (Linux)
+### From Source (Linux)
 
 1. (Optional) Run tests:
 `make test`
