@@ -76,7 +76,6 @@ fn run_status() {
 }
 
 fn main() {
-    // TODO: Only view certain options unless user is authenticated
     let matches = App::new("WhiteBeam")
         .setting(AppSettings::ArgRequiredElseHelp)
         .version(env!("CARGO_PKG_VERSION"))
