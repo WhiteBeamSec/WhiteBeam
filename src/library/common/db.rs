@@ -6,9 +6,7 @@ use crate::platforms::linux as platform;
 use crate::platforms::macos as platform;
 use std::path::Path;
 use rusqlite::{params, Connection};
-use serde::Deserialize;
 
-#[derive(Deserialize)]
 pub struct WhitelistResult {
     pub program: String,
     pub allow_unsafe: bool,
