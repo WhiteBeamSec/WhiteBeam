@@ -9,7 +9,6 @@ pub mod platforms;
 pub mod common;
 
 fn run_auth() {
-    // TODO: Set environment correctly
     // TODO: Log
     let password = rpassword::read_password_from_tty(Some("Password: ")).unwrap();
     let conn: rusqlite::Connection = common::db::db_open();
@@ -17,8 +16,11 @@ fn run_auth() {
             eprintln!("WhiteBeam: Authorization failed");
             return;
     }
-    println!("WhiteBeam: Authorization successful");
-    env::set_var("WB_AUTH", &password);
+    println!("WhiteBeam: Opening administrative shell");
+    Command::new("/bin/sh")
+        .env("WB_AUTH", &password)
+        .spawn()
+        .expect("WhiteBeam: Administrative shell failed to start");
 }
 
 fn run_add(program: &str, allow_unsafe: bool) {
@@ -128,12 +130,6 @@ fn main() {
                  .long("list")
                  .takes_value(false)
                  .help("View whitelist policy on this host"))
-        /* TODO
-        .arg(Arg::with_name("admin")
-                 .long("admin")
-                 .takes_value(false)
-                 .help("Open administrative shell (+auth)"))
-        */
         .arg(Arg::with_name("service")
                  .long("service")
                  .takes_value(false)
