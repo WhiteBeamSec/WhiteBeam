@@ -17,10 +17,14 @@ fn run_auth() {
             return;
     }
     println!("WhiteBeam: Opening administrative shell");
-    Command::new("/bin/sh")
-        .env("WB_AUTH", &password)
-        .spawn()
-        .expect("WhiteBeam: Administrative shell failed to start");
+    let mut command = Command::new("/bin/sh");
+    if let Ok(mut child) = command.env("WB_AUTH", &password)
+                                  .spawn() {
+        child.wait().expect("Session wasn't running");
+        println!("WhiteBeam: Session closed");
+    } else {
+        eprintln!("WhiteBeam: Administrative shell failed to start");
+    }
 }
 
 fn run_add(program: &str, allow_unsafe: bool) {
