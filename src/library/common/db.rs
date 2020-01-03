@@ -4,7 +4,9 @@ use crate::platforms::windows as platform;
 use crate::platforms::linux as platform;
 #[cfg(target_os = "macos")]
 use crate::platforms::macos as platform;
-use std::path::Path;
+use crate::common::hash;
+use std::{env,
+          path::Path};
 use rusqlite::{params, Connection};
 
 pub struct WhitelistResult {
@@ -35,6 +37,23 @@ pub fn get_dyn_whitelist(conn: &Connection) -> Vec<WhitelistResult> {
 
 pub fn get_enabled(conn: &Connection) -> bool {
     get_config(conn, String::from("enabled")) == String::from("true")
+}
+
+pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> bool {
+    let auth_hash: String = hash::common_hash_string(auth);
+    get_config(conn, String::from("console_secret")) == String::from(auth_hash)
+}
+
+pub fn get_valid_auth_env(conn: &Connection) -> bool {
+    let auth: String = match env::var_os("WB_AUTH") {
+        Some(val) => {
+            val.into_string().unwrap()
+        }
+        None => {
+            return false;
+        }
+    };
+    get_valid_auth_string(conn, &auth)
 }
 
 pub fn db_open() -> Connection {

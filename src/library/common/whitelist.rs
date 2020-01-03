@@ -66,6 +66,10 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest:
     if !(db::get_enabled(&conn)) {
         return true;
     }
+    // Permit authorized execution
+    if db::get_valid_auth_env(&conn) {
+        return true;
+    }
     // Permit user application whitelist
     for dyn_result in db::get_dyn_whitelist(&conn).iter() {
         if  (&program == &dyn_result.program) &&
