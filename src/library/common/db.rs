@@ -6,7 +6,8 @@ use crate::platforms::linux as platform;
 use crate::platforms::macos as platform;
 use crate::common::hash;
 use std::{env,
-          path::Path};
+          path::Path,
+          time::SystemTime};
 use rusqlite::{params, Connection};
 
 pub struct WhitelistResult {
@@ -41,7 +42,19 @@ pub fn get_enabled(conn: &Connection) -> bool {
 
 pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> bool {
     let auth_hash: String = hash::common_hash_string(auth);
-    get_config(conn, String::from("console_secret")) == String::from(auth_hash)
+    let console_secret_expiry: u32 = match get_config(conn, String::from("console_secret_expiry")).parse() {
+        Ok(v) => v,
+        Err(_e) => return false
+    };
+    let time_now = SystemTime::now()
+                            .duration_since(SystemTime::UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs() as u32;
+    if console_secret_expiry == 0 ||
+       console_secret_expiry >= time_now {
+            return get_config(conn, String::from("console_secret")) == String::from(auth_hash);
+    }
+    false
 }
 
 pub fn get_valid_auth_env(conn: &Connection) -> bool {

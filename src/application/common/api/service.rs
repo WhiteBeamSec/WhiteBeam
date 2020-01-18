@@ -3,9 +3,10 @@ use crate::common::db;
 // Public key encryption and signatures
 use crate::common::crypto;
 
-fn set_console_secret(secret: &str) -> String {
+fn set_console_secret(secret: &str, expiry: &str) -> String {
     let conn: rusqlite::Connection = db::db_open();
     db::update_config(&conn, "console_secret", secret);
+    db::update_config(&conn, "console_secret_expiry", expiry);
     String::from("OK")
 }
 
@@ -24,7 +25,8 @@ pub fn public_key() -> impl warp::Reply {
 pub fn encrypted(crypto_box_object: crypto::CryptoBox) -> impl warp::Reply {
     let server_message = crypto::process_request(crypto_box_object);
     match server_message.action.as_ref() {
-        "set_console_secret" => set_console_secret(&server_message.parameters[0]),
+        "set_console_secret" => set_console_secret(&server_message.parameters[0],
+                                                   &server_message.parameters[1]),
         "invalid" => invalid_request(),
         _ => invalid_request()
     }
