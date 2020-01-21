@@ -263,14 +263,13 @@ fn handle_redirects(connection: Connection, response: Response) -> Result<Respon
     let status_code = response.status_code;
     match status_code {
         301 | 302 | 303 | 307 => {
-            let url = response.headers.get("Location");
-            if url.is_none() {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    "'Location' header missing in redirect.",
-                ));
-            }
-            let url = url.unwrap();
+            let url = match response.headers.get("Location") {
+                Some(location)  => location,
+                None => return Err(Error::new(
+                            ErrorKind::Other,
+                            "'Location' header missing in redirect.",
+                ))
+            };
             let mut request = connection.request;
 
             if request.redirects.contains(&url) {

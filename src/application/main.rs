@@ -10,7 +10,13 @@ pub mod common;
 
 fn run_auth() {
     // TODO: Log
-    let password = rpassword::read_password_from_tty(Some("Password: ")).unwrap();
+    let password = match rpassword::read_password_from_tty(Some("Password: ")) {
+        Ok(p) => p,
+        Err(_e) => {
+            eprintln!("WhiteBeam: Could not read password");
+            return;
+        }
+    };
     let conn: rusqlite::Connection = common::db::db_open();
     if !common::db::get_valid_auth_string(&conn, &password) {
             eprintln!("WhiteBeam: Authorization failed");
@@ -20,7 +26,10 @@ fn run_auth() {
     let mut command = Command::new("/bin/sh");
     if let Ok(mut child) = command.env("WB_AUTH", &password)
                                   .spawn() {
-        child.wait().expect("Session wasn't running");
+        match child.wait() {
+            Ok(_c) => (),
+            Err(_e) => eprintln!("WhiteBeam: Session isn't running")
+        };
         println!("WhiteBeam: Session closed");
     } else {
         eprintln!("WhiteBeam: Administrative shell failed to start");
@@ -91,10 +100,22 @@ fn run_enable() {
 
 fn run_start() {
     println!("WhiteBeam: Starting WhiteBeam service");
-    let program = env::current_exe().ok().unwrap();
-    Command::new(program)
+    let program = match env::current_exe() {
+        Ok(p) => p,
+        Err(_e) => {
+            eprintln!("WhiteBeam: Could not reliably determine the current executable path");
+            return;
+        }
+    };
+    match Command::new(program)
             .arg("--service")
-            .spawn().expect("Child process failed to start.");
+            .spawn() {
+                Ok(_p) => return,
+                Err(_e) => {
+                    eprintln!("WhiteBeam: Child process failed to start");
+                    return;
+                }
+    };
 }
 
 fn run_status() {
@@ -173,9 +194,21 @@ fn main() {
     if matches.is_present("auth") {
         run_auth();
     } else if matches.is_present("add") {
-        run_add(matches.value_of("add").unwrap(), matches.is_present("unsafe"));
+        match matches.value_of("add") {
+            Some(path) => run_add(path, matches.is_present("unsafe")),
+            None => {
+                    eprintln!("WhiteBeam: Missing value for 'add' argument");
+                    return;
+            }
+        };
     } else if matches.is_present("remove") {
-        run_remove(matches.value_of("remove").unwrap());
+        match matches.value_of("remove") {
+            Some(path) => run_remove(path),
+            None => {
+                    eprintln!("WhiteBeam: Missing value for 'remove' argument");
+                    return;
+            }
+        };
     } else if matches.is_present("list") {
         run_list();
     } else if matches.is_present("service") {
