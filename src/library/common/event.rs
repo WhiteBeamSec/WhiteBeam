@@ -5,6 +5,7 @@ use crate::platforms::linux as platform;
 #[cfg(target_os = "macos")]
 use crate::platforms::macos as platform;
 use serde::{Deserialize, Serialize};
+use std::ffi::OsStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::common::http;
 
@@ -24,10 +25,11 @@ pub fn get_timestamp() -> u32 {
         since_the_epoch.as_secs() as u32
 }
 
-pub fn send_exec_event(uid: u32, program: &str, hash: &str, success: bool) -> () {
+pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) -> () {
+    let program_string = program.to_string_lossy().to_string();
     let ts = get_timestamp();
     let log = LogExecObject {
-        program: program.to_string(),
+        program: program_string,
         hash: hash.to_string(),
         uid: uid,
         ts: ts,

@@ -3,6 +3,7 @@ use std::ptr;
 use crate::platforms::linux;
 use crate::common::whitelist;
 use crate::common::event;
+use crate::common::hash;
 
 /*
        int execl(const char *path, const char *arg, ...
@@ -26,8 +27,10 @@ pub unsafe extern "C" fn execl(path: *const c_char, mut args: ...) -> c_int {
     // TODO: Don't use null (only supported by Linux)
     let envp: *const *const c_char = ptr::null();
 
-    let (program, env) = linux::transform_parameters(path, envp, -1);
-    let (hexdigest, uid) = linux::get_hash_and_uid(&program);
+    let program = linux::c_char_to_osstring(path);
+    let env = linux::parse_env_collection(envp);
+    let hexdigest = hash::common_hash_file(&program);
+    let uid = linux::get_current_uid();
 
     // Permit/deny execution
     if whitelist::is_whitelisted(&program, &env, &hexdigest) {

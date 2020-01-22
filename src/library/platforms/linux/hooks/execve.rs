@@ -2,6 +2,7 @@ use libc::{c_char, c_int};
 use crate::platforms::linux;
 use crate::common::whitelist;
 use crate::common::event;
+use crate::common::hash;
 
 /*
        int execve(const char *path, char *const argv[],
@@ -9,8 +10,10 @@ use crate::common::event;
 */
 hook! {
     unsafe fn hooked_execve(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int => execve {
-		let (program, env) = linux::transform_parameters(path, envp, -1);
-		let (hexdigest, uid) = linux::get_hash_and_uid(&program);
+        let program = linux::c_char_to_osstring(path);
+        let env = linux::parse_env_collection(envp);
+        let hexdigest = hash::common_hash_file(&program);
+        let uid = linux::get_current_uid();
         // Warn that legacy versions of man-db must disable seccomp
         if program == "/usr/bin/man" {
             let mut disable_defined = false;

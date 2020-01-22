@@ -5,45 +5,51 @@ use crate::platforms::linux as platform;
 #[cfg(target_os = "macos")]
 use crate::platforms::macos as platform;
 use crate::common::db;
-use std::{ffi::OsString};
+use std::{ffi::OsStr, ffi::OsString};
 
 // Hardcoded whitelist data for setup
-static ENV_BLACKLIST: &'static [&str] = &[
-    "LD_PRELOAD",
-    "LD_AUDIT",
-    "LD_LIBRARY_PATH"
-];
+fn get_hardcoded_env_blacklist() -> Vec<OsString> {
+    vec!(
+        OsString::from("LD_PRELOAD"),
+        OsString::from("LD_AUDIT"),
+        OsString::from("LD_LIBRARY_PATH")
+    )
+}
 
-#[cfg(not(feature = "whitelist_test"))]
-static WHITELIST: &'static [(&str, bool, &str)] = &[
-    // Tuple of (permitted program, allow unsafe environment variables, SHA3-256 hexdigest)
-    // Shells
-    ("/bin/bash", false, "ANY"),
-    ("/bin/sh", false, "ANY"),
-    // WhiteBeam
-    ("/opt/WhiteBeam/whitebeam", false, "ANY"),
-    ("/usr/local/bin/whitebeam", false, "ANY")
-];
-#[cfg(feature = "whitelist_test")]
-static WHITELIST: &'static [(&str, bool, &str)] = &[
-    ("/usr/bin/whoami", true, "ANY"),
-    // Test seccomp
-    ("/usr/bin/man", true, "ANY")
-];
+fn get_hardcoded_whitelist() -> Vec<(OsString, bool, String)> {
+    #[cfg(feature = "whitelist_test")]
+    return vec!(
+        (OsString::from("/usr/bin/whoami"), true, String::from("ANY")),
+        // Test seccomp
+        (OsString::from("/usr/bin/man"), true, String::from("ANY"))
+    );
+    #[cfg(not(feature = "whitelist_test"))]
+    return vec!(
+        // Tuple of (permitted program, allow unsafe environment variables, SHA3-256 hexdigest)
+        // Shells
+        (OsString::from("/bin/bash"), false, String::from("ANY")),
+        (OsString::from("/bin/sh"), false, String::from("ANY")),
+        // WhiteBeam
+        (OsString::from("/opt/WhiteBeam/whitebeam"), false, String::from("ANY")),
+        (OsString::from("/usr/local/bin/whitebeam"), false, String::from("ANY"))
+    )
+}
 
-pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest: &str) -> bool {
+pub fn is_whitelisted(program: &OsStr, env: &Vec<(OsString, OsString)>, hexdigest: &str) -> bool {
+    let hardcoded_env_blacklist = get_hardcoded_env_blacklist();
+    let hardcoded_whitelist = get_hardcoded_whitelist();
     let mut unsafe_env = false;
     for env_var in env {
-        if ENV_BLACKLIST.contains(&env_var.0.to_str().unwrap()) {
+        if hardcoded_env_blacklist.contains(&env_var.0) {
             unsafe_env = true;
             break;
         }
     }
     // Permit hardcoded application whitelist
-    for (allowed_program, allow_unsafe, allowed_hash) in WHITELIST.iter() {
+    for (allowed_program, allow_unsafe, allowed_hash) in hardcoded_whitelist.iter() {
         if  (&program == allowed_program) &&
             (&unsafe_env == allow_unsafe) &&
-            ((&hexdigest == allowed_hash) || (allowed_hash == &"ANY")) {
+            ((&hexdigest == allowed_hash) || (allowed_hash == "ANY")) {
             return true;
         }
     }
@@ -72,7 +78,7 @@ pub fn is_whitelisted(program: &str, env: &Vec<(OsString, OsString)>, hexdigest:
     }
     // Permit user application whitelist
     for dyn_result in db::get_dyn_whitelist(&conn).iter() {
-        if  (&program == &dyn_result.program) &&
+        if  (&program == &OsStr::new(&dyn_result.program)) &&
             (&unsafe_env == &dyn_result.allow_unsafe) &&
             ((&hexdigest == &dyn_result.hash) || (&dyn_result.hash == &"ANY")) {
             return true;

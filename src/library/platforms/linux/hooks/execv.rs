@@ -3,6 +3,7 @@ use std::ptr;
 use crate::platforms::linux;
 use crate::common::whitelist;
 use crate::common::event;
+use crate::common::hash;
 
 /*
        int execv(const char *path, char *const argv[]);
@@ -10,8 +11,10 @@ use crate::common::event;
 hook! {
     unsafe fn hooked_execv(path: *const c_char, argv: *const *const c_char) -> c_int => execv {
 		let envp: *const *const c_char = ptr::null();
-		let (program, env) = linux::transform_parameters(path, envp, -1);
-		let (hexdigest, uid) = linux::get_hash_and_uid(&program);
+        let program = linux::c_char_to_osstring(path);
+        let env = linux::parse_env_collection(envp);
+        let hexdigest = hash::common_hash_file(&program);
+        let uid = linux::get_current_uid();
         // Permit/deny execution
         if whitelist::is_whitelisted(&program, &env, &hexdigest) {
             event::send_exec_event(uid, &program, &hexdigest, true);

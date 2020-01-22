@@ -1,10 +1,13 @@
 use libc::{c_char, c_int};
 use std::env;
+use std::path::PathBuf;
 use std::ptr;
-use std::{ffi::CString};
+use std::{ffi::CString,
+          os::unix::ffi::OsStrExt};
 use crate::platforms::linux;
 use crate::common::whitelist;
 use crate::common::event;
+use crate::common::hash;
 
 /*
        int execlp(const char *path, const char *arg, ...
@@ -28,20 +31,22 @@ pub unsafe extern "C" fn execlp(path: *const c_char, mut args: ...) -> c_int {
     // TODO: Don't use null (only supported by Linux)
     let envp: *const *const c_char = ptr::null();
 
-    let (program, env) = linux::transform_parameters(path, envp, -1);
+    let program = linux::c_char_to_osstring(path);
+    let env = linux::parse_env_collection(envp);
     let which_abs_pathbuf = match which::which_in(&program,
                                                   Some(linux::get_env_path()),
-                                                  env::current_dir().unwrap()) {
+                                                  env::current_dir().unwrap_or(PathBuf::new())) {
         Err(_why) => {
             *linux::errno_location() = libc::ENOENT;
             return -1 },
         Ok(prog_path) => prog_path
     };
-    let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
-    let (hexdigest, uid) = linux::get_hash_and_uid(abs_prog_str);
+    let abs_prog_str = which_abs_pathbuf.as_os_str();
+    let hexdigest = hash::common_hash_file(abs_prog_str);
+    let uid = linux::get_current_uid();
 
     // Populate path
-    let abs_path_c_str = CString::new(abs_prog_str).unwrap();
+    let abs_path_c_str = CString::new(abs_prog_str.as_bytes()).unwrap();
     let abs_path_c_char: *const c_char = abs_path_c_str.as_ptr() as *const c_char;
 
     // Permit/deny execution

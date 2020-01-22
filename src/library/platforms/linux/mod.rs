@@ -7,12 +7,13 @@ use libc::{c_char, c_int};
 use std::{env,
           mem,
           ffi::CStr,
+          ffi::OsStr,
           ffi::OsString,
+          os::unix::ffi::OsStrExt,
           os::unix::ffi::OsStringExt,
           path::Path,
           path::PathBuf,
           time::Duration};
-use crate::common::hash;
 
 pub fn get_data_file_path(data_file: &str) -> PathBuf {
     let data_path: String = String::from("/opt/WhiteBeam/data/");
@@ -50,7 +51,7 @@ pub fn get_env_path() -> OsString {
     }
 }
 
-fn parse_env(input: &[u8]) -> Option<(OsString, OsString)> {
+fn parse_env_single(input: &[u8]) -> Option<(OsString, OsString)> {
 	if input.is_empty() {
 		return None;
 	}
@@ -63,39 +64,26 @@ fn parse_env(input: &[u8]) -> Option<(OsString, OsString)> {
 	})
 }
 
-unsafe fn transform_parameters(path: *const c_char, envp: *const *const c_char, fd: c_int) -> (String, Vec<(OsString, OsString)>) {
-	// TODO: GC
-
-	// Program
-	let program = if !(path.is_null()) {
-		let program_c_str: &CStr = CStr::from_ptr(path);
-		let program_str_slice: &str = program_c_str.to_str().unwrap();
-		program_str_slice.to_owned()
-	} else {
-		format!("fd://{}", fd)
-	};
-
-	// Environment variables
-	let mut env: Vec<(OsString, OsString)> = Vec::new();
-	if !(envp.is_null()) {
-		let mut envp_iter = envp;
-		while !(*envp_iter).is_null() {
-				if let Some(key_value) = parse_env(CStr::from_ptr(*envp_iter).to_bytes()) {
-					env.push(key_value);
-				}
-				envp_iter = envp_iter.offset(1);
-		}
-	}
-
-	(program, env)
+unsafe fn parse_env_collection(envp: *const *const c_char) -> Vec<(OsString, OsString)> {
+    let mut env: Vec<(OsString, OsString)> = Vec::new();
+    if !(envp.is_null()) {
+        let mut envp_iter = envp;
+        while !(*envp_iter).is_null() {
+                if let Some(key_value) = parse_env_single(CStr::from_ptr(*envp_iter).to_bytes()) {
+                    env.push(key_value);
+                }
+                envp_iter = envp_iter.offset(1);
+        }
+    }
+    env
 }
 
-fn get_hash_and_uid(program: &str) -> (String, u32) {
-	// Hexdigest
-	let hexdigest = hash::common_hash_file(&program);
-
-	// User ID
-	let uid = get_current_uid();
-
-	(hexdigest, uid)
+unsafe fn c_char_to_osstring(char_ptr: *const c_char) -> OsString {
+    match char_ptr.is_null() {
+        true => OsString::new(),
+        false => {
+            let program_c_str: &CStr = CStr::from_ptr(char_ptr);
+    		OsStr::from_bytes(program_c_str.to_bytes()).to_owned()
+        }
+    }
 }

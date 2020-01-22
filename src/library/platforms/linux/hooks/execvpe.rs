@@ -3,6 +3,7 @@ use std::env;
 use crate::platforms::linux;
 use crate::common::whitelist;
 use crate::common::event;
+use crate::common::hash;
 
 /*
        int execvpe(const char *path, char *const argv[],
@@ -10,7 +11,8 @@ use crate::common::event;
 */
 hook! {
     unsafe fn hooked_execvpe(path: *const c_char, argv: *const *const c_char, envp: *const *const c_char) -> c_int => execvpe {
-		let (program, env) = linux::transform_parameters(path, envp, -1);
+        let program = linux::c_char_to_osstring(path);
+        let env = linux::parse_env_collection(envp);
         let which_abs_pathbuf = match which::which_in(&program,
                                                       Some(linux::get_env_path()),
                                                       env::current_dir().unwrap()) {
@@ -19,8 +21,9 @@ hook! {
 				return -1 },
             Ok(prog_path) => prog_path
         };
-		let abs_prog_str = which_abs_pathbuf.to_str().unwrap();
-		let (hexdigest, uid) = linux::get_hash_and_uid(abs_prog_str);
+		let abs_prog_str = which_abs_pathbuf.as_os_str();
+        let hexdigest = hash::common_hash_file(abs_prog_str);
+        let uid = linux::get_current_uid();
         // Permit/deny execution
         if whitelist::is_whitelisted(abs_prog_str, &env, &hexdigest) {
             event::send_exec_event(uid, abs_prog_str, &hexdigest, true);

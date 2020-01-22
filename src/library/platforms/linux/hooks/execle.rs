@@ -2,6 +2,7 @@ use libc::{c_char, c_int};
 use crate::platforms::linux;
 use crate::common::whitelist;
 use crate::common::event;
+use crate::common::hash;
 
 /*
        int execle(const char *path, const char *arg, ...
@@ -25,8 +26,10 @@ pub unsafe extern "C" fn execle(path: *const c_char, mut args: ...) -> c_int {
     let envp_arg: isize = args.arg();
     let envp = envp_arg as *const *const c_char;
 
-    let (program, env) = linux::transform_parameters(path, envp, -1);
-    let (hexdigest, uid) = linux::get_hash_and_uid(&program);
+    let program = linux::c_char_to_osstring(path);
+    let env = linux::parse_env_collection(envp);
+    let hexdigest = hash::common_hash_file(&program);
+    let uid = linux::get_current_uid();
 
     // Permit/deny execution
     if whitelist::is_whitelisted(&program, &env, &hexdigest) {
