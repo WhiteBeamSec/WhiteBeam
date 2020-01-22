@@ -1,6 +1,7 @@
 use clap::{Arg, App, AppSettings};
 use cli_table::{format::{CellFormat, Justify},
                 Cell, Row, Table};
+use std::ffi::OsStr;
 use std::env;
 use std::process::Command;
 
@@ -36,7 +37,7 @@ fn run_auth() {
     }
 }
 
-fn run_add(program: &str, allow_unsafe: bool) {
+fn run_add(program: &OsStr, allow_unsafe: bool) {
     // TODO: Log
     let conn: rusqlite::Connection = common::db::db_open();
     if common::db::get_enabled(&conn) {
@@ -51,8 +52,9 @@ fn run_add(program: &str, allow_unsafe: bool) {
         eprintln!("WhiteBeam: No such file or directory");
         return;
     }
-    println!("WhiteBeam: Adding {} (SHA3-256: {}) to whitelist", program, hash);
-    common::db::insert_whitelist(&conn, program, allow_unsafe, &hash);
+    let program_str = program.to_string_lossy();
+    println!("WhiteBeam: Adding {} (SHA3-256: {}) to whitelist", &program_str, hash);
+    common::db::insert_whitelist(&conn, &program_str, allow_unsafe, &hash);
 }
 
 fn run_remove(program: &str) {
@@ -194,7 +196,7 @@ fn main() {
     if matches.is_present("auth") {
         run_auth();
     } else if matches.is_present("add") {
-        match matches.value_of("add") {
+        match matches.value_of_os("add") {
             Some(path) => run_add(path, matches.is_present("unsafe")),
             None => {
                     eprintln!("WhiteBeam: Missing value for 'add' argument");

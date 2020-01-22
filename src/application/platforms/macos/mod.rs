@@ -8,5 +8,5 @@ pub fn get_data_file_path(data_file: &str) -> PathBuf {
 }
 
 pub fn path_open_secure(file_path: &Path) {
-    panic!("WhiteBeam: Not implemented");
+    unimplemented!("WhiteBeam: Secure file opening is not currently supported on MacOS");
 }
