@@ -69,11 +69,16 @@ pub fn get_valid_auth_env(conn: &Connection) -> bool {
     get_valid_auth_string(conn, &auth)
 }
 
-pub fn db_open() -> Connection {
+pub fn db_open() -> Result<Connection, String> {
     let db_path: &Path = &platform::get_data_file_path("database.sqlite");
     let no_db: bool = !db_path.exists();
     if no_db {
-        panic!("WhiteBeam: No database found");
+        return Err("No database file found".to_string());
     }
-    Connection::open(db_path).unwrap()
+    match Connection::open(db_path) {
+        Ok(conn) => Ok(conn),
+        Err(_e) => {
+            return Err("Could not open database file".to_string());
+        }
+    }
 }

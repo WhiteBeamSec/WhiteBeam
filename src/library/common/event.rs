@@ -6,7 +6,7 @@ use crate::platforms::linux as platform;
 use crate::platforms::macos as platform;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use crate::common::http;
 
 #[derive(Deserialize, Serialize)]
@@ -20,12 +20,18 @@ struct LogExecObject {
 
 pub fn get_timestamp() -> u32 {
         let start = SystemTime::now();
-        let since_the_epoch = start.duration_since(UNIX_EPOCH)
-            .expect("Time went backwards");
+        let since_the_epoch = match start.duration_since(UNIX_EPOCH) {
+            Ok(t) => t,
+            Err(_e) => {
+                // TODO: Log
+                eprintln!("WhiteBeam: System clock went backwards");
+                Duration::from_secs(0)
+            }
+        };
         since_the_epoch.as_secs() as u32
 }
 
-pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) -> () {
+pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) {
     let program_string = program.to_string_lossy().to_string();
     let ts = get_timestamp();
     let log = LogExecObject {
@@ -35,10 +41,18 @@ pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) -> 
         ts: ts,
         success: success
     };
-    // https://github.com/noproto/WhiteBeam/blob/master/src/library/common/whitelist.rs#L40
-    if platform::get_uptime().unwrap().as_secs() < (60*5) {
+    if cfg!(feature = "whitelist_test") {
         return;
     }
+    // https://github.com/noproto/WhiteBeam/blob/master/src/library/common/whitelist.rs#L59
+    match platform::get_uptime() {
+        Ok(uptime) => {
+            if uptime.as_secs() < (60*5) {
+                return;
+            }
+        },
+        Err(e) => eprintln!("WhiteBeam: {}", e)
+    };
     if let Ok(_response) = http::post("http://127.0.0.1:11998/log/exec")
                                 // Prevents denial of service
                                 .with_timeout(1)

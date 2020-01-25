@@ -64,10 +64,22 @@ pub fn is_whitelisted(program: &OsStr, env: &Vec<(OsString, OsString)>, hexdiges
     //    this approach, maintaining a large database of permitted executables)
     // 2. Require a reboot to baseline systems (which may interfere with production systems)
     // Feedback/ideas welcome: https://github.com/noproto/WhiteBeam/issues
-    if platform::get_uptime().unwrap().as_secs() < (60*5) {
-        return true;
-    }
-    let conn = db::db_open();
+    match platform::get_uptime() {
+        Ok(uptime) => {
+            if uptime.as_secs() < (60*5) {
+                return true;
+            }
+        },
+        Err(e) => eprintln!("WhiteBeam: {}", e)
+    };
+    let conn = match db::db_open() {
+        Ok(c) => c,
+        Err(e) => {
+            // No dynamic whitelist present, deny by default
+            eprintln!("WhiteBeam: {}", e);
+            return false;
+        }
+    };
     // Permit execution if running in disabled mode
     if !(db::get_enabled(&conn)) {
         return true;
