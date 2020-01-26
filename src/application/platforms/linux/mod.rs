@@ -15,5 +15,5 @@ pub fn path_open_secure(file_path: &Path) -> File {
         .write(true)
         .mode(0o700)
         .open(file_path)
-        .unwrap()
+        .expect(&format!("WhiteBeam: Could not securely open path {}", file_path.to_string_lossy()))
 }

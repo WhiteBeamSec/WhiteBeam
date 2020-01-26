@@ -18,7 +18,7 @@ struct LogExecObject {
     success: bool
 }
 
-pub fn get_timestamp() -> u32 {
+fn get_timestamp() -> u32 {
         let start = SystemTime::now();
         let since_the_epoch = match start.duration_since(UNIX_EPOCH) {
             Ok(t) => t,
@@ -29,6 +29,11 @@ pub fn get_timestamp() -> u32 {
             }
         };
         since_the_epoch.as_secs() as u32
+}
+
+fn get_timeout() -> u64 {
+    // Prevents denial of service
+    1
 }
 
 pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) {
@@ -53,14 +58,17 @@ pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) {
         },
         Err(e) => eprintln!("WhiteBeam: {}", e)
     };
-    if let Ok(_response) = http::post("http://127.0.0.1:11998/log/exec")
-                                // Prevents denial of service
-                                .with_timeout(1)
-                                .with_json(&log)
-                                .unwrap()
-                                .send() {
-        ()
-    } else {
-        eprintln!("WhiteBeam: Failed to communicate with WhiteBeam service");
+    let request = match http::post("http://127.0.0.1:11998/log/exec")
+                              .with_timeout(get_timeout())
+                              .with_json(&log) {
+                                  Ok(json_data) => json_data,
+                                  Err(_e) => {
+                                      eprintln!("WhiteBeam: Failed to serialize JSON");
+                                      return;
+                                  }
+    };
+    match request.send() {
+        Ok(_response) => (),
+        Err(_e) => eprintln!("WhiteBeam: Failed to communicate with WhiteBeam service")
     }
 }
