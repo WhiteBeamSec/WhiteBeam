@@ -16,7 +16,7 @@ crate-type = ["cdylib"]
 libc = { version = "0.2" }
 sodiumoxide = { version = "0.2.5" }
 serde = { version = "1.0.104", features = ["derive"] }
-serde_json = { version = "1.0.44" }
+serde_json = { version = "1.0.45" }
 rusqlite = { version = "0.21.0", features = ["bundled"] }
 hex = { version = "0.4.0" }
 sha3 = { version = "0.8.2" }

@@ -89,9 +89,9 @@ fn run_list() {
     let _res = table.print_stdout();
 }
 
-fn run_service() {
+async fn run_service() {
     common::db::db_optionally_init();
-    common::api::serve();
+    common::api::serve().await;
 }
 
 fn run_enable() {
@@ -130,7 +130,8 @@ fn run_status() {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let matches = App::new("WhiteBeam")
         .setting(AppSettings::ArgRequiredElseHelp)
         .version(env!("CARGO_PKG_VERSION"))
@@ -214,7 +215,7 @@ fn main() {
     } else if matches.is_present("list") {
         run_list();
     } else if matches.is_present("service") {
-        run_service();
+        run_service().await;
     } else if matches.is_present("enable") {
         run_enable();
     } else if matches.is_present("start") {
