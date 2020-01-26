@@ -46,7 +46,12 @@ pub unsafe extern "C" fn execlp(path: *const c_char, mut args: ...) -> c_int {
     let uid = linux::get_current_uid();
 
     // Populate path
-    let abs_path_c_str = CString::new(abs_prog_str.as_bytes()).unwrap();
+    let abs_path_c_str = match CString::new(abs_prog_str.as_bytes()) {
+        Err(_why) => {
+            *linux::errno_location() = libc::ENOENT;
+            return -1 },
+        Ok(abs_prog_path) => abs_prog_path
+    };
     let abs_path_c_char: *const c_char = abs_path_c_str.as_ptr() as *const c_char;
 
     // Permit/deny execution

@@ -1,5 +1,6 @@
 use libc::{c_char, c_int};
 use std::env;
+use std::path::PathBuf;
 use std::ptr;
 use crate::platforms::linux;
 use crate::common::whitelist;
@@ -16,7 +17,7 @@ hook! {
         let env = linux::parse_env_collection(envp);
 		let which_abs_pathbuf = match which::which_in(&program,
                                                       Some(linux::get_env_path()),
-                                                      env::current_dir().unwrap()) {
+                                                      env::current_dir().unwrap_or(PathBuf::new())) {
             Err(_why) => {
 				*linux::errno_location() = libc::ENOENT;
 				return -1 },

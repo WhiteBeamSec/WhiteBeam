@@ -1,4 +1,5 @@
 use libc::{c_char, c_int};
+use std::ffi::OsString;
 use crate::platforms::linux;
 use crate::common::whitelist;
 use crate::common::event;
@@ -16,9 +17,10 @@ hook! {
         let uid = linux::get_current_uid();
         // Warn that legacy versions of man-db must disable seccomp
         if program == "/usr/bin/man" {
+            let needle = OsString::from("MAN_DISABLE_SECCOMP");
             let mut disable_defined = false;
             for env_var in &env {
-                if &env_var.0.to_str().unwrap() == &"MAN_DISABLE_SECCOMP" {
+                if env_var.0 == needle {
                     disable_defined = true;
                     break;
                 }
