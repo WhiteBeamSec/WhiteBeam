@@ -57,4 +57,4 @@ Install WhiteBeam: `./install.sh`
 
 ## In Action
 
-![In Action](https://user-images.githubusercontent.com/11845893/71755691-bfb31700-2e83-11ea-8d90-2fa1f8767d47.png)
+[![asciicast](https://asciinema.org/a/296135.svg)](https://asciinema.org/a/296135)
