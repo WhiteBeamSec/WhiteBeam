@@ -71,7 +71,7 @@ fn run_remove(program: &str) {
 
 fn run_list() {
     let conn: rusqlite::Connection = common::db::db_open();
-    let whitelist = common::db::get_dyn_whitelist(&conn);
+    let whitelist = common::db::get_dyn_whitelist(&conn).unwrap_or(Vec::new());
     let justify_right = CellFormat::builder().justify(Justify::Right).build();
     let bold = CellFormat::builder().bold(true).build();
     let mut table_vec: Vec<Row> = Vec::new();

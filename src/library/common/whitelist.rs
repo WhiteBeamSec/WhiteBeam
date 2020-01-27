@@ -89,7 +89,7 @@ pub fn is_whitelisted(program: &OsStr, env: &Vec<(OsString, OsString)>, hexdiges
         return true;
     }
     // Permit user application whitelist
-    for dyn_result in db::get_dyn_whitelist(&conn).iter() {
+    for dyn_result in db::get_dyn_whitelist(&conn).unwrap_or(Vec::new()).iter() {
         if  (&program == &OsStr::new(&dyn_result.program)) &&
             (&unsafe_env == &dyn_result.allow_unsafe) &&
             ((&hexdigest == &dyn_result.hash) || (&dyn_result.hash == &"ANY")) {
