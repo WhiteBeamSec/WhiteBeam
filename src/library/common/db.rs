@@ -5,10 +5,10 @@ use crate::platforms::linux as platform;
 #[cfg(target_os = "macos")]
 use crate::platforms::macos as platform;
 use crate::common::hash;
+use crate::common::time;
 use std::{env,
           error::Error,
-          path::Path,
-          time::SystemTime};
+          path::Path};
 use rusqlite::{params, Connection};
 
 pub struct WhitelistResult {
@@ -47,10 +47,7 @@ pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> bool {
         Ok(v) => v,
         Err(_e) => return false
     };
-    let time_now = SystemTime::now()
-                            .duration_since(SystemTime::UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs() as u32;
+    let time_now = time::get_timestamp();
     if console_secret_expiry == 0 ||
        console_secret_expiry >= time_now {
             return get_config(conn, String::from("console_secret")) == String::from(auth_hash);

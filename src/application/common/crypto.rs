@@ -5,6 +5,7 @@ use crate::platforms::linux as platform;
 #[cfg(target_os = "macos")]
 use crate::platforms::macos as platform;
 use crate::common::db;
+use crate::common::time;
 use serde::{Serialize, Deserialize};
 #[allow(unused_imports)]
 use serde_json::json;
@@ -12,7 +13,6 @@ use serde_json::json;
 use std::{io::prelude::*,
           io::Read,
           io::Write as IoWrite,
-          time::SystemTime,
           path::Path,
           fmt::Write as FmtWrite,
           num::ParseIntError};
@@ -74,10 +74,7 @@ pub struct Message {
 }
 
 fn json_encode_message(action: String, parameters: Vec<String>) -> String {
-    let expires = SystemTime::now()
-                            .duration_since(SystemTime::UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs() as u32;
+    let expires = time::get_timestamp()+3600;
     let version = env!("CARGO_PKG_VERSION").to_string();
     let message_object = Message {
         expires: expires,
@@ -179,10 +176,7 @@ pub fn process_request(crypto_box_object: CryptoBox) -> Message {
         ).unwrap()
     );
     let server_message = json_decode_message(plaintext);
-    let expiry = (SystemTime::now()
-                            .duration_since(SystemTime::UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs() as u32)-3600;
+    let expiry = time::get_timestamp();
     if server_message.expires < expiry {
         // Message has expired
         return invalid_message;

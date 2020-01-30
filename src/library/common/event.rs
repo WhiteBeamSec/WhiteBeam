@@ -6,8 +6,8 @@ use crate::platforms::linux as platform;
 use crate::platforms::macos as platform;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use crate::common::http;
+use crate::common::time;
 
 #[derive(Deserialize, Serialize)]
 struct LogExecObject {
@@ -18,19 +18,6 @@ struct LogExecObject {
     success: bool
 }
 
-fn get_timestamp() -> u32 {
-        let start = SystemTime::now();
-        let since_the_epoch = match start.duration_since(UNIX_EPOCH) {
-            Ok(t) => t,
-            Err(_e) => {
-                // TODO: Log
-                eprintln!("WhiteBeam: System clock went backwards");
-                Duration::from_secs(0)
-            }
-        };
-        since_the_epoch.as_secs() as u32
-}
-
 fn get_timeout() -> u64 {
     // Prevents denial of service
     1
@@ -38,7 +25,7 @@ fn get_timeout() -> u64 {
 
 pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) {
     let program_string = program.to_string_lossy().to_string();
-    let ts = get_timestamp();
+    let ts = time::get_timestamp();
     let log = LogExecObject {
         program: program_string,
         hash: hash.to_string(),
