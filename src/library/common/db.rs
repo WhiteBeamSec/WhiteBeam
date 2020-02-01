@@ -18,7 +18,9 @@ pub struct WhitelistResult {
 }
 
 pub fn get_config(conn: &Connection, config_param: String) -> String {
-    conn.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0)).unwrap()
+    // TODO: Log errors
+    conn.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0))
+        .expect("WhiteBeam: Could not query configuration")
 }
 
 pub fn get_dyn_whitelist(conn: &Connection) -> Result<Vec<WhitelistResult>, Box<dyn Error>> {
@@ -56,15 +58,14 @@ pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> bool {
 }
 
 pub fn get_valid_auth_env(conn: &Connection) -> bool {
-    let auth: String = match env::var_os("WB_AUTH") {
-        Some(val) => {
-            val.into_string().unwrap()
+    match env::var("WB_AUTH") {
+        Ok(val) => {
+            get_valid_auth_string(conn, &val)
         }
-        None => {
-            return false;
+        Err(_e) => {
+            false
         }
-    };
-    get_valid_auth_string(conn, &auth)
+    }
 }
 
 pub fn db_open() -> Result<Connection, String> {
