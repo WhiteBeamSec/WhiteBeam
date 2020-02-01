@@ -88,7 +88,9 @@ pub fn get_valid_auth_env(conn: &Connection) -> bool {
 
 pub fn get_seen_nonce(conn: &Connection, nonce: &str) -> bool {
     delete_all_expired_nonce(conn);
-    let count: i64 = conn.query_row("SELECT count(*) FROM nonce_hist WHERE nonce = ?", params![nonce], |r| r.get(0)).unwrap();
+    // TODO: Log errors
+    let count: i64 = conn.query_row("SELECT count(*) FROM nonce_hist WHERE nonce = ?", params![nonce], |r| r.get(0))
+                         .expect("WhiteBeam: Could not query nonce history");
     count > 0
 }
 
@@ -136,7 +138,7 @@ fn delete_all_expired_nonce(conn: &Connection) {
                  rusqlite::NO_PARAMS);
 }
 
-fn db_init(conn: &Connection) {
+fn db_init(conn: &Connection) -> Result<(), Box<dyn Error>> {
     let _res = conn.execute(
         "CREATE TABLE config (
             id INTEGER PRIMARY KEY,
@@ -176,16 +178,16 @@ fn db_init(conn: &Connection) {
     let config_path: &Path = &platform::get_data_file_path("init.json");
     let init_config: bool = config_path.exists();
     if init_config {
-        // TODO: Validate init.json
-        let init_file = std::fs::File::open(config_path).unwrap();
-        let json: ConfigEntry = serde_json::from_reader(init_file).unwrap();
+        // TODO: Validate init.json, log errors
+        let init_file = std::fs::File::open(config_path)?;
+        let json: ConfigEntry = serde_json::from_reader(init_file)?;
         insert_config(conn, "server_ip", &json.server_ip);
         insert_config(conn, "server_key", &json.server_key);
         insert_config(conn, "server_type", &json.server_type);
         insert_config(conn, "enabled", &json.enabled);
         insert_config(conn, "console_secret", "undefined");
         insert_config(conn, "console_secret_expiry", "-1");
-        std::fs::remove_file(config_path).unwrap();
+        std::fs::remove_file(config_path)?;
     } else {
         insert_config(conn, "server_ip", "undefined");
         insert_config(conn, "server_key", "undefined");
@@ -194,12 +196,13 @@ fn db_init(conn: &Connection) {
         insert_config(conn, "console_secret", "undefined");
         insert_config(conn, "console_secret_expiry", "-1");
     }
+    Ok(())
 }
 
 pub fn db_open() -> Connection {
     let db_path: &Path = &platform::get_data_file_path("database.sqlite");
-    let conn: Connection = Connection::open(db_path).unwrap();
-    conn
+    // TODO: Log errors
+    Connection::open(db_path).expect("WhiteBeam: Could not open database")
 }
 
 pub fn db_optionally_init() {
@@ -207,6 +210,7 @@ pub fn db_optionally_init() {
     let run_init: bool = !db_path.exists();
     let conn = db_open();
     if run_init {
-        db_init(&conn)
+        // TODO: Log errors
+        db_init(&conn).expect("WhiteBeam: Failed to initialize database")
     }
 }
