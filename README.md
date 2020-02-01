@@ -1,3 +1,10 @@
+<!---
+WhiteBeam Client version 0.1.0
+
+Open source EDR with application whitelisting
+
+Copyright 2019, noproto
+--->
 <p align="center">
 <img src="https://gist.githubusercontent.com/noproto/ea7d62cd578afdd1bac2e96078c0e6b2/raw/cf895a5fef1f2295671653ece9155f4e1f0478e4/WhiteBeam.svg?sanitize=true" alt="WhiteBeam">
 <br>
