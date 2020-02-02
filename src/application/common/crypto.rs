@@ -33,25 +33,28 @@ fn key_array_from_slice(bytes: &[u8]) -> [u8; SECRETKEYBYTES] {
     array
 }
 
-fn generate_client_private_key(save_path: &Path) {
+fn generate_client_private_key(save_path: &Path) -> Result<(), std::io::Error> {
     let (_public_key, private_key) = box_::gen_keypair();
     let private_key_bytes: &[u8] = private_key.as_ref();
     let mut key_file = platform::path_open_secure(save_path);
-    key_file.write_all(private_key_bytes).unwrap();
+    Ok(key_file.write_all(private_key_bytes)?)
 }
 
-fn get_server_public_key() -> PublicKey {
+fn get_server_public_key() -> Result<PublicKey, Box<dyn Error>> {
     let conn: rusqlite::Connection = db::db_open();
     let public_key_string: String = db::get_config(&conn, String::from("server_key"));
-    let public_key_bytes: &[u8] = &hex::decode(&public_key_string).unwrap();
-    PublicKey::from_slice(public_key_bytes).unwrap()
+    let public_key_bytes: &[u8] = &hex::decode(&public_key_string)?;
+    match PublicKey::from_slice(public_key_bytes) {
+        Some(public_key) => Ok(public_key),
+        None => Err("Invalid server public key".into())
+    }
 }
 
 fn get_client_public_private_key() -> Result<(PublicKey, SecretKey), Box<dyn Error>> {
     let key_file_path: &Path = &platform::get_data_file_path("client.key");
     let gen_key: bool = !key_file_path.exists();
     if gen_key {
-        generate_client_private_key(key_file_path);
+        generate_client_private_key(key_file_path)?;
     }
     let mut key_file = std::fs::File::open(key_file_path)?;
     let mut private_key_bytes: Vec<u8> = Vec::new();
@@ -74,7 +77,7 @@ pub struct Message {
     pub parameters: Vec<String>
 }
 
-fn json_encode_message(action: String, parameters: Vec<String>) -> String {
+fn json_encode_message(action: String, parameters: Vec<String>) -> Result<String, serde_json::Error> {
     let expires = time::get_timestamp()+3600;
     let version = env!("CARGO_PKG_VERSION").to_string();
     let message_object = Message {
@@ -83,12 +86,12 @@ fn json_encode_message(action: String, parameters: Vec<String>) -> String {
         action: action,
         parameters: parameters
     };
-    serde_json::to_string(&message_object).unwrap()
+    Ok(serde_json::to_string(&message_object)?)
 }
 
-fn json_decode_message(json: String) -> Message {
-    let message_object: Message = serde_json::from_str(&json).unwrap();
-    message_object
+fn json_decode_message(json: String) -> Result<Message, serde_json::Error> {
+    let message_object: Message = serde_json::from_str(&json)?;
+    Ok(message_object)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -98,26 +101,29 @@ pub struct CryptoBox {
     pub ciphertext: String
 }
 
-fn json_encode_crypto_box(pubkey: String, nonce: String, ciphertext: String) -> String {
+fn json_encode_crypto_box(pubkey: String, nonce: String, ciphertext: String) -> Result<String, serde_json::Error> {
     let crypto_box_object = CryptoBox {
         pubkey: pubkey,
         nonce: nonce,
         ciphertext: ciphertext
     };
-    serde_json::to_string(&crypto_box_object).unwrap()
+    Ok(serde_json::to_string(&crypto_box_object)?)
 }
 
 #[allow(dead_code)]
-fn json_decode_crypto_box(json: String) -> CryptoBox {
-    let crypto_box_object: CryptoBox = serde_json::from_str(&json).unwrap();
-    crypto_box_object
+fn json_decode_crypto_box(json: String) -> Result<CryptoBox, serde_json::Error> {
+    let crypto_box_object: CryptoBox = serde_json::from_str(&json)?;
+    Ok(crypto_box_object)
 }
 
-fn nonce_array_from_slice(bytes: &[u8]) -> [u8; NONCEBYTES] {
+fn nonce_array_from_slice(bytes: &[u8]) -> Result<[u8; NONCEBYTES], String> {
+    if bytes.len() != NONCEBYTES {
+        return Err("Invalid nonce".into());
+    }
     let mut array = [0; NONCEBYTES];
-    let bytes = &bytes[..array.len()]; // Panics if not enough data
+    let bytes = &bytes[..array.len()];
     array.copy_from_slice(bytes);
-    array
+    Ok(array)
 }
 
 /*
@@ -126,13 +132,13 @@ Encryption
 
 fn generate_ciphertext(plaintext: &[u8], nonce: Nonce) -> Result<Vec<u8>, Box<dyn Error>> {
     let (_client_public_key, client_private_key) = get_client_public_private_key()?;
-    let server_public_key = get_server_public_key();
+    let server_public_key = get_server_public_key()?;
     Ok(box_::seal(plaintext, &nonce, &server_public_key, &client_private_key))
 }
 
 fn decrypt_server_ciphertext(ciphertext: &[u8], nonce: Nonce) -> Result<Vec<u8>, Box<dyn Error>> {
     let (_client_public_key, client_private_key) = get_client_public_private_key()?;
-    let server_public_key = get_server_public_key();
+    let server_public_key = get_server_public_key()?;
     // Verification and decryption
     match box_::open(ciphertext, &nonce, &server_public_key, &client_private_key) {
         Ok(plaintext) => Ok(plaintext),
@@ -151,10 +157,10 @@ pub fn get_client_public_key() -> Result<PublicKey, Box<dyn Error>> {
 
 pub fn generate_crypto_box_message(action: String, parameters: Vec<String>) -> Result<String, Box<dyn Error>> {
     let (client_public_key, _client_private_key) = get_client_public_private_key()?;
-    let message = json_encode_message(action, parameters);
+    let message = json_encode_message(action, parameters)?;
     let nonce = box_::gen_nonce();
     let ciphertext: Vec<u8> = generate_ciphertext(message.as_bytes(), nonce)?;
-    Ok(json_encode_crypto_box(hex::encode(client_public_key), hex::encode(nonce), hex::encode(ciphertext)))
+    Ok(json_encode_crypto_box(hex::encode(client_public_key), hex::encode(nonce), hex::encode(ciphertext))?)
 }
 
 pub fn process_request(crypto_box_object: CryptoBox) -> Result<Message, Box<dyn Error>> {
@@ -163,7 +169,7 @@ pub fn process_request(crypto_box_object: CryptoBox) -> Result<Message, Box<dyn 
     if db::get_seen_nonce(&conn, &crypto_box_object.nonce) {
         return Err("Invalid message".into());
     }
-    let nonce_array: [u8; NONCEBYTES] = nonce_array_from_slice(&hex::decode(crypto_box_object.nonce)?);
+    let nonce_array: [u8; NONCEBYTES] = nonce_array_from_slice(&hex::decode(crypto_box_object.nonce)?)?;
     let nonce = Nonce(nonce_array);
     let plaintext: String = String::from(
         std::str::from_utf8(
@@ -173,7 +179,7 @@ pub fn process_request(crypto_box_object: CryptoBox) -> Result<Message, Box<dyn 
             )?
         )?
     );
-    let server_message = json_decode_message(plaintext);
+    let server_message = json_decode_message(plaintext)?;
     let expiry = time::get_timestamp();
     if server_message.expires < expiry {
         // Message has expired

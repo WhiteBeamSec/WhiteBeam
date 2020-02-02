@@ -14,12 +14,13 @@ gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys 4A3F1233C01563F808B8355125ECFD1
 
 **Current security vulnerability rewards** (will be provided at the discretion of the lead developers):
 
-| Vulnerability                                | Reward         |
-| -------------------------------------------- | -------------- |
-| Remote code execution (RCE)                  | $1000, Credits |
-| Local privilege escalation (LPE)             | $500, Credits  |
-| Bypass whitelisting on chal.whitebeamsec.com | $250, Credits  |
-| Cryptographic vulnerability                  | $150, Credits  |
+| Vulnerability                                 | Reward         |
+| --------------------------------------------- | -------------- |
+| Remote code execution (RCE)                   | $1000, Credits |
+| Local privilege escalation (LPE)              | $500, Credits  |
+| Bypass whitelisting on chal.whitebeamsec.com  | $250, Credits  |
+| Cryptographic vulnerability                   | $150, Credits  |
+| Remote denial of service (DoS), service crash | $25            |
 
 Past security advisories can be found here: https://github.com/noproto/WhiteBeam/security/advisories
 
