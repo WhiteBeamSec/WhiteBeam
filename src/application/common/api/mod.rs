@@ -26,7 +26,7 @@ pub async fn serve() {
         .and(warp::path("service"))
         .and(warp::path("public_key"))
         .and(warp::path::end())
-        .map(service::public_key);
+        .and_then(service::public_key);
 
     // POST /service/encrypted {"pubkey":"..","nonce":"..","ciphertext":".."}
     let service_encrypted_route = warp::post()

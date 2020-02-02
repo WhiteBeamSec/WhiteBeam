@@ -16,18 +16,22 @@ fn invalid_request() -> String {
 }
 
 // GET /service/public_key
-pub fn public_key() -> impl warp::Reply {
-    let client_public_key = crypto::get_client_public_key();
-    return hex::encode(client_public_key);
+pub async fn public_key() -> Result<impl warp::Reply, warp::Rejection> {
+    match crypto::get_client_public_key() {
+            Ok(client_public_key) => Ok(hex::encode(client_public_key)),
+            Err(_e) => return Err(warp::reject::not_found())
+    }
 }
 
 // POST /service/encrypted
 pub fn encrypted(crypto_box_object: crypto::CryptoBox) -> impl warp::Reply {
-    let server_message = crypto::process_request(crypto_box_object);
+    let server_message = match crypto::process_request(crypto_box_object) {
+        Ok(server_msg) => server_msg,
+        Err(_e) => return invalid_request()
+    };
     match server_message.action.as_ref() {
         "set_console_secret" => set_console_secret(&server_message.parameters[0],
                                                    &server_message.parameters[1]),
-        "invalid" => invalid_request(),
         _ => invalid_request()
     }
 }
