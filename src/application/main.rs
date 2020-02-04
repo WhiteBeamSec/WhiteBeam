@@ -135,7 +135,7 @@ async fn main() {
     let matches = App::new("WhiteBeam")
         .setting(AppSettings::ArgRequiredElseHelp)
         .version(env!("CARGO_PKG_VERSION"))
-        .about("Open source EDR ( https://github.com/noproto/WhiteBeam )")
+        .about("Open source EDR ( https://github.com/WhiteBeamSec/WhiteBeam )")
         .arg(Arg::with_name("auth")
                  .long("auth")
                  .takes_value(false)

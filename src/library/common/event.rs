@@ -36,7 +36,7 @@ pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) {
     if cfg!(feature = "whitelist_test") {
         return;
     }
-    // https://github.com/noproto/WhiteBeam/blob/master/src/library/common/whitelist.rs#L59
+    // https://github.com/WhiteBeamSec/WhiteBeam/blob/master/src/library/common/whitelist.rs#L59
     match platform::get_uptime() {
         Ok(uptime) => {
             if uptime.as_secs() < (60*5) {

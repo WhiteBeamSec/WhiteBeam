@@ -63,7 +63,7 @@ pub fn is_whitelisted(program: &OsStr, env: &Vec<(OsString, OsString)>, hexdiges
     // 1. Whitelisting all binaries by default, including malware (other EDR software use
     //    this approach, maintaining a large database of permitted executables)
     // 2. Require a reboot to baseline systems (which may interfere with production systems)
-    // Feedback/ideas welcome: https://github.com/noproto/WhiteBeam/issues
+    // Feedback/ideas welcome: https://github.com/WhiteBeamSec/WhiteBeam/issues
     match platform::get_uptime() {
         Ok(uptime) => {
             if uptime.as_secs() < (60*5) {

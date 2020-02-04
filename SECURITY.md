@@ -22,7 +22,7 @@ gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys 4A3F1233C01563F808B8355125ECFD1
 | Cryptographic vulnerability                   | $150, Credits  |
 | Remote denial of service (DoS), service crash | $25            |
 
-Past security advisories can be found here: https://github.com/noproto/WhiteBeam/security/advisories
+Past security advisories can be found here: https://github.com/WhiteBeamSec/WhiteBeam/security/advisories
 
 We would like to thank the following security researchers for their contributions to WhiteBeam's security:
 
