@@ -1,5 +1,5 @@
 // Load OS-specific modules
-// TODO: AppInit_DLLs or Detours https://github.com/Microsoft/Detours/wiki
+// TODO: AppCert DLLs
 
 //use std::env;
 use std::{path::Path,
