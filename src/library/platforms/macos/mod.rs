@@ -1,5 +1,5 @@
 // Load OS-specific modules
-// TODO: DYLD_INSERT_LIBRARIES
+// TODO: DYLD_INSERT_LIBRARIES globally
 
 use std::{mem,
           path::Path,

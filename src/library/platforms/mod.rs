@@ -2,7 +2,6 @@
 pub mod windows;
 
 #[cfg(target_os = "linux")]
-#[macro_use]
 pub mod linux;
 
 #[cfg(target_os = "macos")]

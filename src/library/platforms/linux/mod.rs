@@ -1,9 +1,7 @@
 // Load OS-specific modules
-#[macro_use]
-mod hook;
 mod hooks;
 
-use libc::{c_char, c_int};
+use libc::{c_char, c_int, c_void};
 use std::{env,
           mem,
           ffi::CStr,
@@ -14,6 +12,21 @@ use std::{env,
           path::Path,
           path::PathBuf,
           time::Duration};
+
+#[link(name = "dl")]
+extern "C" {
+    fn dlsym(handle: *const c_void, symbol: *const c_char) -> *const c_void;
+}
+
+const RTLD_NEXT: *const c_void = -1isize as *const c_void;
+
+pub unsafe fn dlsym_next(symbol: &'static str) -> *const u8 {
+    let ptr = dlsym(RTLD_NEXT, symbol.as_ptr() as *const c_char);
+    if ptr.is_null() {
+        panic!("WhiteBeam: Unable to find underlying function for {}", symbol);
+    }
+    ptr as *const u8
+}
 
 pub fn get_data_file_path(data_file: &str) -> PathBuf {
     let data_path: String = String::from("/opt/WhiteBeam/data/");
