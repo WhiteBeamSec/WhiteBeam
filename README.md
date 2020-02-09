@@ -37,8 +37,8 @@ Open source EDR with application whitelisting
 | Platform        | URL                                                                | Hash(es) |
 | --------------- | ------------------------------------------------------------------ | -------- |
 | Linux (x86_64)  | https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.tar.gz | [SHA-256](https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.SHA256) |
-| Linux (i686)    | *Available February 2nd*                                           | *N/A* |
-| Linux (aarch64) | *Available February 8th*                                           | *N/A* |
+| Linux (i686)    | *Available February 15th*                                           | *N/A* |
+| Linux (aarch64) | *Available February 22nd*                                           | *N/A* |
 
 Install WhiteBeam: `./install.sh`
 
