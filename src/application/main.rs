@@ -100,6 +100,19 @@ fn run_enable() {
     common::db::update_config(&conn, "enabled", "true");
 }
 
+fn run_disable() {
+    // TODO: Log
+    let conn: rusqlite::Connection = common::db::db_open();
+    if common::db::get_enabled(&conn) {
+        if !common::db::get_valid_auth_env(&conn) {
+            eprintln!("WhiteBeam: Authorization failed");
+            return;
+        }
+    }
+    println!("WhiteBeam: Disabling WhiteBeam");
+    common::db::update_config(&conn, "enabled", "false");
+}
+
 fn run_start() {
     println!("WhiteBeam: Starting WhiteBeam service");
     let program = match env::current_exe() {
@@ -166,12 +179,10 @@ async fn main() {
                  .long("enable")
                  .takes_value(false)
                  .help("Enable application whitelisting"))
-        /* TODO
         .arg(Arg::with_name("disable")
                  .long("disable")
                  .takes_value(false)
                  .help("Disable application whitelisting (+auth)"))
-        */
         .arg(Arg::with_name("start")
                  .long("start")
                  .takes_value(false)
@@ -218,6 +229,8 @@ async fn main() {
         run_service().await;
     } else if matches.is_present("enable") {
         run_enable();
+    } else if matches.is_present("disable") {
+        run_disable();
     } else if matches.is_present("start") {
         run_start();
     } else if matches.is_present("status") {
