@@ -2,11 +2,12 @@ use std::fs::File;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path,
                 PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 pub fn start_service() {
     match Command::new("/etc/init.d/whitebeam")
             .arg("start")
+            .stdout(Stdio::null())
             .spawn() {
                 Ok(_p) => return,
                 Err(_e) => {
@@ -19,6 +20,7 @@ pub fn start_service() {
 pub fn stop_service() {
     match Command::new("/etc/init.d/whitebeam")
             .arg("stop")
+            .stdout(Stdio::null())
             .spawn() {
                 Ok(_p) => return,
                 Err(_e) => {
