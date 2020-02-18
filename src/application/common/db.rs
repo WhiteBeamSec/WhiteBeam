@@ -65,7 +65,7 @@ pub fn get_dyn_whitelist(conn: &Connection) -> Result<Vec<WhitelistResult>, Box<
 pub fn get_baseline(conn: &Connection) -> Result<Vec<BaselineResult>, Box<dyn Error>> {
     let mut result_vec: Vec<BaselineResult> = Vec::new();
     let mut stmt = conn.prepare("SELECT program, count(program) AS total_blocked
-                                          FROM exec_logs
+                                          FROM exec_log
                                           WHERE success=false
                                           GROUP BY program
                                           ORDER BY total_blocked DESC")?;
@@ -137,7 +137,7 @@ pub fn insert_whitelist(conn: &Connection, program: &str, allow_unsafe: bool, ha
 
 pub fn insert_exec(conn: &Connection, exec: LogExecObject) {
     let _res = conn.execute(
-        "INSERT INTO exec_logs (program, hash, uid, ts, success)
+        "INSERT INTO exec_log (program, hash, uid, ts, success)
                   VALUES (?1, ?2, ?3, ?4, ?5)",
         params![exec.program, exec.hash, exec.uid, exec.ts, exec.success]
     );
@@ -172,7 +172,15 @@ fn db_init(conn: &Connection) -> Result<(), Box<dyn Error>> {
         rusqlite::NO_PARAMS
     );
     let _res = conn.execute(
-        "CREATE TABLE exec_logs (
+        "CREATE TABLE modules (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            enabled BOOLEAN NOT NULL DEFAULT TRUE
+         )",
+        rusqlite::NO_PARAMS
+    );
+    let _res = conn.execute(
+        "CREATE TABLE exec_log (
             id INTEGER PRIMARY KEY,
             program TEXT NOT NULL,
             hash TEXT NOT NULL,
@@ -183,10 +191,32 @@ fn db_init(conn: &Connection) -> Result<(), Box<dyn Error>> {
         rusqlite::NO_PARAMS
     );
     let _res = conn.execute(
+        "CREATE TABLE error_log (
+            id INTEGER PRIMARY KEY,
+            file TEXT NOT NULL,
+            line INTEGER NOT NULL,
+            column INTEGER NOT NULL,
+            desc TEXT,
+            ts INTEGER NOT NULL,
+            fatal BOOLEAN NOT NULL
+         )",
+        rusqlite::NO_PARAMS
+    );
+    let _res = conn.execute(
+        "CREATE TABLE auth_log (
+            id INTEGER PRIMARY KEY,
+            source TEXT NOT NULL,
+            desc TEXT,
+            ts INTEGER NOT NULL,
+            success BOOLEAN NOT NULL
+         )",
+        rusqlite::NO_PARAMS
+    );
+    let _res = conn.execute(
         "CREATE TABLE whitelist (
             id INTEGER PRIMARY KEY,
             program TEXT NOT NULL,
-            allow_unsafe BOOLEAN DEFAULT FALSE,
+            allow_unsafe BOOLEAN NOT NULL DEFAULT FALSE,
             hash TEXT NOT NULL
          )",
         rusqlite::NO_PARAMS

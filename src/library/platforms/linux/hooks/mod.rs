@@ -10,7 +10,7 @@ exec hooks: Required
 +--------+-------------------------------------------------------------------------------------+
 */
 
-// TODO: Rewrite exec hooks to be consistent, use context hooks to guard against TOCTOU.
+// TODO: Use context hooks to guard against TOCTOU.
 // TODO: Whitelist libraries, RPATH
 mod execl;
 mod execle;
