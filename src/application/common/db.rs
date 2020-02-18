@@ -35,6 +35,11 @@ pub struct WhitelistResult {
     pub hash: String
 }
 
+pub struct BaselineResult {
+    pub program: String,
+    pub total_blocked: u32
+}
+
 pub fn get_config(conn: &Connection, config_param: String) -> String {
     // TODO: Log errors
     conn.query_row("SELECT config_value FROM config WHERE config_param = ?", params![config_param], |r| r.get(0))
@@ -49,6 +54,25 @@ pub fn get_dyn_whitelist(conn: &Connection) -> Result<Vec<WhitelistResult>, Box<
             program: row.get(0)?,
             allow_unsafe: row.get(1)?,
             hash: row.get(2)?
+        })
+    })?;
+    for result in result_iter {
+        result_vec.push(result?);
+    }
+    Ok(result_vec)
+}
+
+pub fn get_baseline(conn: &Connection) -> Result<Vec<BaselineResult>, Box<dyn Error>> {
+    let mut result_vec: Vec<BaselineResult> = Vec::new();
+    let mut stmt = conn.prepare("SELECT program, count(program) AS total_blocked
+                                          FROM exec_logs
+                                          WHERE success=false
+                                          GROUP BY program
+                                          ORDER BY total_blocked DESC")?;
+    let result_iter = stmt.query_map(params![], |row| {
+        Ok(BaselineResult {
+            program: row.get(0)?,
+            total_blocked: row.get(1)?
         })
     })?;
     for result in result_iter {

@@ -133,6 +133,26 @@ fn run_start() {
     };
 }
 
+fn run_baseline() {
+    let conn: rusqlite::Connection = common::db::db_open();
+    let whitelist = common::db::get_baseline(&conn).unwrap_or(Vec::new());
+    let justify_right = CellFormat::builder().justify(Justify::Right).build();
+    let bold = CellFormat::builder().bold(true).build();
+    let mut table_vec: Vec<Row> = Vec::new();
+    table_vec.push(Row::new(vec![
+        Cell::new("Path", bold),
+        Cell::new("Total Blocked", bold)
+    ]));
+    for result in whitelist {
+        table_vec.push(Row::new(vec![
+                Cell::new(&result.program, Default::default()),
+                Cell::new(&result.total_blocked, justify_right)
+            ]));
+    }
+    let table = Table::new(table_vec, cli_table::format::BORDER_COLUMN_TITLE);
+    let _res = table.print_stdout();
+}
+
 fn run_status() {
     if let Ok(_response) = common::http::get("http://127.0.0.1:11998/status")
                                 .with_timeout(1)
@@ -193,12 +213,10 @@ async fn main() {
                  .takes_value(false)
                  .help("Stop the WhiteBeam service (+auth)"))
         */
-        /* TODO
         .arg(Arg::with_name("baseline")
                  .long("baseline")
                  .takes_value(false)
                  .help("Print execution statistics for non-whitelisted binaries"))
-        */
         .arg(Arg::with_name("status")
                  .long("status")
                  .takes_value(false)
@@ -233,6 +251,8 @@ async fn main() {
         run_disable();
     } else if matches.is_present("start") {
         run_start();
+    } else if matches.is_present("baseline") {
+        run_baseline();
     } else if matches.is_present("status") {
         run_status();
     }
