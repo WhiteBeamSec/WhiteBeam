@@ -41,7 +41,7 @@ install:
 	@$(sudo_pfx) ln -s /opt/WhiteBeam/whitebeam /usr/local/bin/whitebeam
 	@$(sudo_pfx) cp $(shell pwd)/src/extra/init.sh /etc/init.d/whitebeam
 	@$(sudo_pfx) ln -s /etc/init.d/whitebeam /etc/rc3.d/S01whitebeam
-	@$(sudo_pfx) /opt/WhiteBeam/whitebeam --start
+	@$(sudo_pfx) /etc/init.d/whitebeam start
 	@echo "/opt/WhiteBeam/libwhitebeam.so" | $(sudo_pfx) tee -a /etc/ld.so.preload
 	@echo "Complete"
 

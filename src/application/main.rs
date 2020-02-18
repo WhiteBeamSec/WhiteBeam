@@ -6,6 +6,12 @@ use std::env;
 use std::process::Command;
 
 pub mod platforms;
+#[cfg(target_os = "windows")]
+use platforms::windows as platform;
+#[cfg(target_os = "linux")]
+use platforms::linux as platform;
+#[cfg(target_os = "macos")]
+use platforms::macos as platform;
 // Platform independent features
 pub mod common;
 
@@ -115,22 +121,20 @@ fn run_disable() {
 
 fn run_start() {
     println!("WhiteBeam: Starting WhiteBeam service");
-    let program = match env::current_exe() {
-        Ok(p) => p,
-        Err(_e) => {
-            eprintln!("WhiteBeam: Could not reliably determine the current executable path");
+    platform::start_service();
+}
+
+fn run_stop() {
+    // TODO: Log
+    let conn: rusqlite::Connection = common::db::db_open();
+    if common::db::get_enabled(&conn) {
+        if !common::db::get_valid_auth_env(&conn) {
+            eprintln!("WhiteBeam: Authorization failed");
             return;
         }
-    };
-    match Command::new(program)
-            .arg("--service")
-            .spawn() {
-                Ok(_p) => return,
-                Err(_e) => {
-                    eprintln!("WhiteBeam: Child process failed to start");
-                    return;
-                }
-    };
+    }
+    println!("WhiteBeam: Stopping WhiteBeam service");
+    platform::stop_service();
 }
 
 fn run_baseline() {
@@ -207,12 +211,10 @@ async fn main() {
                  .long("start")
                  .takes_value(false)
                  .help("Start the WhiteBeam service"))
-        /* TODO
         .arg(Arg::with_name("stop")
                  .long("stop")
                  .takes_value(false)
                  .help("Stop the WhiteBeam service (+auth)"))
-        */
         .arg(Arg::with_name("baseline")
                  .long("baseline")
                  .takes_value(false)
@@ -251,6 +253,8 @@ async fn main() {
         run_disable();
     } else if matches.is_present("start") {
         run_start();
+    } else if matches.is_present("stop") {
+        run_stop();
     } else if matches.is_present("baseline") {
         run_baseline();
     } else if matches.is_present("status") {

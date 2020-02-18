@@ -2,6 +2,14 @@
 use std::path::{Path,
                 PathBuf};
 
+pub fn start_service() {
+    unimplemented!("WhiteBeam: Service control is not currently supported on Windows");
+}
+
+pub fn stop_service() {
+    unimplemented!("WhiteBeam: Service control is not currently supported on Windows");
+}
+
 pub fn get_data_file_path(data_file: &str) -> PathBuf {
     // TODO: Change this when registry and environment are secured
     //Path::new(env::var("ProgramFiles").unwrap_or("C:\\ProgramFiles").push_str("\\WhiteBeam\\data\\"))

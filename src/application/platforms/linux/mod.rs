@@ -2,6 +2,31 @@ use std::fs::File;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path,
                 PathBuf};
+use std::process::Command;
+
+pub fn start_service() {
+    match Command::new("/etc/init.d/whitebeam")
+            .arg("start")
+            .spawn() {
+                Ok(_p) => return,
+                Err(_e) => {
+                    eprintln!("WhiteBeam: Child process failed to start");
+                    return;
+                }
+    };
+}
+
+pub fn stop_service() {
+    match Command::new("/etc/init.d/whitebeam")
+            .arg("stop")
+            .spawn() {
+                Ok(_p) => return,
+                Err(_e) => {
+                    eprintln!("WhiteBeam: Child process failed to start");
+                    return;
+                }
+    };
+}
 
 pub fn get_data_file_path(data_file: &str) -> PathBuf {
     let data_path: String = String::from("/opt/WhiteBeam/data/");
