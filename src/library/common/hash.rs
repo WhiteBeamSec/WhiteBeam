@@ -1,48 +1,55 @@
-use sha3::{Digest, Sha3_256};
-use std::{fs, io, ffi::OsStr};
+use sodiumoxide::crypto::hash;
+use std::{fs, io, io::Read, ffi::OsStr};
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::os::unix::io::FromRawFd;
 #[cfg(target_os = "windows")]
 use std::os::windows::io::FromRawHandle;
 
-fn common_hash_algo() -> Sha3_256 {
-    Sha3_256::new()
+fn common_hash_algo() -> sodiumoxide::crypto::hash::State {
+    hash::State::new()
 }
 
 pub fn hash_null() -> String {
-    "0".repeat(64)
+    hex::encode(vec![0; hash::DIGESTBYTES])
 }
 
-pub fn common_hash_string(input: &str) -> String {
-    let mut hasher = common_hash_algo();
-    hasher.input(input);
-    format!("{:x}", hasher.result())
+pub fn common_hash_password(input: &str) -> String {
+    // TODO: Use pwhash
+    hex::encode(hash::hash(input.as_bytes()))
+}
+
+
+pub fn common_hash_data<R: io::Read>(reader: R) -> String {
+    let buf_size = 8 * 1024;
+    let mut buf: Vec<u8> = Vec::with_capacity(buf_size);
+    let mut hash_state = common_hash_algo();
+    let mut limited_reader = reader.take(buf_size as u64);
+    loop {
+        match limited_reader.read_to_end(&mut buf) {
+            Ok(0) => break,
+            Ok(_) => {
+                hash_state.update(&buf[..]);
+                buf.clear();
+                limited_reader = limited_reader.into_inner().take(buf_size as u64);
+            }
+            Err(_err) => return hash_null(),
+        }
+    }
+    hex::encode(hash_state.finalize())
 }
 
 pub fn common_hash_fd(fd: i32) -> String {
     #[cfg(target_os = "windows")]
     unimplemented!("WhiteBeam: File handles are not currently supported");
     #[cfg(any(target_os = "linux", target_os = "macos"))]
-    let mut file = unsafe { fs::File::from_raw_fd(fd) };
-    let mut hasher = common_hash_algo();
-    let _n = match io::copy(&mut file, &mut hasher) {
-        Err(_why) => return hash_null(),
-        Ok(cnt) => cnt
-    };
-    let hash = hasher.result();
-    hex::encode(hash)
+    let file = unsafe { fs::File::from_raw_fd(fd) };
+    common_hash_data(file)
 }
 
 pub fn common_hash_file(path: &OsStr) -> String {
-    let mut file = match fs::File::open(&path) {
+    let file = match fs::File::open(&path) {
         Err(_why) => return hash_null(),
         Ok(file) => file
     };
-    let mut hasher = common_hash_algo();
-    let _n = match io::copy(&mut file, &mut hasher) {
-        Err(_why) => return hash_null(),
-        Ok(cnt) => cnt
-    };
-    let hash = hasher.result();
-    hex::encode(hash)
+    common_hash_data(file)
 }

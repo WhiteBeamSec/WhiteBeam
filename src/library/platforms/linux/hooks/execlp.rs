@@ -1,6 +1,4 @@
 use libc::{c_char, c_int};
-use std::env;
-use std::path::PathBuf;
 use std::ptr;
 use std::{ffi::CString,
           os::unix::ffi::OsStrExt};
@@ -33,13 +31,11 @@ pub unsafe extern "C" fn execlp(path: *const c_char, mut args: ...) -> c_int {
 
     let program = linux::c_char_to_osstring(path);
     let env = linux::parse_env_collection(envp);
-    let which_abs_pathbuf = match which::which_in(&program,
-                                                  Some(linux::get_env_path()),
-                                                  env::current_dir().unwrap_or(PathBuf::new())) {
-        Err(_why) => {
-            *linux::errno_location() = libc::ENOENT;
-            return -1 },
-        Ok(prog_path) => prog_path
+    let which_abs_pathbuf = match linux::search_path(&program) {
+        Some(prog_path) => prog_path,
+        None => {
+			*linux::errno_location() = libc::ENOENT;
+			return -1 }
     };
     let abs_prog_str = which_abs_pathbuf.as_os_str();
     let hexdigest = hash::common_hash_file(abs_prog_str);

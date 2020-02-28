@@ -25,7 +25,7 @@ fn get_hardcoded_whitelist() -> Vec<(OsString, bool, String)> {
     );
     #[cfg(not(feature = "whitelist_test"))]
     return vec!(
-        // Tuple of (permitted program, allow unsafe environment variables, SHA3-256 hexdigest)
+        // Tuple of (permitted program, allow unsafe environment variables, SHA-512 hexdigest)
         // Shells
         (OsString::from("/bin/bash"), false, String::from("ANY")),
         (OsString::from("/bin/sh"), false, String::from("ANY")),

@@ -21,7 +21,7 @@ Open source EDR with application whitelisting
 ## Features
 
 * Block file-based malware, with planned support for fileless
-* Modern cryptography: SHA3-256 for hashing and libsodium for encryption
+* Modern cryptography: libsodium for hashing and encryption
 * Highly compatible: Development focused on all platforms (incl. legacy) and architectures
 * Open source: Audits welcome
 * Reviewed by security researchers with combined 100+ years of experience

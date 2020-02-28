@@ -64,6 +64,19 @@ pub fn get_env_path() -> OsString {
     }
 }
 
+pub fn search_path(program: &OsStr) -> Option<PathBuf> {
+    // TODO: Test if necessary to expand absolute paths
+    // env::current_dir().unwrap_or(PathBuf::new())
+    let paths: OsString = get_env_path();
+    for mut path in env::split_paths(&paths) {
+        path.push(program);
+        if path.exists() && path.is_file() {
+            return Some(path);
+        }
+    }
+    None
+}
+
 fn parse_env_single(input: &[u8]) -> Option<(OsString, OsString)> {
 	if input.is_empty() {
 		return None;

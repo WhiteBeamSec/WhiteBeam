@@ -44,7 +44,7 @@ pub fn get_enabled(conn: &Connection) -> bool {
 }
 
 pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> bool {
-    let auth_hash: String = hash::common_hash_string(auth);
+    let auth_hash: String = hash::common_hash_password(auth);
     let console_secret_expiry: u32 = match get_config(conn, String::from("console_secret_expiry")).parse() {
         Ok(v) => v,
         Err(_e) => return false

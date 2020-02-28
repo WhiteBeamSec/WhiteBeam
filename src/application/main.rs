@@ -59,7 +59,7 @@ fn run_add(program: &OsStr, allow_unsafe: bool) {
         return;
     }
     let program_str = program.to_string_lossy();
-    println!("WhiteBeam: Adding {} (SHA3-256: {}) to whitelist", &program_str, hash);
+    println!("WhiteBeam: Adding {} (SHA-512: {}) to whitelist", &program_str, hash);
     common::db::insert_whitelist(&conn, &program_str, allow_unsafe, &hash);
 }
 
