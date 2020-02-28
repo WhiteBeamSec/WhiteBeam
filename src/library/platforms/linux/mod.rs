@@ -65,7 +65,7 @@ pub fn get_env_path() -> OsString {
 }
 
 pub fn search_path(program: &OsStr) -> Option<PathBuf> {
-    // TODO: Test if necessary to expand absolute paths
+    // TODO: Search absolute path if path separater (/) in string
     // env::current_dir().unwrap_or(PathBuf::new())
     let paths: OsString = get_env_path();
     for mut path in env::split_paths(&paths) {
