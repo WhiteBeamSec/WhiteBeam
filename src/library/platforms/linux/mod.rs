@@ -65,10 +65,15 @@ pub fn get_env_path() -> OsString {
 }
 
 pub fn search_path(program: &OsStr) -> Option<PathBuf> {
-    // TODO: Search absolute path if path separater (/) in string
-    // env::current_dir().unwrap_or(PathBuf::new())
-    let paths: OsString = get_env_path();
-    for mut path in env::split_paths(&paths) {
+    let env_path: OsString = get_env_path();
+    let mut paths: Vec<PathBuf> = env::split_paths(&env_path).collect();
+    if program.as_bytes().contains(&b'/') {
+        match env::current_dir() {
+            Ok(cwd) => paths.push(cwd),
+            Err(_) => () // TODO: Log errors
+        }
+    }
+    for mut path in paths {
         path.push(program);
         if path.exists() && path.is_file() {
             return Some(path);
