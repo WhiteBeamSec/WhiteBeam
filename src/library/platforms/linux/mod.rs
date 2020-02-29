@@ -70,7 +70,7 @@ pub fn search_path(program: &OsStr) -> Option<PathBuf> {
     if program.as_bytes().contains(&b'/') {
         match env::current_dir() {
             Ok(cwd) => paths.push(cwd),
-            Err(_) => () // TODO: Log errors
+            Err(_err) => () // TODO: Log errors
         }
     }
     for mut path in paths {
