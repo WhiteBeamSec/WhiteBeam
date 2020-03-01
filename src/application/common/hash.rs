@@ -20,7 +20,7 @@ pub fn common_hash_password(input: &str) -> String {
 
 
 pub fn common_hash_data<R: io::Read>(reader: R) -> String {
-    let buf_size = 8 * 1024;
+    let buf_size = 32768;
     let mut buf: Vec<u8> = Vec::with_capacity(buf_size);
     let mut hash_state = common_hash_algo();
     let mut limited_reader = reader.take(buf_size as u64);
