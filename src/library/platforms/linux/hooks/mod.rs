@@ -45,5 +45,9 @@ attr/acl hooks for various filesystems, *init_module, chroot: Optional
 */
 
 /*
-TODO: socket hooks: Optional
+TODO: socket/SSL hooks: Optional
+*/
+
+/*
+TODO: memory protection hooks: Optional
 */
