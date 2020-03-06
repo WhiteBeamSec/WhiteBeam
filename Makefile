@@ -53,7 +53,7 @@ test:
 	@du -h $(shell pwd)/target/release/libwhitebeam.so | cut -f1
 	@echo "libwhitebeam.so:"
 	@echo "\033[4mProperties\033[0m:"
-	@objdump -T -j .text $(shell pwd)/target/release/libwhitebeam.so
+	@objdump -T -j .text $(shell pwd)/target/release/libwhitebeam.so | grep -v rust_eh_personality
 	@file -b $(shell pwd)/target/release/libwhitebeam.so
 	@echo "\033[4mTesting\033[0m:"
 	@echo "Whitelisted binary"

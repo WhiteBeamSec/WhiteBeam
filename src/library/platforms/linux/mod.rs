@@ -5,6 +5,8 @@ use libc::{c_char, c_int, c_void};
 use std::{env,
           mem,
           ffi::CStr,
+          ffi::CString,
+          ffi::NulError,
           ffi::OsStr,
           ffi::OsString,
           os::unix::ffi::OsStrExt,
@@ -117,4 +119,8 @@ unsafe fn c_char_to_osstring(char_ptr: *const c_char) -> OsString {
     		OsStr::from_bytes(program_c_str.to_bytes()).to_owned()
         }
     }
+}
+
+fn osstr_to_cstring(osstr_input: &OsStr) -> Result<CString, NulError> {
+    CString::new(osstr_input.as_bytes())
 }

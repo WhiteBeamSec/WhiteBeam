@@ -1,3 +1,7 @@
+// Each hook uses a template
+#[macro_use]
+mod template;
+
 /*
 exec hooks: Required
 +--------+-------------------------------------------------------------------------------------+
