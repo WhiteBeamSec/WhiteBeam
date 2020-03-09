@@ -1,21 +1,89 @@
 #[macro_export]
+// TODO: Reduce duplication of code
+// TODO: Add generic hook, fexecve
 
-// TODO: Exec hook template
-/*
+// Exec hook template
 macro_rules! build_exec_hook {
     // Parameters for the hook template
-    (hook fn $func_name:ident ( $($v:ident : $t:ty),* ) -> $return_type:ty $body:block) => {
+    (hook $func_name:ident ($program: ident) $body:block) => {
         // =====================================================================
         // Generated code for the hook template
         #[no_mangle]
-        pub unsafe extern "C" fn $func_name ( $($v : $t),* ) -> $return_type {
+        #[allow(unused_mut)]
+        pub unsafe extern "C" fn $func_name (mut path: *const libc::c_char, argv: *const *const libc::c_char) -> libc::c_int {
             // Common hook code
+            let envp: *const *const libc::c_char = std::ptr::null();
+            let mut $program = crate::platforms::linux::c_char_to_osstring(path);
             $body
+            let program_c_str = match crate::platforms::linux::osstr_to_cstring(&$program) {
+                Err(_why) => {
+                    *crate::platforms::linux::errno_location() = libc::ENOENT;
+                    return -1 },
+                Ok(res) => res
+            };
+            path = program_c_str.as_ptr() as *const libc::c_char;
+            let hexdigest = crate::common::hash::common_hash_file(&$program);
+            let env = crate::platforms::linux::parse_env_collection(envp);
+            let uid = crate::platforms::linux::get_current_uid();
+            // Permit/deny execution
+            if crate::common::whitelist::is_whitelisted(&$program, &env, &hexdigest) {
+                crate::common::event::send_exec_event(uid, &$program, &hexdigest, true);
+                // Call execve
+                static mut REAL: *const u8 = 0 as *const u8;
+                static mut ONCE: ::std::sync::Once = ::std::sync::Once::new();
+                ONCE.call_once(|| {
+                    REAL = crate::platforms::linux::dlsym_next(concat!(stringify!($func_name), "\0"));
+                });
+                let func_real: unsafe extern "C" fn(path: *const libc::c_char, argv: *const *const libc::c_char) -> libc::c_int = std::mem::transmute(REAL);
+                func_real(path, argv)
+            } else {
+                crate::common::event::send_exec_event(uid, &$program, &hexdigest, false);
+                *crate::platforms::linux::errno_location() = libc::EACCES;
+                return -1
+            }
         }
         // =====================================================================
-    }
+    };
+    (hook $func_name:ident ($program: ident, $envp:ident) $body:block) => {
+        // =====================================================================
+        // Generated code for the hook template
+        #[no_mangle]
+        #[allow(unused_assignments)]
+        #[allow(unused_mut)]
+        pub unsafe extern "C" fn $func_name (mut path: *const libc::c_char, argv: *const *const libc::c_char, $envp: *const *const libc::c_char) -> libc::c_int {
+            // Common hook code
+            let mut $program = crate::platforms::linux::c_char_to_osstring(path);
+            $body
+            let program_c_str = match crate::platforms::linux::osstr_to_cstring(&$program) {
+                Err(_why) => {
+                    *crate::platforms::linux::errno_location() = libc::ENOENT;
+                    return -1 },
+                Ok(res) => res
+            };
+            path = program_c_str.as_ptr() as *const libc::c_char;
+            let hexdigest = crate::common::hash::common_hash_file(&$program);
+            let env = crate::platforms::linux::parse_env_collection($envp);
+            let uid = crate::platforms::linux::get_current_uid();
+            // Permit/deny execution
+            if crate::common::whitelist::is_whitelisted(&$program, &env, &hexdigest) {
+                crate::common::event::send_exec_event(uid, &$program, &hexdigest, true);
+                // Call execve
+                static mut REAL: *const u8 = 0 as *const u8;
+                static mut ONCE: ::std::sync::Once = ::std::sync::Once::new();
+                ONCE.call_once(|| {
+                    REAL = crate::platforms::linux::dlsym_next(concat!(stringify!($func_name), "\0"));
+                });
+                let func_real: unsafe extern "C" fn(path: *const libc::c_char, argv: *const *const libc::c_char, envp: *const *const libc::c_char) -> libc::c_int = std::mem::transmute(REAL);
+                func_real(path, argv, $envp)
+            } else {
+                crate::common::event::send_exec_event(uid, &$program, &hexdigest, false);
+                *crate::platforms::linux::errno_location() = libc::EACCES;
+                return -1
+            }
+        }
+        // =====================================================================
+    };
 }
-*/
 
 // Variadic exec hook template
 macro_rules! build_variadic_exec_hook {
@@ -70,5 +138,5 @@ macro_rules! build_variadic_exec_hook {
             }
         }
         // =====================================================================
-    }
+    };
 }

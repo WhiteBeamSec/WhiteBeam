@@ -1,7 +1,7 @@
 # General info
 [package]
 name = "libwhitebeam"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["WhiteBeam Security, Inc."]
 edition = "2018"
 
