@@ -4,8 +4,8 @@
                   char *const envp[]);
 */
 build_exec_hook! {
-    hook execve (program, envp) {
-        // execve custom routines
+    hook execve (program, envp)
+    custom_routine {
         // Warn that legacy versions of man-db must disable seccomp
         // TODO: Hook proper function
         if program == "/usr/bin/man" {

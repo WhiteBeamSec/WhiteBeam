@@ -5,7 +5,7 @@
 // Exec hook template
 macro_rules! build_exec_hook {
     // Parameters for the hook template
-    (hook $func_name:ident ($program: ident) $body:block) => {
+    (hook $func_name:ident ($program: ident) custom_routine $body:block) => {
         // =====================================================================
         // Generated code for the hook template
         #[no_mangle]
@@ -44,7 +44,7 @@ macro_rules! build_exec_hook {
         }
         // =====================================================================
     };
-    (hook $func_name:ident ($program: ident, $envp:ident) $body:block) => {
+    (hook $func_name:ident ($program: ident, $envp:ident) custom_routine $body:block) => {
         // =====================================================================
         // Generated code for the hook template
         #[no_mangle]
@@ -88,7 +88,7 @@ macro_rules! build_exec_hook {
 // Variadic exec hook template
 macro_rules! build_variadic_exec_hook {
     // Parameters for the hook template
-    (hook $func_name:ident ($program: ident, $args:ident, $envp:ident) $body:block) => {
+    (hook $func_name:ident ($program: ident, $args:ident, $envp:ident) custom_routine $body:block) => {
         // =====================================================================
         // Generated code for the hook template
         #[no_mangle]

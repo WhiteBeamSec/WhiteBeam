@@ -4,8 +4,8 @@
                        /* (char  *) NULL */);
 */
 build_variadic_exec_hook! {
-    hook execlp (program, args, envp) {
-        // execlp custom routines
+    hook execlp (program, args, envp)
+    custom_routine {
         // Repopulate program
         let absolute_path = match crate::platforms::linux::search_path(&program) {
             Some(abspath) => abspath,

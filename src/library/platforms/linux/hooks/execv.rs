@@ -3,7 +3,6 @@
        int execv(const char *path, char *const argv[]);
 */
 build_exec_hook! {
-    hook execv (program) {
-        // execv custom routines
-    }
+    hook execv (program)
+    custom_routine {}
 }

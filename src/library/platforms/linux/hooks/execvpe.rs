@@ -4,8 +4,8 @@
                        char *const envp[]);
 */
 build_exec_hook! {
-    hook execvpe (program, envp) {
-        // execvpe custom routines
+    hook execvpe (program, envp)
+    custom_routine {
         // Repopulate program
         let absolute_path = match crate::platforms::linux::search_path(&program) {
             Some(abspath) => abspath,

@@ -3,8 +3,8 @@
        int execvp(const char *file, char *const argv[]);
 */
 build_exec_hook! {
-    hook execvp (program) {
-        // execvp custom routines
+    hook execvp (program)
+    custom_routine {
         // Repopulate program
         let absolute_path = match crate::platforms::linux::search_path(&program) {
             Some(abspath) => abspath,
