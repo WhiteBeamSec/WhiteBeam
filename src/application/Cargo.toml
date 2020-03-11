@@ -22,7 +22,7 @@ clap = { version = "2.33.0" }
 tokio = { version = "0.2", features = ["macros"] }
 warp = { version = "0.2.1" }
 rpassword = { version = "4.0.5" }
-cli-table = { version = "0.2" }
+cli-table = { version = "0.3" }
 
 # Windows dependencies
 [target.'cfg(target_os = "windows")'.dependencies.kernel32-sys]
