@@ -91,7 +91,13 @@ fn run_list() {
                 Cell::new(&result.allow_unsafe, justify_right)
             ]));
     }
-    let table = Table::new(table_vec, cli_table::format::BORDER_COLUMN_TITLE);
+    let table = match Table::new(table_vec, cli_table::format::BORDER_COLUMN_TITLE) {
+        Ok(table_obj) => table_obj,
+        Err(_e) => {
+            eprintln!("WhiteBeam: Could not create table");
+            return;
+        }
+    };
     let _res = table.print_stdout();
 }
 
@@ -153,7 +159,13 @@ fn run_baseline() {
                 Cell::new(&result.total_blocked, justify_right)
             ]));
     }
-    let table = Table::new(table_vec, cli_table::format::BORDER_COLUMN_TITLE);
+    let table = match Table::new(table_vec, cli_table::format::BORDER_COLUMN_TITLE) {
+        Ok(table_obj) => table_obj,
+        Err(_e) => {
+            eprintln!("WhiteBeam: Could not create table");
+            return;
+        }
+    };
     let _res = table.print_stdout();
 }
 

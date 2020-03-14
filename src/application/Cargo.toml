@@ -13,16 +13,16 @@ path = "main.rs"
 # Cross-platform dependencies
 [dependencies]
 libc = { version = "0.2" }
-sodiumoxide = { version = "0.2.5" }
-serde = { version = "1.0.104", features = ["derive"] }
-serde_json = { version = "1.0.45" }
-rusqlite = { version = "0.21.0", features = ["bundled"] }
-hex = { version = "0.4.0" }
-clap = { version = "2.33.0" }
+sodiumoxide = { version = "0.2" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
+rusqlite = { version = "0.21", features = ["bundled"] }
+hex = { version = "0.4" }
+clap = { version = "2.33" }
 tokio = { version = "0.2", features = ["macros"] }
-warp = { version = "0.2.1" }
-rpassword = { version = "4.0.5" }
-cli-table = { version = "0.2" }
+warp = { version = "0.2" }
+rpassword = { version = "4.0" }
+cli-table = { version = "0.3" }
 
 # Windows dependencies
 [target.'cfg(target_os = "windows")'.dependencies.kernel32-sys]
