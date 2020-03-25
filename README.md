@@ -45,11 +45,11 @@ Install WhiteBeam: `./install.sh`
 ### From Source (Linux)
 
 1. (Optional) Run tests:
-`make test`
+`cargo run test`
 2. Compile:
-`make`
+`cargo run build`
 3. Install WhiteBeam:
-`make install`
+`cargo run install`
 
 ---
 

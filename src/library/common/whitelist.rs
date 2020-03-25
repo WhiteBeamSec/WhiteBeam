@@ -19,7 +19,7 @@ fn get_hardcoded_env_blacklist() -> Vec<OsString> {
 fn get_hardcoded_whitelist() -> Vec<(OsString, bool, String)> {
     #[cfg(feature = "whitelist_test")]
     return vec!(
-        (OsString::from("/usr/bin/whoami"), true, String::from("ANY")),
+        (OsString::from("/bin/bash"), true, String::from("ANY")),
         // Test seccomp
         (OsString::from("/usr/bin/man"), true, String::from("ANY"))
     );
@@ -48,7 +48,7 @@ pub fn is_whitelisted(program: &OsStr, env: &Vec<(OsString, OsString)>, hexdiges
     // Permit hardcoded application whitelist
     for (allowed_program, allow_unsafe, allowed_hash) in hardcoded_whitelist.iter() {
         if  (&program == allowed_program) &&
-            (&unsafe_env == allow_unsafe) &&
+            ((&unsafe_env == allow_unsafe) || cfg!(feature = "whitelist_test")) &&
             ((&hexdigest == allowed_hash) || (allowed_hash == "ANY")) {
             return true;
         }

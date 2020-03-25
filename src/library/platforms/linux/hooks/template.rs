@@ -40,7 +40,6 @@ macro_rules! build_exec_hook {
             crate::common::event::send_exec_event(uid, &$program, &hexdigest, true);
             call_real!{ $func_name (path: *const libc::c_char, argv: *const *const libc::c_char) -> libc::c_int }
         }
-        // =====================================================================
     };
     (hook $func_name:ident ($program: ident, $envp:ident) custom_routine $body:block) => {
         #[no_mangle]
@@ -68,7 +67,6 @@ macro_rules! build_exec_hook {
             crate::common::event::send_exec_event(uid, &$program, &hexdigest, true);
             call_real!{ $func_name (path: *const libc::c_char, argv: *const *const libc::c_char, $envp: *const *const libc::c_char) -> libc::c_int }
         }
-        // =====================================================================
     };
 }
 
@@ -90,7 +88,7 @@ macro_rules! build_variadic_exec_hook {
             }
             arg_vec.push(std::ptr::null());
             let argv: *const *const libc::c_char = (&arg_vec).as_ptr() as *const *const libc::c_char;
-            let mut $envp: *const *const libc::c_char = std::ptr::null();
+            let mut $envp: *const *const libc::c_char = crate::platforms::linux::environ();
             let mut $program = crate::platforms::linux::c_char_to_osstring(path);
             $body
             let program_c_str = match crate::platforms::linux::osstr_to_cstring(&$program) {
@@ -112,6 +110,5 @@ macro_rules! build_variadic_exec_hook {
             crate::common::event::send_exec_event(uid, &$program, &hexdigest, true);
             call_real!{ execve (path: *const libc::c_char, argv: *const *const libc::c_char, $envp: *const *const libc::c_char) -> libc::c_int }
         }
-        // =====================================================================
     };
 }

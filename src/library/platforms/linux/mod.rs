@@ -84,6 +84,13 @@ pub fn search_path(program: &OsStr) -> Option<PathBuf> {
     None
 }
 
+pub unsafe fn environ() -> *const *const c_char {
+    extern "C" {
+        static environ: *const *const c_char;
+    }
+    environ
+}
+
 fn parse_env_single(input: &[u8]) -> Option<(OsString, OsString)> {
 	if input.is_empty() {
 		return None;
