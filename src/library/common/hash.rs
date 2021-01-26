@@ -1,3 +1,4 @@
+// TODO: Accept hash type argument
 use sodiumoxide::crypto::hash;
 use std::{fs, io, io::Read, ffi::OsStr};
 #[cfg(any(target_os = "linux", target_os = "macos"))]

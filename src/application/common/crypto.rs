@@ -1,3 +1,6 @@
+// TODO: Update for 0.2
+// https://github.com/RustCrypto/AEADs/blob/master/crypto_box/src/lib.rs
+
 #[cfg(target_os = "windows")]
 use crate::platforms::windows as platform;
 #[cfg(target_os = "linux")]
@@ -41,8 +44,8 @@ fn generate_client_private_key(save_path: &Path) -> Result<(), std::io::Error> {
 }
 
 fn get_server_public_key() -> Result<PublicKey, Box<dyn Error>> {
-    let conn: rusqlite::Connection = db::db_open();
-    let public_key_string: String = db::get_config(&conn, String::from("server_key"));
+    let conn: rusqlite::Connection = db::db_open()?;
+    let public_key_string: String = db::get_setting(&conn, String::from("server_key"));
     let public_key_bytes: &[u8] = &hex::decode(&public_key_string)?;
     match PublicKey::from_slice(public_key_bytes) {
         Some(public_key) => Ok(public_key),
@@ -81,10 +84,10 @@ fn json_encode_message(action: String, parameters: Vec<String>) -> Result<String
     let expires = time::get_timestamp()+3600;
     let version = env!("CARGO_PKG_VERSION").to_string();
     let message_object = Message {
-        expires: expires,
-        version: version,
-        action: action,
-        parameters: parameters
+        expires,
+        version,
+        action,
+        parameters
     };
     Ok(serde_json::to_string(&message_object)?)
 }
@@ -103,9 +106,9 @@ pub struct CryptoBox {
 
 fn json_encode_crypto_box(pubkey: String, nonce: String, ciphertext: String) -> Result<String, serde_json::Error> {
     let crypto_box_object = CryptoBox {
-        pubkey: pubkey,
-        nonce: nonce,
-        ciphertext: ciphertext
+        pubkey,
+        nonce,
+        ciphertext
     };
     Ok(serde_json::to_string(&crypto_box_object)?)
 }
@@ -164,7 +167,7 @@ pub fn generate_crypto_box_message(action: String, parameters: Vec<String>) -> R
 }
 
 pub fn process_request(crypto_box_object: CryptoBox) -> Result<Message, Box<dyn Error>> {
-    let conn: rusqlite::Connection = db::db_open();
+    let conn: rusqlite::Connection = db::db_open()?;
     // Ignore replayed messages
     if db::get_seen_nonce(&conn, &crypto_box_object.nonce) {
         return Err("Invalid message".into());

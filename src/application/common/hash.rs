@@ -1,3 +1,8 @@
+// TODO: Update for 0.2
+// https://github.com/RustCrypto/password-hashes
+// https://github.com/sru-systems/rust-argon2
+
+// TODO: Accept hash type argument
 use sodiumoxide::crypto::hash;
 use std::{fs, io, io::Read, ffi::OsStr};
 #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -14,7 +19,7 @@ pub fn hash_null() -> String {
 }
 
 pub fn common_hash_password(input: &str) -> String {
-    // TODO: Use pwhash
+    // TODO: Hash using SecretAlgorithm
     hex::encode(hash::hash(input.as_bytes()))
 }
 

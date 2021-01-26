@@ -10,9 +10,12 @@ pub fn stop_service() {
 }
 
 pub fn get_data_file_path(data_file: &str) -> PathBuf {
+    #[cfg(feature = "whitelist_test")]
+    let data_path: String = format!("{}/target/release/examples/", env!("PWD"));
+    #[cfg(not(feature = "whitelist_test"))]
     let data_path: String = String::from("/Applications/WhiteBeam/data/");
     let data_file_path = data_path + data_file;
-    Path::new(&data_file_path).to_owned()
+    PathBuf::from(data_file_path)
 }
 
 pub fn path_open_secure(file_path: &Path) {

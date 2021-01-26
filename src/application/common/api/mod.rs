@@ -40,5 +40,6 @@ pub async fn serve() {
                 .or(log_exec_route)
                 .or(service_public_key_route)
                 .or(service_encrypted_route);
+    // TODO: Use ServicePort setting
     warp::serve(routes).run(([0, 0, 0, 0], 11998)).await;
 }

@@ -1,67 +1,87 @@
 <!---
 WhiteBeam Client
 
-Open source EDR with application whitelisting
+Transparent endpoint security
 
 Copyright 2020, WhiteBeam Security, Inc.
 --->
-<p align="center">
-<img src="https://gist.githubusercontent.com/noproto/ea7d62cd578afdd1bac2e96078c0e6b2/raw/cf895a5fef1f2295671653ece9155f4e1f0478e4/WhiteBeam.svg?sanitize=true" alt="WhiteBeam">
+<img src="https://raw.githubusercontent.com/gist/noproto/f858188c6201b9a7e4ac99157c2546ba/raw/f34a53aa2fc2ea6c3af8a26af43385719318640f/WhiteBeamShield.svg" alt="WhiteBeam Logo" align="right" width="17%" hspace="50"/>
+<p align="left">
+<img src="https://gist.githubusercontent.com/noproto/f858188c6201b9a7e4ac99157c2546ba/raw/37f3b631bbea096926d28cebdcee15654f6fe847/WhiteBeamTextOnly.svg" alt="WhiteBeam">
 <br>
-<a href="https://github.com/WhiteBeamSec/WhiteBeam/releases" title="Releases"><img src="https://img.shields.io/github/v/tag/WhiteBeamSec/WhiteBeam.svg?style=for-the-badge&label=release&color=lightgrey&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAE/UlEQVR42uWbXYhVVRTH/8u5MxbVpJRUZhgZYxoSpQ8lfUCURvnQBz2YBEMmGRURBD4UaBAU0cdYYdmXToSB0DwZhYgDRoVYic4kiqkTUmGTk4NjM87cub8e7r4wne65Z997zzn3Xuf/NnPP3mf9/2etvdZeZx+pCPg/9iomAGNF5h9XAgDeAw4B4xPuNd9nYDGMAeurNKgUhmMmfxA4DeQC91lYraFHEiBfQB/wfJXEdwODRYgXcFtcxm6NmTzOVf8EhiogvtGNzUXcY0m5Bpea8ETEPF8DZ6kMI2WQPwIMe857fxxPbKIox4uMXwYc8HgaURgEPixh5zEgW86Ecbnsz87dcAYcBTonjO8nXgwG7PsCGK1koiBXCxHglKSLywzDUUl/SbpMUpPqD1kzaw7+c0rIxTdJOlzmDVokzaxT8n2SFhX7oagAZnZU0kJJu9T46JR0nZnt8xbAiXBa0p2SbpbkW6kdqCPi/ZLuNbN2MzsbytNzUZwpaY9z8UbAdknLzWygCBeZWbQHBLzhd0mzJW2rc+Ijkp6WtDSMvO9DD/MEAU8GNhf1gv1AWwm7BbQCz8Sx0bgeOFknxMeBDiATQf5G4DDwqQ/BSzyuOQ/YWWPyfcDiCI8V8CjwjxuzyUeA48DtHtcZ8GwMJW8l2ApcFEH+AmBLYNxHvqVwFlgHmMf181IMiVPAI2Fl/YSnPg/oLTJ+Y7l7gW5gumdIfJkw+R3A5Z4uPxQyx4ZKNkP9wB2eIbEqAeLDwJpS3uiItwAfRMz1TqW7wRzwOjDFY/w1wImYyPcCCzzS8xyXCqPQUe12eE8pN5wwR4tbqCpFzqW3Zg/yy13/zwdvxNEPGATu86wZHqqgcPoDWOoRbhknUjl4Lc4e3idhBUhgviuAX8pIb5dGzNcEXAnsrcCzXolTgEJ3aLbHnBng/QivWh212Lp5lgB/VxhaL8ctAK7KeqyKdtt3wEqPsc3Aq1Uuqi8lIUABW4CpHvNPc9ePAt94rPLmxnwbQ1ZZm6QAuE5tm2fN0A7M8Mgmi4CBmNLqi14doSpwtaT9QHtEjwEz22xm/SXIXyhppaTdkqbHZN940gJI0lRJm4Au4PwKt9wzJH0uaUPMdqYiQAEPSDrk9Ub2v+TnS/pJ0rIEbEpVAEm6StI+4LmonaVLcSsk9UialZA9qQsgSRlJb0raHraHB1oldUj6LGG7aiJAAXdJ+iGYJdzf3ZKeSsGGmgogSW2SDrpmSxPwoKQf3dsopS1ARrWBSVoraYWkOVW1qstHrh4EKODaGtwzW+sQqDVyk12ASe8B45NdgAWTWQAkjdVTFkg79leb2cc+ApBybk4aZyQ9bGZfBX8IC4Ge4GrZwBiQdHcx8qECmNkNkjYrf/KrkdEnabGZfV+qJI3am5+S1NqAIdEr6R4z+63URZFZwMymKX9kLtdA5Lsl3RpF3jsNmtlc5c8HNcK60KX86bDBeBNovju7Bvi1Ts8IAbzt8/I2DjF2lHtIOWHkgHXpllTwVsSHCWkhCzyefk3pGpzu3WCtQmLI9y110mJ01UCEk6VOiKUtQAZ4wr2xTSMkjgFz63O7BbsS9oYeYFZdJ2LghZDvA6tFd+NsvOEW56pxhURXY3YgoDOGkHi3sdsw+a/IBhuiwElYiG1leEMWWHXuNeXyp0JGIsifObc7k/mTpD1hBc7kadHC+kCW6Evbhn8B9AX59hwJv14AAAAASUVORK5CYII=" alt="Latest Release"></a>
-<a href="https://github.com/WhiteBeamSec/WhiteBeam/blob/master/LICENSE.md" title="License"><img src="https://img.shields.io/badge/LICENSE-CC--BY--NC-lightgrey?style=for-the-badge" alt="CC-BY-NC 4.0 Licensed"></a>
-<a href="https://github.com/WhiteBeamSec/WhiteBeam/security/policy" title="Security"><img src="https://img.shields.io/badge/bounty-$1K-green?style=for-the-badge" alt="Bounty $1K"></a>
+Transparent endpoint security
+<br><br><br>
+<a href="https://github.com/WhiteBeamSec/WhiteBeam/releases" title="Releases"><img src="https://img.shields.io/github/v/tag/WhiteBeamSec/WhiteBeam.svg?style=for-the-badge&label=release&color=blue" alt="Latest Release"></a>
+<a href="https://github.com/WhiteBeamSec/WhiteBeam/security/policy" title="Security"><img src="https://img.shields.io/badge/bounty-$5,000-blue?style=for-the-badge" alt="Bounty $5,000"></a>
 <a href="https://discord.gg/GYSVqYx" target="_blank" title="Chat"><img src="https://img.shields.io/discord/641744447289294859?style=for-the-badge" alt="Chat"></a>
-<br>
-Open source EDR with application whitelisting
 </p>
 
 ---
 
+**NOTICE**: This repository tracks the pre-alpha release of WhiteBeam 0.2. If you'd like to test WhiteBeam in your environment, [contact us](info@whitebeamsec.com).
+
 ## Features
 
-* Block file-based malware, with planned support for fileless
-* Modern cryptography: libsodium for hashing and encryption
+* Block and detect advanced attacks
+* Modern audited cryptography: [RustCrypto](https://github.com/RustCrypto) for hashing and encryption (TODO: Migrate from Sodium)
 * Highly compatible: Development focused on all platforms (incl. legacy) and architectures
-* Open source: Audits welcome
+* Source available: Audits welcome
 * Reviewed by security researchers with combined 100+ years of experience
-
----
-
-## Installation
-
-### From Binaries
-
-**Important**: Always ensure the downloaded file hash matches official hashes ([How-to](https://github.com/WhiteBeamSec/WhiteBeam/wiki/Verifying-file-hashes)).
-
-| Platform        | URL                                                                | Hash(es) |
-| --------------- | ------------------------------------------------------------------ | -------- |
-| Linux (x86_64)  | https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.tar.gz | [SHA-256](https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.SHA256) |
-| Linux (i686)    | *Building*                                                         | *N/A* |
-| Linux (aarch64) | *Building*                                                         | *N/A* |
-
-Install WhiteBeam: `./install.sh`
-
-### From Source (Linux)
-
-1. (Optional) Run tests:
-`cargo run test`
-2. Compile:
-`cargo run build`
-3. Install WhiteBeam:
-`cargo run install`
-
----
-
-## How to Use
-
-1. Add permitted applications:
-`whitebeam --add /absolute/path/to/command`
-2. Enable WhiteBeam:
-`whitebeam --enable`
-
----
 
 ## In Action
 
+* [Video demonstration of detection and prevention capabilities](TODO)
+* [Recorded attacks against the WhiteBeam 0.2 honeypot](TODO) <font color="red">[ LIVE ]</font>
+
+TODO: Update video for 0.2
+
 [![asciicast](https://asciinema.org/a/296135.svg)](https://asciinema.org/a/296135)
+
+## Installation
+
+### From Packages (Linux)
+
+TODO: Using your package manager of choice (on Ubuntu/Debian (apt/snap classic)/Gentoo (emerge)/Arch (pacman AUR)/RHEL/Amazon Linux/Rocky Linux (yum)/OpenSUSE/etc.), details on installing `whitebeam`
+
+### From Repositories
+
+TODO: Repositories while packages get processed. Deprecated binary guide below.
+
+**Important**: Always ensure the downloaded file hash matches official hashes ([How-to](https://github.com/WhiteBeamSec/WhiteBeam/wiki/Verifying-file-hashes)).
+
+| Platform        | URL                                                                 | Hash(es) |
+| --------------- | ------------------------------------------------------------------- | -------- |
+| Linux (x86_64)  | https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.tar.gz  | [SHA-256](https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.SHA256)  |
+| Linux (i686)    | https://dist.whitebeamsec.com/linux/i686/WhiteBeam_latest.tar.gz    | [SHA-256](https://dist.whitebeamsec.com/linux/i686/WhiteBeam_latest.SHA256)    |
+| Linux (aarch64) | https://dist.whitebeamsec.com/linux/aarch64/WhiteBeam_latest.tar.gz | [SHA-256](https://dist.whitebeamsec.com/linux/aarch64/WhiteBeam_latest.SHA256) |
+
+Install WhiteBeam: `./install`
+
+### From Source (Linux)
+
+1. Run tests (_Optional_):
+    * `cargo run test`
+2. Compile:
+    * `cargo run build`
+3. Install WhiteBeam:
+    * `cargo run install`
+
+## Quick start
+1. Become root (`sudo -s`/`su root`)
+2. Set a recovery secret. You'll be able to use this with `whitebeam --auth` to make changes to the system: `whitebeam --setting recovery_secret mask`
+
+### Detect Attacks with WhiteBeam
+There are three options, depending on your preference:
+1. [Serverless guide](TODO), for passive review
+2. [Kolide Fleet setup guide](TODO), for passive review
+3. [WhiteBeam Server setup guide](TODO), for active response
+
+### How to Prevent Attacks with WhiteBeam
+1. Become root (`sudo -s`/`su root`)
+2. Download default whitelists for your platform:
+    * `whitebeam --load base`
+3. Review the baseline after a minimum of 24 hours:
+    * `whitebeam --baseline`
+4. Add trusted actions to the whitelist, following the [whitelisting guide](TODO)
+5. Enable WhiteBeam protection (**WARNING**: Never enable protection without the `essential` whitelist loaded. If you make this mistake, follow the [recovery guide](TODO)):
+    * `whitebeam --setting protected true`

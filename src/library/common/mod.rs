@@ -1,8 +1,10 @@
+// Datatype conversion functions
+pub mod convert;
 // Database
 pub mod db;
-// Whitelist
-pub mod whitelist;
-// Hashing algorithm
+// Actions
+pub mod action;
+// Hashing
 pub mod hash;
 // Time functions
 pub mod time;

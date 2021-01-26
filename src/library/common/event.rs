@@ -1,9 +1,5 @@
-#[cfg(target_os = "windows")]
-use crate::platforms::windows as platform;
-#[cfg(target_os = "linux")]
-use crate::platforms::linux as platform;
-#[cfg(target_os = "macos")]
-use crate::platforms::macos as platform;
+// TODO: Update for 0.2
+
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use crate::common::http;
@@ -29,22 +25,14 @@ pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) {
     let log = LogExecObject {
         program: program_string,
         hash: hash.to_string(),
-        uid: uid,
-        ts: ts,
-        success: success
+        uid,
+        ts,
+        success
     };
     if cfg!(feature = "whitelist_test") {
         return;
     }
-    // https://github.com/WhiteBeamSec/WhiteBeam/blob/master/src/library/common/whitelist.rs#L59
-    match platform::get_uptime() {
-        Ok(uptime) => {
-            if uptime.as_secs() < (60*5) {
-                return;
-            }
-        },
-        Err(e) => eprintln!("WhiteBeam: {}", e)
-    };
+    // TODO: Use ServicePort setting
     let request = match http::post("http://127.0.0.1:11998/log/exec")
                               .with_timeout(get_timeout())
                               .with_json(&log) {

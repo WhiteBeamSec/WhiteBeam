@@ -1,8 +1,11 @@
+// TODO: Cross platform, tests, replace install.sh, add sqlite config for osquery/osquery pkgs
+
 use std::{env,
           ffi::OsStr,
           fs,
-          path::Path,
+          path::PathBuf,
           process::Command};
+pub mod common;
 pub mod platforms;
 #[cfg(target_os = "windows")]
 use platforms::windows as platform;
@@ -28,92 +31,77 @@ pub fn pretty_bytes(num: f64) -> String {
 }
 
 fn build(args: Vec<String>) {
+    // TODO: Consistent naming: binary and application
     platform::check_build_environment();
-    let (mut compile_bin, mut compile_lib) = (true, true);
-    if (args.len()-1) > 1 {
-        let subcommand: &str = &(&args[2].to_lowercase());
-        match subcommand {
-            "binary" => {
-                compile_lib = false;
-            },
-            "library" => {
-                compile_bin = false;
-            },
-            _ => {
-                eprintln!("WhiteBeam: Invalid subcommand. Valid subcommands are: binary library");
-                return;
-            }
-        }
+    if args.len() <= 2 {
+        // By default, build both the release library and binary
+        build(vec![String::from("whitebeam-installer"), String::from("build"), String::from("binary")]);
+        build(vec![String::from("whitebeam-installer"), String::from("build"), String::from("library")]);
+        return;
     }
-    if compile_lib {
-        println!("Building library");
-        let _exit_status_lib = Command::new("cargo")
-            .arg("+nightly").arg("build").arg("--package").arg("libwhitebeam").arg("--lib").arg("--release")
-            .env("RUSTFLAGS", "-C link-arg=-s")
-            .status()
-            .expect("Failed to execute cargo command");
-        match fs::metadata("./target/release/libwhitebeam.so") {
-            Ok(meta) => println!("Completed. Size: {}", pretty_bytes(meta.len() as f64)),
-            Err(_e) => println!("Failed to stat ./target/release/libwhitebeam.so")
+    // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
+    let mut cargo_command = Command::new("cargo");
+    cargo_command.env("RUSTFLAGS", "-C link-arg=-s");
+    let lib_target_path: PathBuf = PathBuf::from(format!("{}/target/release/libwhitebeam.so", env!("PWD")));
+    let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
+    let subcommand: &str = &(&args[2].to_lowercase());
+    let current_target_path = match subcommand {
+        "binary" => {
+            println!("Building binary");
+            cargo_command.args(&["build", "--package", "whitebeam", "--bin", "whitebeam", "--release"]);
+            bin_target_path
+        },
+        "library" => {
+            println!("Building library");
+            cargo_command.args(&["+nightly", "build", "--package", "libwhitebeam", "--lib", "--release"]);
+            lib_target_path
+        },
+        "binary-test" => {
+            println!("Building test binary");
+            cargo_command.args(&["build", "--package", "whitebeam", "--bin", "whitebeam", "--release",
+                                 "--manifest-path", "./src/application/Cargo.toml", "--features", "whitelist_test"]);
+            bin_target_path
+        },
+        "library-test" => {
+            println!("Building test library");
+            cargo_command.args(&["+nightly", "build", "--package", "libwhitebeam", "--lib", "--release",
+                                 "--manifest-path", "./src/library/Cargo.toml", "--features", "whitelist_test"]);
+            lib_target_path
+        },
+        _ => {
+            eprintln!("WhiteBeam: Invalid subcommand. Valid subcommands are: binary library binary-test library-test");
+            return;
         }
-    }
-    if compile_bin {
-        let _exit_status_bin = Command::new("cargo")
-            .arg("+stable").arg("build").arg("--package").arg("whitebeam").arg("--bin").arg("whitebeam").arg("--release")
-            .env("RUSTFLAGS", "-C link-arg=-s")
-            .status()
-            .expect("Failed to execute cargo command");
-        match fs::metadata("./target/release/whitebeam") {
-            Ok(meta) => println!("Completed. Size: {}", pretty_bytes(meta.len() as f64)),
-            Err(_e) => println!("Failed to stat ./target/release/whitebeam")
-        }
+    };
+    cargo_command.status().expect("WhiteBeam: Failed to execute cargo command");
+    match fs::metadata(&current_target_path) {
+        Ok(meta) => println!("WhiteBeam: Completed. Size: {}", pretty_bytes(meta.len() as f64)),
+        Err(_e) => println!("WhiteBeam: Failed to stat {}", (&current_target_path).display())
     }
 }
 
-fn test(_args: Vec<String>) {
-    // TODO: Verify we're in the right directory
-    println!("Building test library");
-    let _exit_status_lib = Command::new("cargo")
-        .arg("+nightly").arg("build").arg("--package").arg("libwhitebeam").arg("--lib").arg("--release")
-        // Arguments for testing
-        .arg("--manifest-path").arg("./src/library/Cargo.toml").arg("--features").arg("whitelist_test")
-        .env("RUSTFLAGS", "-C link-arg=-s")
-        .status()
-        .expect("Failed to execute cargo command");
-    match fs::metadata("./target/release/libwhitebeam.so") {
-        Ok(meta) => println!("Completed. Size: {}", pretty_bytes(meta.len() as f64)),
-        Err(_e) => println!("Failed to stat ./target/release/libwhitebeam.so")
-    }
-    let libwhitebeam_file = Command::new(platform::search_path(OsStr::new("file")).unwrap())
-            .arg("./target/release/libwhitebeam.so")
-            .output()
-            .expect("Failed to execute file command");
-    println!("{}", String::from_utf8_lossy(&libwhitebeam_file.stdout).trim_end());
-    println!("Exported symbols:");
-    let libwhitebeam_objdump = Command::new(platform::search_path(OsStr::new("objdump")).unwrap())
-            .arg("-T").arg("-j").arg(".text").arg("./target/release/libwhitebeam.so")
-            .output()
-            .expect("Failed to execute objdump command");
-    let libwhitebeam_objdump_string = String::from_utf8_lossy(&libwhitebeam_objdump.stdout);
-    let mut modules: Vec<&str> = Vec::new();
-    for line in libwhitebeam_objdump_string.lines() {
-        if line.contains(".text") && !line.contains("rust_eh_personality") {
-            modules.push(line.split_ascii_whitespace().last().unwrap());
-        }
-    }
-    for module in &modules {
-        println!("* {}", module);
-    }
+fn test(args: Vec<String>) {
+    // TODO: More error handling
+    build(vec![String::from("whitebeam-installer"), String::from("build"), String::from("library-test")]);
+    build(vec![String::from("whitebeam-installer"), String::from("build"), String::from("binary-test")]);
     println!("Testing:");
+    // Initialize test database
+    common::db::db_optionally_init(&args[1].to_lowercase()).expect("WhiteBeam: Failed to initialize test database");
+    // Load platform-specific test data through whitebeam command
+    common::db::load_test_data().expect("WhiteBeam: Failed to load test data");
+    // Run tests
     let _exit_status_tests = Command::new("cargo")
-        .arg("+stable").arg("build").arg("--package").arg("libwhitebeam-tests").arg("--release")
+        .arg("build").arg("--package").arg("libwhitebeam-tests").arg("--release")
+        // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
         .env("RUSTFLAGS", "-C link-arg=-s")
         .status()
-        .expect("Failed to execute cargo command");
+        .expect("WhiteBeam: Failed to execute cargo command");
+    // TODO: Run tests (cont.): Iterate over tests that just got loaded with application listing them
+    /*
     for module in &modules {
         // TODO: fexecve in Linux tests
         if module == &"fexecve" {
-            eprintln!("Skipping fexecve");
+            eprintln!("WhiteBeam: Skipping fexecve");
             continue;
         }
         for test_type in &["positive", "negative"] {
@@ -121,14 +109,14 @@ fn test(_args: Vec<String>) {
                 .arg(module).arg(test_type)
                 .env("LD_PRELOAD", "./target/release/libwhitebeam.so")
                 .status()
-                .expect("Failed to execute cargo command");
+                .expect("WhiteBeam: Failed to execute cargo command");
                 // TODO: Use OS temp directory/directory relative to cwd instead of hardcoding /tmp/
             if test_type == &"positive" {
                 // Positive test
                 assert!(exit_status_module.success());
-                let contents = fs::read_to_string("/tmp/test_result").expect("Could not read test result file");
+                let contents = fs::read_to_string("/tmp/test_result").expect("WhiteBeam: Could not read test result file");
                 assert_eq!(contents, String::from("./target/release/libwhitebeam.so"));
-                fs::remove_file("/tmp/test_result").expect("Failed to remove /tmp/test_result");
+                fs::remove_file("/tmp/test_result").expect("WhiteBeam: Failed to remove /tmp/test_result");
             } else {
                 // Negative test
                 // TODO: assert!(!exit_status_module.success());
@@ -137,6 +125,7 @@ fn test(_args: Vec<String>) {
             println!("{} passed ({} test).", module, test_type);
         }
     }
+    */
     // TODO: Test binary (e.g. ./target/release/whitebeam || true)
 }
 
@@ -150,8 +139,8 @@ fn clean(_args: Vec<String>) {
     let _clean_result = Command::new(platform::search_path(OsStr::new("cargo")).unwrap())
             .arg("clean")
             .output()
-            .expect("Failed to execute cargo command");
-    fs::remove_file("Cargo.lock").expect("Failed to remove Cargo.lock");
+            .expect("WhiteBeam: Failed to execute cargo command");
+    fs::remove_file("Cargo.lock").expect("WhiteBeam: Failed to remove Cargo.lock");
 }
 
 fn main() {

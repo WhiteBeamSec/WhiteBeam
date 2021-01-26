@@ -1,12 +1,14 @@
 // Load OS-specific modules
 
-use std::{path::Path,
-          path::PathBuf};
+use std::path::PathBuf;
 
-pub fn get_data_file_path(data_file: &str) -> PathBuf {
-    let data_path: String = String::from("/Applications/WhiteBeam/data/");
+pub fn get_data_file_path(data_file: &str, release: &str) -> PathBuf {
+    let data_path: String = match release {
+        "test" => format!("{}/target/release/examples/", env!("PWD")),
+        _ => String::from("/Applications/WhiteBeam/data/")
+    };
     let data_file_path = data_path + data_file;
-    Path::new(&data_file_path).to_owned()
+    PathBuf::from(data_file_path)
 }
 
 pub fn check_build_environment() {

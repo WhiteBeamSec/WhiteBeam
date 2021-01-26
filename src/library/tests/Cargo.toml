@@ -1,7 +1,7 @@
 # General info
 [package]
 name = "libwhitebeam-tests"
-version = "0.1.3"
+version = "0.2.0"
 authors = ["WhiteBeam Security, Inc."]
 edition = "2018"
 
@@ -13,8 +13,3 @@ path = "main.rs"
 # Cross-platform dependencies
 [dependencies]
 libc = { version = "0.2" }
-
-# Windows dependencies
-[target.'cfg(target_os = "windows")'.dependencies.kernel32-sys]
-version = "0.2"
-default-features = false

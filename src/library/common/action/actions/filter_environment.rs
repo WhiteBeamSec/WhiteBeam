@@ -1,0 +1,83 @@
+#[macro_use]
+build_action! { filter_environment (src_prog, hooked_fn, arg_id, args, do_return, return_value) {
+        // Enforce LD_AUDIT, LD_BIND_NOT, WB_PROG
+        // TODO: Avoid leaking memory (NB: this action is often called before execve)
+        let envp_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
+        let envp_argument: crate::common::db::ArgumentRow = args[envp_index].clone();
+        let envp = envp_argument.real as *const *const libc::c_char;
+        // FIXME: Needs correction user-defined LD_AUDIT libraries will be overwritten
+        // let orig_env_vec: Vec<(std::ffi::OsString, std::ffi::OsString)> = unsafe { crate::common::convert::parse_env_collection(envp) };
+        let orig_env_vec: Vec<(std::ffi::OsString, std::ffi::OsString)> = vec![];
+        let mut update_ld_audit: bool = false;
+        let mut update_ld_bind_not: bool = false;
+        // TODO: Support more platforms here
+        let rtld_audit_lib_path = crate::platforms::linux::get_rtld_audit_lib_path();
+        let new_ld_audit_var: std::ffi::OsString = match orig_env_vec.iter().find(|var| var.0 == std::ffi::OsString::from("LD_AUDIT")) {
+            Some(val) => {
+                if crate::common::convert::osstr_split_at_byte(&val.1, b':').0 == rtld_audit_lib_path {
+                    std::ffi::OsString::new()
+                } else {
+                    update_ld_audit = true;
+                    let mut new_ld_audit_osstring = std::ffi::OsString::from("LD_AUDIT=");
+                    new_ld_audit_osstring.push(rtld_audit_lib_path.as_os_str());
+                    new_ld_audit_osstring.push(std::ffi::OsStr::new(":"));
+                    new_ld_audit_osstring.push(&val.1);
+                    new_ld_audit_osstring
+                }
+            }
+            None => {
+                update_ld_audit = true;
+                let mut new_ld_audit_osstring = std::ffi::OsString::from("LD_AUDIT=");
+                new_ld_audit_osstring.push(rtld_audit_lib_path.as_os_str());
+                new_ld_audit_osstring
+            }
+        };
+        let new_ld_bind_not_var: std::ffi::OsString = match orig_env_vec.iter().find(|var| var.0 == std::ffi::OsString::from("LD_BIND_NOT")) {
+            Some(val) => {
+                if val.1 != std::ffi::OsString::from("1") {
+                    update_ld_bind_not = true;
+                    std::ffi::OsString::from("LD_BIND_NOT=1")
+                } else {
+                    std::ffi::OsString::new()
+                }
+            }
+            None => {
+                update_ld_bind_not = true;
+                std::ffi::OsString::from("LD_BIND_NOT=1")
+            }
+        };
+        let mut env_vec: Vec<*const libc::c_char> = Vec::new();
+        let program_path: String = src_prog.clone();
+        if update_ld_audit {
+            // TODO: Log null reference, process errors
+            let new_ld_audit_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(&new_ld_audit_var).expect("WhiteBeam: Unexpected null reference"));
+            // TODO: Check whitelist for path
+            env_vec.push(Box::leak(new_ld_audit_cstring).as_ptr());
+        }
+        if update_ld_bind_not {
+            // TODO: Log null reference, process errors
+            let new_ld_bind_not_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(&new_ld_bind_not_var).expect("WhiteBeam: Unexpected null reference"));
+            env_vec.push(Box::leak(new_ld_bind_not_cstring).as_ptr());
+        }
+        let mut program_path_env: std::ffi::OsString = std::ffi::OsString::from("WB_PROG=");
+        program_path_env.push(&program_path);
+        let program_path_env_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(&program_path_env).expect("WhiteBeam: Unexpected null reference"));
+        env_vec.push(Box::leak(program_path_env_cstring).as_ptr());
+        unsafe {
+        if !(envp.is_null()) {
+            let mut envp_iter = envp;
+            while !(*envp_iter).is_null() {
+                if let Some(key_value) = crate::common::convert::parse_env_single(std::ffi::CStr::from_ptr(*envp_iter).to_bytes()) {
+                    if  (!(update_ld_audit) && (key_value.0 == "LD_AUDIT"))
+                     || (!(update_ld_bind_not) && (key_value.0 == "LD_BIND_NOT"))
+                     || ((key_value.0 != "LD_AUDIT") && (key_value.0 != "LD_BIND_NOT") && (key_value.0 != "WB_PROG")) {
+                        env_vec.push(*envp_iter);
+                    }
+                }
+                envp_iter = envp_iter.offset(1);
+            }
+        }
+        }
+        env_vec.push(std::ptr::null());
+        args[envp_index].real = (&env_vec).as_ptr() as usize;
+}}

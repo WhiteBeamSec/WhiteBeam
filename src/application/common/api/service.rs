@@ -1,12 +1,22 @@
+// TODO: Always return JSON so errors can be parsed, set JSON header
+
 // Database
 use crate::common::db;
 // Public key encryption and signatures
 use crate::common::crypto;
 
 fn set_console_secret(secret: &str, expiry: &str) -> String {
-    let conn: rusqlite::Connection = db::db_open();
-    db::update_config(&conn, "console_secret", secret);
-    db::update_config(&conn, "console_secret_expiry", expiry);
+    let conn: rusqlite::Connection = match db::db_open() {
+        Ok(c) => c,
+        Err(_) => return String::from("OK")
+    };
+    db::update_setting(&conn, "console_secret", secret);
+    db::update_setting(&conn, "console_secret_expiry", expiry);
+    String::from("OK")
+}
+
+fn query(statement: &str) -> String {
+    // TODO: Send to osquery, return JSON rows
     String::from("OK")
 }
 
@@ -30,6 +40,7 @@ pub fn encrypted(crypto_box_object: crypto::CryptoBox) -> impl warp::Reply {
         Err(_e) => return invalid_request()
     };
     match server_message.action.as_ref() {
+        "query" => query(&server_message.parameters[0]),
         "set_console_secret" => set_console_secret(&server_message.parameters[0],
                                                    &server_message.parameters[1]),
         _ => invalid_request()
