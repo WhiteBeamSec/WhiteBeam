@@ -12,7 +12,7 @@ Please email us at security@whitebeamsec.com. We request at least the following 
 
 gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys 4A3F1233C01563F808B8355125ECFD172151528B
 
-**Current security vulnerability rewards** (will be provided at the discretion of the lead developers):
+**Current security vulnerability rewards** (Reward program will begin *after* completion of WhiteBeam 0.2, and rewards will be provided at the discretion of the lead developers):
 
 | Vulnerability                                                                               | Reward         |
 | ------------------------------------------------------------------------------------------- | -------------- |
