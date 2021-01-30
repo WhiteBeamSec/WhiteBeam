@@ -83,5 +83,5 @@ There are three options, depending on your preference:
 3. Review the baseline after a minimum of 24 hours:
     * `whitebeam --baseline`
 4. Add trusted actions to the whitelist, following the [whitelisting guide](TODO)
-5. Enable WhiteBeam protection:
-    * `whitebeam --setting protected true`
+5. Enable WhiteBeam prevention:
+    * `whitebeam --setting Prevention true`

@@ -224,7 +224,7 @@ pub fn get_setting(param: String) -> String {
     (&setting_row_cloned.value).to_owned()
 }
 
-pub fn get_protected() -> bool {
+pub fn get_prevention() -> bool {
     get_setting(String::from("Prevention")) == String::from("true")
 }
 

@@ -10,7 +10,6 @@ use std::{env,
           ffi::OsStr,
           ffi::OsString,
           os::unix::ffi::OsStrExt,
-          os::unix::ffi::OsStringExt,
           path::PathBuf,
           lazy::SyncLazy,
           sync::Mutex};
@@ -204,7 +203,7 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
       (supports 1,587 out of 1,589 glibc functions)
     - 6 out of 1,589 glibc functions are unsupported due to no VaList equivalent
       (argp_failure, fcntl, ioctl, makecontext, strfmon, syscall, and ulimit)
-    - No known security implications while Execution and Filesystem hooks are enforcing protected mode
+    - No known security implications while Execution and Filesystem hooks are enforcing prevention mode
     */
     // Program
     let src_prog: String = { CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };

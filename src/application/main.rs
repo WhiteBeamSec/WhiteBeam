@@ -20,7 +20,7 @@ pub mod common;
 fn valid_auth() -> bool {
     // TODO: Log
     let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
-    if common::db::get_protected(&conn) {
+    if common::db::get_prevention(&conn) {
         if !common::db::get_valid_auth_env(&conn) {
             eprintln!("WhiteBeam: Authorization failed");
             return false;
@@ -167,9 +167,14 @@ async fn run_service() {
     common::api::serve().await;
 }
 
-fn run_setting(param: &str, value: &str) {
+fn run_setting(param: &str, value: Option<&str>) {
     if !valid_auth() { return; }
-    let mut val: String = match value {
+    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
+    if value.is_none() {
+        println!("{}", common::db::get_setting(&conn, String::from(param)));
+        return;
+    }
+    let mut val: String = match value.unwrap() {
         "mask" => {
             let masked_value: String = match rpassword::read_password_from_tty(Some("Value: ")) {
                 Ok(v) => v,
@@ -186,7 +191,6 @@ fn run_setting(param: &str, value: &str) {
         let hash: String = common::hash::common_hash_password(&val);
         val = hash;
     }
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
     common::db::update_setting(&conn, param, &val);
 }
 
@@ -222,7 +226,7 @@ async fn main() {
         .arg(Arg::with_name("add")
                  .long("add")
                  .takes_value(true)
-                 .help("Add a whitelist rule (+auth when protected)")
+                 .help("Add a whitelist rule (+auth with Prevention)")
                  .value_name("path"))
         .arg(Arg::with_name("auth")
                  .long("auth")
@@ -235,11 +239,11 @@ async fn main() {
         .arg(Arg::with_name("disable")
                  .long("disable")
                  .takes_value(true)
-                 .help("Disable a class of hooks (+auth when protected)"))
+                 .help("Disable a class of hooks (+auth with Prevention)"))
         .arg(Arg::with_name("enable")
                  .long("enable")
                  .takes_value(true)
-                 .help("Enable a class of hooks (+auth when protected)"))
+                 .help("Enable a class of hooks (+auth with Prevention)"))
         .arg(Arg::with_name("list")
                  .long("list")
                  .takes_value(false)
@@ -247,11 +251,11 @@ async fn main() {
         .arg(Arg::with_name("load")
                  .long("load")
                  .takes_value(true)
-                 .help("Load SQL from standard input, a file, or repository (+auth when protected)"))
+                 .help("Load SQL from standard input, a file, or repository (+auth with Prevention)"))
         .arg(Arg::with_name("remove")
                  .long("remove")
                  .takes_value(true)
-                 .help("Remove a whitelist rule by id (+auth when protected)")
+                 .help("Remove a whitelist rule by id (+auth with Prevention)")
                  .value_name("path"))
         .arg(Arg::with_name("service")
                  .long("service")
@@ -260,7 +264,8 @@ async fn main() {
         .arg(Arg::with_name("setting")
                  .long("setting")
                  .takes_value(true)
-                 .help("Modify WhiteBeam client settings (+auth when protected)"))
+                 .multiple(true)
+                 .help("Modify or view WhiteBeam client settings (+auth with Prevention)"))
         .arg(Arg::with_name("start")
                  .long("start")
                  .takes_value(false)
@@ -272,7 +277,7 @@ async fn main() {
         .arg(Arg::with_name("stop")
                  .long("stop")
                  .takes_value(false)
-                 .help("Stop the WhiteBeam service (+auth when protected)"))
+                 .help("Stop the WhiteBeam service (+auth with Prevention)"))
         .get_matches();
 
     if matches.is_present("add") {
@@ -319,13 +324,18 @@ async fn main() {
         match matches.values_of_os("setting") {
             Some(vals) => {
                 let mut vals_iter = vals.clone();
+                // TODO: Refactor
                 if vals_iter.len() == 2 {
                     // TODO: Error handling
                     let param: &str = vals_iter.next().expect("WhiteBeam: Could not read param")
                                                .to_str().expect("WhiteBeam: Param was invalid UTF-8");
                     let value: &str = vals_iter.next().expect("WhiteBeam: Could not read value")
                                                .to_str().expect("WhiteBeam: Value was invalid UTF-8");
-                    run_setting(param, value)
+                    run_setting(param, Some(value))
+                } else if vals_iter.len() == 1 {
+                    let param: &str = vals_iter.next().expect("WhiteBeam: Could not read param")
+                                               .to_str().expect("WhiteBeam: Param was invalid UTF-8");
+                    run_setting(param, None)
                 } else {
                     eprintln!("WhiteBeam: Insufficient parameters for 'setting' argument");
                     return;

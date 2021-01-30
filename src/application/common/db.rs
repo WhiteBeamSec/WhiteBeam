@@ -73,8 +73,8 @@ pub fn get_baseline(conn: &Connection) -> Result<Vec<BaselineResult>, Box<dyn Er
     Ok(result_vec)
 }
 
-pub fn get_protected(conn: &Connection) -> bool {
-    get_setting(conn, String::from("protected")) == String::from("true")
+pub fn get_prevention(conn: &Connection) -> bool {
+    get_setting(conn, String::from("Prevention")) == String::from("true")
 }
 
 pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> bool {
