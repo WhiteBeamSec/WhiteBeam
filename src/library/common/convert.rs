@@ -56,8 +56,12 @@ pub unsafe fn parse_env_collection(envp: *const *const c_char) -> Vec<(OsString,
                 if let Some(key_value) = parse_env_single(CStr::from_ptr(*envp_iter).to_bytes()) {
                     env.push(key_value);
                 }
-                envp_iter = envp_iter.offset(1);
+                envp_iter = envp_iter.add(1);
         }
     }
     env
+}
+
+pub fn u8_slice_as_os_str(s: &[u8]) -> &OsStr {
+    unsafe { &*(s as *const [u8] as *const OsStr) }
 }
