@@ -245,7 +245,6 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
         hooked_fn = hooked_fn_new;
         arg_vec = arg_vec_new;
         if do_return {
-            // TODO: *errno_location() = libc::EACCES;
             return return_value;
         }
     };

@@ -30,6 +30,10 @@ INSERT INTO Whitelist (path, value, class) VALUES ("/bin/bash", "3599edef28afa67
                                                   ("/usr/bin/whoami", "758fd29bc9160ab6e302be8c6dae03d2854cceaa5ed1aca525ab57a740a90645", (SELECT id FROM WhitelistClass WHERE class="Hash/BLAKE3")),
                                                   ("/bin/bash", "/usr/sbin/apache2", (SELECT id FROM WhitelistClass WHERE class="Filesystem/Path/Executable")),
                                                   ("/bin/sh", "/usr/sbin/apache2", (SELECT id FROM WhitelistClass WHERE class="Filesystem/Path/Executable")),
+                                                  ("ANY", "/bin/bash", (SELECT id FROM WhitelistClass WHERE class="Filesystem/Path/Executable")),
+                                                  ("ANY", "/bin/sh", (SELECT id FROM WhitelistClass WHERE class="Filesystem/Path/Executable")),
+                                                  ("ANY", "/usr/bin/bash", (SELECT id FROM WhitelistClass WHERE class="Filesystem/Path/Executable")),
+                                                  ("ANY", "/usr/bin/sh", (SELECT id FROM WhitelistClass WHERE class="Filesystem/Path/Executable")),
                                                   ("ANY", "/usr/bin/whoami", (SELECT id FROM WhitelistClass WHERE class="Filesystem/Path/Executable")),
                                                   ("ANY", "/tmp/*", (SELECT id FROM WhitelistClass WHERE class="Filesystem/Path/Writable")), -- Realpath/canonicalized open() for wildcards?
                                                   ("/opt/WhiteBeam/whitebeam", "11998", (SELECT id FROM WhitelistClass WHERE class="Network/Range/Port")),

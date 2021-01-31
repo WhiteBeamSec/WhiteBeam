@@ -26,6 +26,11 @@ build_action! { verify_can_execute (src_prog, hooked_fn, arg_id, args, do_return
             }
         }
         // Deny by default
+        if hooked_fn.contains("exec") {
+            // Terminate the child process
+            eprintln!("WhiteBeam: {}: Permission denied", &target_executable);
+            unsafe { libc::exit(126) };
+        }
         do_return = true;
         return_value = -1;
 }}
