@@ -1,6 +1,5 @@
 use clap::{Arg, App, AppSettings};
-//use cli_table::{format::{CellFormat, Justify},
-//                Cell, Row, Table};
+use cli_table::{format::{HorizontalLine, Justify, Separator}, print_stdout, CellStruct, Cell, Style, Table, TableStruct};
 use std::ffi::OsStr;
 use std::env;
 use std::io::{self, Read};
@@ -115,30 +114,74 @@ fn run_enable() {
     // TODO: Enable hook class
 }
 
-fn run_list() {
-    // TODO: Refactor
+fn run_list(param: &str) {
     let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
-    let whitelist = common::db::get_dyn_whitelist(&conn).unwrap_or(Vec::new());
-    /*
-    let bold = CellFormat::builder().bold(true).build();
-    let mut table_vec: Vec<Row> = Vec::new();
-    table_vec.push(Row::new(vec![
-        Cell::new("Path", bold)
-    ]));
-    for result in whitelist {
-        table_vec.push(Row::new(vec![
-                Cell::new(&result.program, Default::default())
-            ]));
-    }
-    let table = match Table::new(table_vec, cli_table::format::BORDER_COLUMN_TITLE) {
-        Ok(table_obj) => table_obj,
-        Err(_e) => {
-            eprintln!("WhiteBeam: Could not create table");
+    let table_struct: TableStruct = match param {
+        "whitelist" => {
+            let table: Vec<Vec<CellStruct>> = common::db::get_whitelist(&conn).unwrap_or(Vec::new()).iter()
+                                                .map(|entry| vec![entry.id.clone().cell(), entry.class.clone().cell(), entry.path.clone().cell(), entry.value.clone().cell()])
+                                                .collect();
+            table.table()
+                    .title(vec![
+                        "ID".cell().bold(true),
+                        "Class".cell().bold(true),
+                        "Path".cell().bold(true),
+                        "Value".cell().bold(true)
+                    ])
+                    .separator(
+                        Separator::builder()
+                        .title(Some(Default::default()))
+                        .row(None)
+                        .column(Some(Default::default()))
+                        .build(),
+                    )
+        },
+        "hooks" => {
+            let table: Vec<Vec<CellStruct>> = common::db::get_hooks(&conn).unwrap_or(Vec::new()).iter()
+                                                .map(|entry| vec![entry.id.clone().cell(), entry.enabled.clone().cell(), entry.language.clone().cell(), entry.library.clone().cell(), entry.symbol.clone().cell(), entry.args.clone().cell()])
+                                                .collect();
+            table.table()
+                    .title(vec![
+                        "ID".cell().bold(true),
+                        "Enabled".cell().bold(true),
+                        "Language".cell().bold(true),
+                        "Library".cell().bold(true),
+                        "Symbol".cell().bold(true),
+                        "Arguments".cell().bold(true)
+                    ])
+                    .separator(
+                        Separator::builder()
+                        .title(Some(Default::default()))
+                        .row(None)
+                        .column(Some(Default::default()))
+                        .build(),
+                    )
+        },
+        "rules" => {
+            let table: Vec<Vec<CellStruct>> = common::db::get_rules(&conn).unwrap_or(Vec::new()).iter()
+                                                .map(|entry| vec![entry.library.clone().cell(), entry.symbol.clone().cell(), entry.arg.clone().cell(), entry.actions.clone().cell()])
+                                                .collect();
+            table.table()
+                    .title(vec![
+                        "Library".cell().bold(true),
+                        "Symbol".cell().bold(true),
+                        "Argument".cell().bold(true),
+                        "Actions".cell().bold(true)
+                    ])
+                    .separator(
+                        Separator::builder()
+                        .title(Some(Default::default()))
+                        .row(None)
+                        .column(Some(Default::default()))
+                        .build(),
+                    )
+        },
+        _ => {
+            eprintln!("WhiteBeam: Invalid parameter for 'list' argument");
             return;
         }
     };
-    let _res = table.print_stdout();
-    */
+    print_stdout(table_struct).expect("WhiteBeam: Could not create table");
 }
 
 fn run_load(path: &OsStr) {
@@ -246,8 +289,8 @@ async fn main() {
                  .help("Enable a class of hooks (+auth with Prevention)"))
         .arg(Arg::with_name("list")
                  .long("list")
-                 .takes_value(false)
-                 .help("View whitelist policy on this host"))
+                 .takes_value(true)
+                 .help("List hooks, rules, or whitelist policy on this host"))
         .arg(Arg::with_name("load")
                  .long("load")
                  .takes_value(true)
@@ -297,7 +340,13 @@ async fn main() {
     } else if matches.is_present("enable") {
         run_enable();
     } else if matches.is_present("list") {
-        run_list();
+        match matches.value_of_os("list") {
+            Some(param) => run_list(param.to_str().expect("WhiteBeam: List parameter was invalid UTF-8")),
+            None => {
+                    eprintln!("WhiteBeam: Missing parameter for 'list' argument");
+                    return;
+            }
+        };
     } else if matches.is_present("load") {
         match matches.value_of_os("load") {
             Some(path) => run_load(path),

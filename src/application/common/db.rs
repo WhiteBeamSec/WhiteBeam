@@ -23,9 +23,29 @@ pub struct LogExecObject {
     pub success: bool
 }
 
-pub struct WhitelistResult {
-    pub param: String,
+pub struct HookRow {
+    pub id: i64,
+    pub enabled: bool,
+    pub language: String,
+    pub library: String,
+    pub symbol: String,
+    pub args: String,
+}
+
+#[derive(Clone)]
+pub struct WhitelistRow {
+    pub class: String,
+    pub id: i64,
+    pub path: String,
     pub value: String
+}
+
+#[derive(Clone)]
+pub struct RuleRow {
+    pub library: String,
+    pub symbol: String,
+    pub arg: String,
+    pub actions: String
 }
 
 pub struct BaselineResult {
@@ -39,13 +59,69 @@ pub fn get_setting(conn: &Connection, param: String) -> String {
         .expect("WhiteBeam: Could not query setting")
 }
 
-pub fn get_dyn_whitelist(conn: &Connection) -> Result<Vec<WhitelistResult>, Box<dyn Error>> {
-    let mut result_vec: Vec<WhitelistResult> = Vec::new();
-    let mut stmt = conn.prepare("SELECT param, value FROM Whitelist")?;
+pub fn get_whitelist(conn: &Connection) -> Result<Vec<WhitelistRow>, Box<dyn Error>> {
+    // TODO: Log errors
+    let mut result_vec: Vec<WhitelistRow> = Vec::new();
+    let mut stmt = conn.prepare("SELECT WhitelistClass.class, Whitelist.id, Whitelist.path, Whitelist.value
+                                           FROM Whitelist
+                                           INNER JOIN WhitelistClass ON Whitelist.class = WhitelistClass.id")?;
     let result_iter = stmt.query_map(params![], |row| {
-        Ok(WhitelistResult {
-            param: row.get(0)?,
-            value: row.get(1)?
+        Ok(WhitelistRow {
+            class: row.get(0)?,
+            id: row.get(1)?,
+            path: row.get(2)?,
+            value: row.get(3)?
+        })
+    })?;
+    for result in result_iter {
+        result_vec.push(result?);
+    }
+    Ok(result_vec)
+}
+
+pub fn get_hooks(conn: &Connection) -> Result<Vec<HookRow>, Box<dyn Error>> {
+    // TODO: Log errors
+    let mut result_vec: Vec<HookRow> = Vec::new();
+    let mut stmt = conn.prepare("SELECT Hook.id, Hook.enabled, HookLanguage.language, Hook.library, Hook.symbol, GROUP_CONCAT('(' || Datatype.datatype || ') ' || Argument.name, ', ') AS args
+                                 FROM Hook
+                                 INNER JOIN HookLanguage ON Hook.language = HookLanguage.id
+                                 INNER JOIN Argument ON Hook.id = Argument.hook
+                                 INNER JOIN Datatype ON Argument.datatype = Datatype.id
+                                 WHERE Argument.parent IS NULL
+                                 GROUP BY Hook.id
+                                 ORDER BY Hook.id, Argument.position")?;
+    let result_iter = stmt.query_map(params![], |row| {
+        Ok(HookRow {
+            id: row.get(0)?,
+            enabled: row.get(1)?,
+            language: row.get(2)?,
+            library: row.get(3)?,
+            symbol: row.get(4)?,
+            args: row.get(5)?
+        })
+    })?;
+    for result in result_iter {
+        result_vec.push(result?);
+    }
+    Ok(result_vec)
+}
+
+pub fn get_rules(conn: &Connection) -> Result<Vec<RuleRow>, Box<dyn Error>> {
+    // TODO: Log errors
+    let mut result_vec: Vec<RuleRow> = Vec::new();
+    let mut stmt = conn.prepare("SELECT Hook.library, Hook.symbol, Argument.name AS arg, GROUP_CONCAT(Action.name, ', ') AS actions
+                                 FROM Rule
+                                 INNER JOIN Action ON Rule.action = Action.id
+                                 INNER JOIN Argument on Rule.arg = Argument.id
+                                 INNER JOIN Hook on Argument.hook = Hook.id
+                                 GROUP BY Hook.id, Argument.id
+                                 ORDER BY Hook.id, Rule.id")?;
+    let result_iter = stmt.query_map(params![], |row| {
+        Ok(RuleRow {
+            library: row.get(0)?,
+            symbol: row.get(1)?,
+            arg: row.get(2)?,
+            actions: row.get(3)?
         })
     })?;
     for result in result_iter {
