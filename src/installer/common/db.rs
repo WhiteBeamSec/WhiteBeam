@@ -11,8 +11,8 @@ use std::{error::Error,
           process::Stdio};
 
 fn db_init() -> Result<(), Box<dyn Error>> {
-    let schema_path: &str = &format!("{}/src/installer/common/resources/schema.sql", env!("PWD"));
-    let default_data_path: &str = &format!("{}/src/installer/common/resources/default.sql", env!("PWD"));
+    let schema_path: &str = &format!("{}/src/sql/common/schema.sql", env!("PWD"));
+    let default_data_path: &str = &format!("{}/src/sql/common/default.sql", env!("PWD"));
     db_load(schema_path)?;
     db_load(default_data_path)?;
     Ok(())
@@ -54,8 +54,8 @@ pub fn db_load(sql_path: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn load_test_data() -> Result<(), Box<dyn Error>> {
-    let test_data_path: &str = &format!("{}/src/installer/platforms/{}/resources/test.sql", env!("PWD"), std::env::consts::OS);
-    db_load(test_data_path)?;
+pub fn load_platform_data(sql_filename: &str) -> Result<(), Box<dyn Error>> {
+    let platform_data_path: &str = &format!("{}/src/sql/platforms/{}/{}.sql", env!("PWD"), std::env::consts::OS, sql_filename);
+    db_load(platform_data_path)?;
     Ok(())
 }
