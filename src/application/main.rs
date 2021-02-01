@@ -1,5 +1,5 @@
 use clap::{Arg, App, AppSettings};
-use cli_table::{format::{HorizontalLine, Justify, Separator}, print_stdout, CellStruct, Cell, Style, Table, TableStruct};
+use cli_table::{format::{Justify, Separator}, print_stdout, CellStruct, Cell, Style, Table, TableStruct};
 use std::ffi::OsStr;
 use std::env;
 use std::io::{self, Read};
