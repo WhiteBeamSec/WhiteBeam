@@ -56,8 +56,8 @@ INSERT INTO Argument (name, position, hook, datatype) VALUES -- execl
                                                              ("envp", 2, (SELECT id FROM Hook WHERE library = "/lib/x86_64-linux-gnu/libc.so.6" AND symbol="fexecve"), (SELECT id FROM Datatype WHERE datatype="StringArray"));
 
 -- Rule
--- TODO: Audit non-exec*e functions for whitelist bypasses
--- TODO: fexecve
+-- TODO: OverrideFunction *exec* -> execve, add environment if not present and pass on to FilterEnvironment
+-- TODO: exec*p*, fexecve: Rewrite path (for fexecve likely /proc/pid/fd/x)
 INSERT INTO Rule (arg, action) VALUES -- Execution
                                       ((SELECT id FROM Argument WHERE hook=(SELECT id FROM Hook WHERE library = "/lib/x86_64-linux-gnu/libc.so.6" AND symbol="execl") AND name="pathname"), (SELECT id FROM Action WHERE name="VerifyCanExecute")),
                                       ((SELECT id FROM Argument WHERE hook=(SELECT id FROM Hook WHERE library = "/lib/x86_64-linux-gnu/libc.so.6" AND symbol="execl") AND name="pathname"), (SELECT id FROM Action WHERE name="VerifyFileHash")),

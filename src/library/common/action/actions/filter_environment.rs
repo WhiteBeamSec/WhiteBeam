@@ -1,5 +1,5 @@
 #[macro_use]
-build_action! { filter_environment (src_prog, hooked_fn, arg_id, args, do_return, return_value) {
+build_action! { FilterEnvironment (src_prog, hooked_fn, arg_id, args, do_return, return_value) {
         // Enforce LD_AUDIT, LD_BIND_NOT, WB_PROG
         // TODO: Avoid leaking memory (NB: this action is often called before execve)
         let envp_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");

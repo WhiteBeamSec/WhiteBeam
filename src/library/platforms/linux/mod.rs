@@ -220,7 +220,7 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
         let arg_cache_lock = db::ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         arg_cache_lock.iter().filter(|arg| arg.hook == stack_hook).map(|arg| arg.clone()).collect()
     };
-    // TODO: Expand out variadic arguments
+    // TODO: Expand out variadic arguments (implications for execle)
     // TODO: Make this less expensive
     let mut argc: usize = get_argc(arg_vec.clone());
     if argc > 0 {

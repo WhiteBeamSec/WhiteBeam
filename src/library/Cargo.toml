@@ -19,7 +19,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 rusqlite = { version = "0.24", features = ["bundled"] }
 hex = { version = "0.4" }
-automod = { git = "https://github.com/noproto/automod" }
+linkme = { version = "0.2" }
+automod = { version = "1.0" }
 
 [features]
 whitelist_test = []

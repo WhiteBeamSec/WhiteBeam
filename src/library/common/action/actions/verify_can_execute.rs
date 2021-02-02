@@ -1,5 +1,5 @@
 #[macro_use]
-build_action! { verify_can_execute (src_prog, hooked_fn, arg_id, args, do_return, return_value) {
+build_action! { VerifyCanExecute (src_prog, hooked_fn, arg_id, args, do_return, return_value) {
         // Permit execution if not running in prevention mode
         if !(crate::common::db::get_prevention()) {
             return (hooked_fn, args, do_return, return_value);
