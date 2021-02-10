@@ -11,10 +11,8 @@ use std::{error::Error,
           process::Stdio};
 
 fn db_init() -> Result<(), Box<dyn Error>> {
-    let schema_path: &str = &format!("{}/src/sql/common/schema.sql", env!("PWD"));
-    let default_data_path: &str = &format!("{}/src/sql/common/default.sql", env!("PWD"));
-    db_load(schema_path)?;
-    db_load(default_data_path)?;
+    db_load("Schema")?;
+    db_load("Default")?;
     Ok(())
 }
 
@@ -35,27 +33,12 @@ pub fn db_optionally_init(release: &str) -> Result<(), Box<dyn Error>> {
 
 pub fn db_load(sql_path: &str) -> std::io::Result<()> {
     let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
-    let sql_data: Vec<u8> = std::fs::read(sql_path)?;
-    let mut child = Command::new(bin_target_path).args(&["--load", "stdin"]).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
-    {
-        // Limited borrow of stdin
-        let stdin = match child.stdin.as_mut() {
-            Some(s) => s,
-            None => return Err(std::io::Error::new(std::io::ErrorKind::BrokenPipe, "WhiteBeam: Could not get handle to stdin"))
-        };
-        stdin.write_all(&sql_data)?;
-    }
+    let mut child = Command::new(bin_target_path).args(&["--load", sql_path]).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
     // TODO: _output, debugging information follows:
     let output = child.wait_with_output()?;
     print!("stdout: {}", std::str::from_utf8(&output.stdout).unwrap());
     if output.stderr.len() > 0 {
         eprint!("stderr: {}", std::str::from_utf8(&output.stderr).unwrap());
     }
-    Ok(())
-}
-
-pub fn load_platform_data(sql_filename: &str) -> Result<(), Box<dyn Error>> {
-    let platform_data_path: &str = &format!("{}/src/sql/platforms/{}/{}.sql", env!("PWD"), std::env::consts::OS, sql_filename);
-    db_load(platform_data_path)?;
     Ok(())
 }

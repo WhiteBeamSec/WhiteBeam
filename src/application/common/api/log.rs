@@ -14,7 +14,7 @@ pub async fn log_exec(exec: db::LogExecObject, addr: Option<SocketAddr>) -> Resu
         return Err(warp::reject::not_found());
     }
     // Input to this function is untrusted
-    let conn: rusqlite::Connection = match db::db_open() {
+    let conn: rusqlite::Connection = match db::db_open(false) {
         Ok(c) => c,
         Err(_) => return Err(warp::reject::not_found())
     };

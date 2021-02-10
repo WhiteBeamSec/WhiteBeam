@@ -44,8 +44,8 @@ fn generate_client_private_key(save_path: &Path) -> Result<(), std::io::Error> {
 }
 
 fn get_server_public_key() -> Result<PublicKey, Box<dyn Error>> {
-    let conn: rusqlite::Connection = db::db_open()?;
-    let public_key_string: String = db::get_setting(&conn, String::from("server_key"));
+    let conn: rusqlite::Connection = db::db_open(false)?;
+    let public_key_string: String = db::get_setting(&conn, String::from("ServerPublicKey"))?;
     let public_key_bytes: &[u8] = &hex::decode(&public_key_string)?;
     match PublicKey::from_slice(public_key_bytes) {
         Some(public_key) => Ok(public_key),
@@ -167,9 +167,9 @@ pub fn generate_crypto_box_message(action: String, parameters: Vec<String>) -> R
 }
 
 pub fn process_request(crypto_box_object: CryptoBox) -> Result<Message, Box<dyn Error>> {
-    let conn: rusqlite::Connection = db::db_open()?;
+    let conn: rusqlite::Connection = db::db_open(false)?;
     // Ignore replayed messages
-    if db::get_seen_nonce(&conn, &crypto_box_object.nonce) {
+    if db::get_seen_nonce(&conn, &crypto_box_object.nonce)? {
         return Err("Invalid message".into());
     }
     let nonce_array: [u8; NONCEBYTES] = nonce_array_from_slice(&hex::decode(crypto_box_object.nonce)?)?;

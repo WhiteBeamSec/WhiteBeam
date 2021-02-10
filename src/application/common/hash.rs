@@ -53,7 +53,7 @@ pub fn common_hash_fd(fd: i32) -> String {
 
 pub fn common_hash_file(path: &OsStr) -> String {
     let file = match fs::File::open(&path) {
-        Err(_why) => return hash_null(),
+        Err(_desc) => return hash_null(),
         Ok(file) => file
     };
     common_hash_data(file)

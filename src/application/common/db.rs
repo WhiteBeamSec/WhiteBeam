@@ -26,7 +26,7 @@ pub struct LogExecObject {
 pub struct HookRow {
     pub id: i64,
     pub enabled: bool,
-    pub language: String,
+    pub class: String,
     pub library: String,
     pub symbol: String,
     pub args: String,
@@ -53,10 +53,9 @@ pub struct BaselineResult {
     pub total_blocked: u32
 }
 
-pub fn get_setting(conn: &Connection, param: String) -> String {
+pub fn get_setting(conn: &Connection, param: String) -> Result<String, Box<dyn Error>> {
     // TODO: Log errors
-    conn.query_row("SELECT value FROM Setting WHERE param = ?", params![param], |r| r.get(0))
-        .expect("WhiteBeam: Could not query setting")
+    Ok(conn.query_row("SELECT value FROM Setting WHERE param = ?", params![param], |r| r.get(0))?)
 }
 
 pub fn get_whitelist(conn: &Connection) -> Result<Vec<WhitelistRow>, Box<dyn Error>> {
@@ -79,11 +78,12 @@ pub fn get_whitelist(conn: &Connection) -> Result<Vec<WhitelistRow>, Box<dyn Err
     Ok(result_vec)
 }
 
-pub fn get_hooks(conn: &Connection) -> Result<Vec<HookRow>, Box<dyn Error>> {
+pub fn get_hooks_pretty(conn: &Connection) -> Result<Vec<HookRow>, Box<dyn Error>> {
     // TODO: Log errors
     let mut result_vec: Vec<HookRow> = Vec::new();
-    let mut stmt = conn.prepare("SELECT Hook.id, Hook.enabled, HookLanguage.language, Hook.library, Hook.symbol, GROUP_CONCAT('(' || Datatype.datatype || ') ' || Argument.name, ', ') AS args
+    let mut stmt = conn.prepare("SELECT Hook.id, Hook.enabled, HookClass.class, Hook.library || ' (' || HookLanguage.language || ')' AS library, Hook.symbol, GROUP_CONCAT('(' || Datatype.datatype || ') ' || Argument.name, ', ') AS args
                                  FROM Hook
+                                 INNER JOIN HookClass ON Hook.class = HookClass.id
                                  INNER JOIN HookLanguage ON Hook.language = HookLanguage.id
                                  INNER JOIN Argument ON Hook.id = Argument.hook
                                  INNER JOIN Datatype ON Argument.datatype = Datatype.id
@@ -94,7 +94,7 @@ pub fn get_hooks(conn: &Connection) -> Result<Vec<HookRow>, Box<dyn Error>> {
         Ok(HookRow {
             id: row.get(0)?,
             enabled: row.get(1)?,
-            language: row.get(2)?,
+            class: row.get(2)?,
             library: row.get(3)?,
             symbol: row.get(4)?,
             args: row.get(5)?
@@ -106,7 +106,7 @@ pub fn get_hooks(conn: &Connection) -> Result<Vec<HookRow>, Box<dyn Error>> {
     Ok(result_vec)
 }
 
-pub fn get_rules(conn: &Connection) -> Result<Vec<RuleRow>, Box<dyn Error>> {
+pub fn get_rules_pretty(conn: &Connection) -> Result<Vec<RuleRow>, Box<dyn Error>> {
     // TODO: Log errors
     let mut result_vec: Vec<RuleRow> = Vec::new();
     let mut stmt = conn.prepare("SELECT Hook.library, Hook.symbol, Argument.name AS arg, GROUP_CONCAT(Action.name, ', ') AS actions
@@ -149,87 +149,65 @@ pub fn get_baseline(conn: &Connection) -> Result<Vec<BaselineResult>, Box<dyn Er
     Ok(result_vec)
 }
 
-pub fn get_prevention(conn: &Connection) -> bool {
-    get_setting(conn, String::from("Prevention")) == String::from("true")
+pub fn get_prevention(conn: &Connection) -> Result<bool, Box<dyn Error>> {
+    Ok(get_setting(conn, String::from("Prevention"))? == String::from("true"))
 }
 
-pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> bool {
+pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> Result<bool, Box<dyn Error>> {
     let auth_hash: String = hash::common_hash_password(auth);
-    let console_secret_expiry: u32 = match get_setting(conn, String::from("console_secret_expiry")).parse() {
-        Ok(v) => v,
-        Err(_e) => return false
-    };
+    let console_secret_expiry: u32 = get_setting(conn, String::from("ConsoleSecretExpiry"))?.parse()?;
     let time_now = time::get_timestamp();
     if console_secret_expiry == 0 ||
        console_secret_expiry >= time_now {
-            return get_setting(conn, String::from("console_secret")) == String::from(auth_hash);
+            return Ok(get_setting(conn, String::from("ConsoleSecret"))? == String::from(auth_hash));
     }
-    false
+    Ok(false)
 }
 
-pub fn get_valid_auth_env(conn: &Connection) -> bool {
-    match env::var("WB_AUTH") {
-        Ok(val) => {
-            get_valid_auth_string(conn, &val)
-        }
-        Err(_e) => {
-            false
-        }
-    }
+pub fn get_valid_auth_env(conn: &Connection) -> Result<bool, Box<dyn Error>> {
+    get_valid_auth_string(conn, &env::var("WB_AUTH")?)
 }
 
-pub fn get_seen_nonce(conn: &Connection, nonce: &str) -> bool {
+pub fn get_seen_nonce(conn: &Connection, nonce: &str) -> Result<bool, Box<dyn Error>> {
     // TODO: Log errors
-    let count: i64 = conn.query_row("SELECT count(*) FROM NonceHistory WHERE nonce = ?", params![nonce], |r| r.get(0))
-                         .expect("WhiteBeam: Could not query nonce history");
-    count > 0
+    let count: i64 = conn.query_row("SELECT count(*) FROM NonceHistory WHERE nonce = ?", params![nonce], |r| r.get(0))?;
+    Ok(count > 0)
 }
 
-pub fn insert_setting(conn: &Connection, param: &str, value: &str) {
-    let _res = conn.execute(
-        "INSERT INTO Setting (param, value)
-                  VALUES (?1, ?2)",
-        params![param, value]
-    );
+pub fn insert_setting(conn: &Connection, param: &str, value: &str) -> Result<(), Box<dyn Error>> {
+    let _res = conn.execute("INSERT INTO Setting (param, value) VALUES (?1, ?2)", params![param, value])?;
+    Ok(())
 }
 
-pub fn insert_whitelist(conn: &Connection, param: &str, value: &str) {
+pub fn insert_whitelist(conn: &Connection, param: &str, value: &str) -> Result<(), Box<dyn Error>> {
     // TODO: Verify no duplicate value exists
-    let _res = conn.execute(
-        "INSERT INTO Whitelist (param, value)
-                  VALUES (?1, ?2)",
-        params![param, value]
-    );
+    let _res = conn.execute("INSERT INTO Whitelist (param, value) VALUES (?1, ?2)", params![param, value])?;
+    Ok(())
 }
 
-pub fn insert_exec(conn: &Connection, exec: LogExecObject) {
-    let _res = conn.execute(
-        "INSERT INTO Log (program, hash, uid, ts, success)
-                  VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![exec.program, exec.hash, exec.uid, exec.ts, exec.success]
-    );
+pub fn insert_exec(conn: &Connection, exec: LogExecObject) -> Result<(), Box<dyn Error>> {
+    let _res = conn.execute("INSERT INTO Log (program, hash, uid, ts, success) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![exec.program, exec.hash, exec.uid, exec.ts, exec.success])?;
+    Ok(())
 }
 
-pub fn update_setting(conn: &Connection, param: &str, value: &str) {
-    let _res = conn.execute(
-        "INSERT OR REPLACE INTO Setting (param, value)
-                  VALUES (?1, ?2)",
-        params![param, value]
-    );
+pub fn update_setting(conn: &Connection, param: &str, value: &str) -> Result<(), Box<dyn Error>> {
+    let _res = conn.execute("INSERT OR REPLACE INTO Setting (param, value) VALUES (?1, ?2)", params![param, value])?;
+    Ok(())
 }
 
-pub fn delete_whitelist(conn: &Connection, id: u32) {
-    let _res = conn.execute("DELETE FROM Whitelist WHERE id = ?1",
-                 params![id]);
+pub fn delete_whitelist(conn: &Connection, id: u32) -> Result<(), Box<dyn Error>> {
+    let _res = conn.execute("DELETE FROM Whitelist WHERE id = ?1", params![id])?;
+    Ok(())
 }
 
-pub fn db_open() -> Result<Connection, String> {
+pub fn db_open(force: bool) -> Result<Connection, String> {
     let db_path: &Path = &platform::get_data_file_path("database.sqlite");
     let no_db: bool = !db_path.exists();
     // TODO: Log instead?
-    //if no_db {
-    //    return Err("No database file found".to_string());
-    //}
+    if no_db && !force {
+        return Err("No database file found".to_string());
+    }
     match Connection::open(db_path) {
         Ok(conn) => Ok(conn),
         Err(_e) => {

@@ -41,21 +41,15 @@ TODO: Update video for 0.2
 
 ### From Packages (Linux)
 
-TODO: Using your package manager of choice (on Ubuntu/Debian (apt/snap classic)/Gentoo (emerge)/Arch (pacman AUR)/RHEL/Amazon Linux/Rocky Linux (yum)/OpenSUSE/etc.), details on installing `whitebeam`
-
-### From Repositories
-
-TODO: Repositories while packages get processed. Deprecated binary guide below.
+TODO: Using your package manager of choice (on Ubuntu/Debian (apt/snap classic)/Gentoo (emerge)/Arch (pacman AUR)/RHEL/Amazon Linux/Rocky Linux (yum)/OpenSUSE/etc.), details on installing `whitebeam` package.
 
 **Important**: Always ensure the downloaded file hash matches official hashes ([How-to](https://github.com/WhiteBeamSec/WhiteBeam/wiki/Verifying-file-hashes)).
 
-| Platform        | URL                                                                 | Hash(es) |
-| --------------- | ------------------------------------------------------------------- | -------- |
-| Linux (x86_64)  | https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.tar.gz  | [SHA-256](https://dist.whitebeamsec.com/linux/x86_64/WhiteBeam_latest.SHA256)  |
-| Linux (i686)    | https://dist.whitebeamsec.com/linux/i686/WhiteBeam_latest.tar.gz    | [SHA-256](https://dist.whitebeamsec.com/linux/i686/WhiteBeam_latest.SHA256)    |
-| Linux (aarch64) | https://dist.whitebeamsec.com/linux/aarch64/WhiteBeam_latest.tar.gz | [SHA-256](https://dist.whitebeamsec.com/linux/aarch64/WhiteBeam_latest.SHA256) |
+https://github.com/WhiteBeamSec/WhiteBeam/releases
 
-Install WhiteBeam: `./install`
+### From Repositories
+
+TODO: Repositories, https://repology.org/ badge.
 
 ### From Source (Linux)
 

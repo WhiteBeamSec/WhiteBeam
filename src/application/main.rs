@@ -1,9 +1,12 @@
+// TODO: Non-zero exit codes for all errors
 use clap::{Arg, App, AppSettings};
-use cli_table::{format::{Justify, Separator}, print_stdout, CellStruct, Cell, Style, Table, TableStruct};
-use std::ffi::OsStr;
-use std::env;
-use std::io::{self, Read};
-use std::process::Command;
+use cli_table::{format::{Justify, Separator}, print_stdout, CellStruct, Cell, Style, Table, TableStruct, Color};
+use std::{env,
+          error::Error,
+          ffi::OsStr,
+          fmt::{self, Debug, Display},
+          io::{self, Read},
+          process::Command};
 
 pub mod platforms;
 #[cfg(target_os = "windows")]
@@ -16,64 +19,53 @@ use platforms::macos as platform;
 pub mod common;
 
 // Support functions
-fn valid_auth() -> bool {
+fn valid_auth() -> Result<bool, Box<dyn Error>> {
     // TODO: Log
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
-    if common::db::get_prevention(&conn) {
-        if !common::db::get_valid_auth_env(&conn) {
-            eprintln!("WhiteBeam: Authorization failed");
-            return false;
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
+    if common::db::get_prevention(&conn)? {
+        if !common::db::get_valid_auth_env(&conn).unwrap_or(false) {
+            return Ok(false);
         }
     }
-    return true;
+    return Ok(true);
 }
 
 // Methods
-fn run_add(program: &OsStr) {
-    if !valid_auth() { return; }
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
+fn run_add(program: &OsStr) -> Result<(), Box<dyn Error>> {
+    if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
     // TODO: Use hook class to determine how to store value
     let hash: String = common::hash::common_hash_file(program);
     if hash == common::hash::hash_null() {
-        eprintln!("WhiteBeam: No such file or directory");
-        return;
+        return Err("WhiteBeam: No such file or directory".into());
     }
-    let program_str = program.to_string_lossy();
+    let program_str = program.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
     println!("WhiteBeam: Adding {} (SHA-512: {}) to whitelist", &program_str, hash);
-    common::db::insert_whitelist(&conn, &program_str, &hash);
+    common::db::insert_whitelist(&conn, &program_str, &hash)
 }
 
-fn run_auth() {
+fn run_auth() -> Result<(), Box<dyn Error>> {
     // TODO: Log
-    let password = match rpassword::read_password_from_tty(Some("Password: ")) {
-        Ok(p) => p,
-        Err(_e) => {
-            eprintln!("WhiteBeam: Could not read password");
-            return;
-        }
-    };
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
-    if !common::db::get_valid_auth_string(&conn, &password) {
-            eprintln!("WhiteBeam: Authorization failed");
-            return;
+    let password: String = rpassword::read_password_from_tty(Some("Password: "))?;
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
+    if !common::db::get_valid_auth_string(&conn, &password)? {
+        return Err("WhiteBeam: Authorization failed".into());
     }
     println!("WhiteBeam: Opening administrative shell");
     let mut command = Command::new("/bin/sh");
     if let Ok(mut child) = command.env("WB_AUTH", &password)
                                   .spawn() {
-        match child.wait() {
-            Ok(_c) => (),
-            Err(_e) => eprintln!("WhiteBeam: Session isn't running")
-        };
+        child.wait()?;
         println!("WhiteBeam: Session closed");
     } else {
-        eprintln!("WhiteBeam: Administrative shell failed to start");
+        return Err("WhiteBeam: Administrative shell failed to start".into());
     }
+    Ok(())
 }
 
-fn run_baseline() {
+fn run_baseline() -> Result<(), Box<dyn Error>> {
     // TODO: Refactor
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
     //let whitelist = common::db::get_baseline(&conn).unwrap_or(Vec::new());
     /*
     let justify_right = CellFormat::builder().justify(Justify::Right).build();
@@ -98,28 +90,39 @@ fn run_baseline() {
     };
     let _res = table.print_stdout();
     */
+    Ok(())
 }
 
-fn run_disable() {
-    if !valid_auth() { return; }
+fn run_disable() -> Result<(), Box<dyn Error>> {
+    if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     println!("WhiteBeam: Disabling hook class");
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
     // TODO: Disable hook class
+    Ok(())
 }
 
-fn run_enable() {
-    if !valid_auth() { return; }
+fn run_enable() -> Result<(), Box<dyn Error>> {
+    if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     println!("WhiteBeam: Enabling hook class");
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
     // TODO: Enable hook class
+    Ok(())
 }
 
-fn run_list(param: &str) {
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
-    let table_struct: TableStruct = match param {
+fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
+    // TODO: Zero argument case
+    // TODO: Add hook class
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
+    let param_str = param.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
+    let table_struct: TableStruct = match param_str {
         "whitelist" => {
             let table: Vec<Vec<CellStruct>> = common::db::get_whitelist(&conn).unwrap_or(Vec::new()).iter()
-                                                .map(|entry| vec![entry.id.clone().cell(), entry.class.clone().cell(), entry.path.clone().cell(), entry.value.clone().cell()])
+                                                .map(|entry| vec![
+                                                    entry.id.clone().cell(),
+                                                    entry.class.clone().cell(),
+                                                    entry.path.clone().cell(),
+                                                    entry.value.clone().cell()
+                                                ])
                                                 .collect();
             table.table()
                     .title(vec![
@@ -137,14 +140,28 @@ fn run_list(param: &str) {
                     )
         },
         "hooks" => {
-            let table: Vec<Vec<CellStruct>> = common::db::get_hooks(&conn).unwrap_or(Vec::new()).iter()
-                                                .map(|entry| vec![entry.id.clone().cell(), entry.enabled.clone().cell(), entry.language.clone().cell(), entry.library.clone().cell(), entry.symbol.clone().cell(), entry.args.clone().cell()])
+            let table: Vec<Vec<CellStruct>> = common::db::get_hooks_pretty(&conn).unwrap_or(Vec::new()).iter()
+                                                .map(|entry| vec![
+                                                    entry.id.clone().cell(),
+                                                    {
+                                                        let enabled = entry.enabled.clone();
+                                                        if enabled {
+                                                            enabled.cell().foreground_color(Some(Color::Green))
+                                                        } else {
+                                                            enabled.cell().foreground_color(Some(Color::Red))
+                                                        }
+                                                    },
+                                                    entry.class.clone().cell().justify(Justify::Center),
+                                                    entry.library.clone().cell(),
+                                                    entry.symbol.clone().cell(),
+                                                    entry.args.clone().cell()
+                                                ])
                                                 .collect();
             table.table()
                     .title(vec![
                         "ID".cell().bold(true),
                         "Enabled".cell().bold(true),
-                        "Language".cell().bold(true),
+                        "Class".cell().bold(true).justify(Justify::Center),
                         "Library".cell().bold(true),
                         "Symbol".cell().bold(true),
                         "Arguments".cell().bold(true)
@@ -158,8 +175,13 @@ fn run_list(param: &str) {
                     )
         },
         "rules" => {
-            let table: Vec<Vec<CellStruct>> = common::db::get_rules(&conn).unwrap_or(Vec::new()).iter()
-                                                .map(|entry| vec![entry.library.clone().cell(), entry.symbol.clone().cell(), entry.arg.clone().cell(), entry.actions.clone().cell()])
+            let table: Vec<Vec<CellStruct>> = common::db::get_rules_pretty(&conn).unwrap_or(Vec::new()).iter()
+                                                .map(|entry| vec![
+                                                    entry.library.clone().cell(),
+                                                    entry.symbol.clone().cell(),
+                                                    entry.arg.clone().cell(),
+                                                    entry.actions.clone().cell()
+                                                ])
                                                 .collect();
             table.table()
                     .title(vec![
@@ -177,56 +199,102 @@ fn run_list(param: &str) {
                     )
         },
         _ => {
-            eprintln!("WhiteBeam: Invalid parameter for 'list' argument");
-            return;
+            return Err("WhiteBeam: Invalid parameter for 'list' argument".into());
         }
     };
-    print_stdout(table_struct).expect("WhiteBeam: Could not create table");
+    Ok(print_stdout(table_struct)?)
 }
 
-fn run_load(path: &OsStr) {
-    //if !valid_auth() { return; }
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
-    let path_str = path.to_string_lossy();
-    if (&path_str == "stdin") || (&path_str == "-") {
+fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
+   match valid_auth() {
+       Ok(is_valid) => {
+           if !is_valid {
+               return Err("WhiteBeam: Authorization failed".into());
+           }
+       }
+       Err(desc) => {
+           let desc_str: String = desc.to_string();
+           // Allow database to be initialized for the first time
+           // TODO: Audit denial of service attacks against --load (e.g. max opened files, exhausting memory)
+           if (desc_str != "No database file found") &&
+              (desc_str != "Query returned no rows") {
+               return Err(desc);
+           }
+       }
+    }
+    let conn: rusqlite::Connection = common::db::db_open(true)?;
+    let path_str = path.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
+    if (path_str == "stdin") || (path_str == "-") {
         println!("WhiteBeam: Loading SQL from standard input");
         let mut buffer = String::new();
-        std::io::stdin().read_to_string(&mut buffer).expect("WhiteBeam: Could not get handle to stdin");
-        conn.execute_batch(&buffer);
-        return;
+        std::io::stdin().read_to_string(&mut buffer)?;
+        conn.execute_batch(&buffer)?;
+        return Ok(());
     }
-    // TODO: file/repository with std::fs::read_to_string and http.rs
-    println!("WhiteBeam: Loading SQL from '{}'", &path_str);
+    // Try reading a file
+    if let Ok(buffer) = std::fs::read_to_string(&path) {
+        println!("WhiteBeam: Loading SQL from local file '{}'", path_str);
+        conn.execute_batch(&buffer)?;
+        return Ok(());
+    }
+    // Try loading from repository
+    // TODO: Rewrite path if str is "Base"
+    let repository = match common::db::get_setting(&conn, String::from("Repository")) {
+        Ok(repo) => repo,
+        // TODO: Package Schema, Default, and Essential
+        Err(_) => String::from("https://github.com/WhiteBeamSec/SQL/blob/master")
+    };
+    let mut url_common: String = format!("{}/sql/common/{}.sql", repository, path_str);
+    let mut url_platform: String = format!("{}/sql/platforms/{}/{}.sql", repository, std::env::consts::OS, path_str);
+    if repository.starts_with("https://github.com/") {
+        url_common.push_str("?raw=true");
+        url_platform.push_str("?raw=true");
+    }
+    // TODO: Identify ourselves with a user agent
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()?;
+    let response_common = client.get(&url_common).send()?;
+    if response_common.status().is_success() {
+        println!("WhiteBeam: Loading '{}' from repository", path_str);
+        let buffer = response_common.text()?;
+        conn.execute_batch(&buffer)?;
+        return Ok(());
+    }
+    let response_platform = client.get(&url_platform).send()?;
+    if response_platform.status().is_success() {
+        println!("WhiteBeam: Loading '{}' from repository", path_str);
+        let buffer = response_platform.text()?;
+        conn.execute_batch(&buffer)?;
+        return Ok(())
+    } else {
+        return Err("WhiteBeam: Failed to load SQL from all available sources".into());
+    }
 }
 
-fn run_remove(id: u32) {
-    if !valid_auth() { return; }
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
-    common::db::delete_whitelist(&conn, id);
+fn run_remove(id: u32) -> Result<(), Box<dyn Error>> {
+    if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
+    common::db::delete_whitelist(&conn, id)
 }
 
+#[tokio::main]
 async fn run_service() {
     //common::db::db_optionally_init();
     common::api::serve().await;
 }
 
-fn run_setting(param: &str, value: Option<&str>) {
-    if !valid_auth() { return; }
-    let conn: rusqlite::Connection = common::db::db_open().expect("WhiteBeam: Could not open database");
+fn run_setting(param: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error>> {
+    if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
+    let param_str = param.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
     if value.is_none() {
-        println!("{}", common::db::get_setting(&conn, String::from(param)));
-        return;
+        println!("{}", common::db::get_setting(&conn, String::from(param_str))?);
+        return Ok(());
     }
-    let mut val: String = match value.unwrap() {
+    let mut val: String = match value.unwrap().to_str().ok_or(String::from("Invalid UTF-8 provided"))? {
         "mask" => {
-            let masked_value: String = match rpassword::read_password_from_tty(Some("Value: ")) {
-                Ok(v) => v,
-                Err(_e) => {
-                    eprintln!("WhiteBeam: Could not read value");
-                    return;
-                }
-            };
-            masked_value
+            rpassword::read_password_from_tty(Some("Value: "))?
         },
         v => String::from(v)
     };
@@ -234,7 +302,7 @@ fn run_setting(param: &str, value: Option<&str>) {
         let hash: String = common::hash::common_hash_password(&val);
         val = hash;
     }
-    common::db::update_setting(&conn, param, &val);
+    common::db::update_setting(&conn, param_str, &val)
 }
 
 fn run_start() {
@@ -242,25 +310,47 @@ fn run_start() {
     platform::start_service();
 }
 
-fn run_status() {
+fn run_status() -> Result<(), Box<dyn Error>> {
     // TODO: Use ServicePort setting
-    if let Ok(_response) = common::http::get("http://127.0.0.1:11998/status")
-                                .with_timeout(1)
-                                .send() {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(1))
+        .build()?;
+    if let Ok(_response) = client.get("http://127.0.0.1:11998/status").send() {
         println!("WhiteBeam: OK");
     } else {
         eprintln!("WhiteBeam: Failed to communicate with WhiteBeam service");
     }
+    Ok(())
 }
 
-fn run_stop() {
-    if !valid_auth() { return; }
+fn run_stop() -> Result<(), Box<dyn Error>> {
+    if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     println!("WhiteBeam: Stopping WhiteBeam service");
     platform::stop_service();
+    Ok(())
 }
 
-#[tokio::main]
-async fn main() {
+pub struct MainError(Box<dyn Error>);
+
+impl<E: Into<Box<dyn Error>>> From<E> for MainError {
+    fn from(e: E) -> Self {
+        MainError(e.into())
+    }
+}
+
+impl Debug for MainError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Display::fmt(&self.0, f)?;
+        let mut source = self.0.source();
+        while let Some(error) = source {
+            write!(f, "\nCaused by: {}", error)?;
+            source = error.source();
+        }
+        Ok(())
+    }
+}
+
+fn main() -> Result<(), MainError> {
     // TODO: List enabled/disabled hook classes or individual hooks
     let matches = App::new("WhiteBeam")
         .setting(AppSettings::ArgRequiredElseHelp)
@@ -324,51 +414,23 @@ async fn main() {
         .get_matches();
 
     if matches.is_present("add") {
-        match matches.value_of_os("add") {
-            Some(path) => run_add(path),
-            None => {
-                    eprintln!("WhiteBeam: Missing parameter for 'add' argument");
-                    return;
-            }
-        };
+        run_add(matches.value_of_os("add").ok_or(String::from("WhiteBeam: Missing parameter for 'add' argument"))?)?;
     } else if matches.is_present("auth") {
-        run_auth();
+        run_auth()?;
     } else if matches.is_present("baseline") {
-        run_baseline();
+        run_baseline()?;
     } else if matches.is_present("disable") {
-        run_disable();
+        run_disable()?;
     } else if matches.is_present("enable") {
-        run_enable();
+        run_enable()?;
     } else if matches.is_present("list") {
-        match matches.value_of_os("list") {
-            Some(param) => run_list(param.to_str().expect("WhiteBeam: List parameter was invalid UTF-8")),
-            None => {
-                    eprintln!("WhiteBeam: Missing parameter for 'list' argument");
-                    return;
-            }
-        };
+        run_list(matches.value_of_os("list").ok_or(String::from("WhiteBeam: Missing parameter for 'list' argument"))?)?;
     } else if matches.is_present("load") {
-        match matches.value_of_os("load") {
-            Some(path) => run_load(path),
-            None => run_load(OsStr::new("stdin"))
-        };
+        run_load(matches.value_of_os("load").unwrap_or(OsStr::new("stdin")))?;
     } else if matches.is_present("remove") {
-        match matches.value_of("remove") {
-            Some(val) => {
-                match val.parse::<u32>() {
-                    Ok(id) => run_remove(id),
-                    Err(_) => {
-                        eprintln!("WhiteBeam: Invalid parameter for 'remove' argument")
-                    }
-                }
-            },
-            None => {
-                    eprintln!("WhiteBeam: Missing parameter for 'remove' argument");
-                    return;
-            }
-        };
+        run_remove(matches.value_of("remove").ok_or(String::from("WhiteBeam: Missing parameter for 'remove' argument"))?.parse::<u32>()?)?;
     } else if matches.is_present("service") {
-        run_service().await;
+        run_service();
     } else if matches.is_present("setting") {
         match matches.values_of_os("setting") {
             Some(vals) => {
@@ -376,30 +438,26 @@ async fn main() {
                 // TODO: Refactor
                 if vals_iter.len() == 2 {
                     // TODO: Error handling
-                    let param: &str = vals_iter.next().expect("WhiteBeam: Could not read param")
-                                               .to_str().expect("WhiteBeam: Param was invalid UTF-8");
-                    let value: &str = vals_iter.next().expect("WhiteBeam: Could not read value")
-                                               .to_str().expect("WhiteBeam: Value was invalid UTF-8");
-                    run_setting(param, Some(value))
+                    let param: &OsStr = vals_iter.next().ok_or(String::from("Missing parameter for 'setting' argument"))?;
+                    let value: &OsStr = vals_iter.next().ok_or(String::from("Missing value for 'setting' argument"))?;
+                    run_setting(param, Some(value))?
                 } else if vals_iter.len() == 1 {
-                    let param: &str = vals_iter.next().expect("WhiteBeam: Could not read param")
-                                               .to_str().expect("WhiteBeam: Param was invalid UTF-8");
-                    run_setting(param, None)
+                    let param: &OsStr = vals_iter.next().ok_or(String::from("Missing parameter for 'setting' argument"))?;
+                    run_setting(param, None)?
                 } else {
-                    eprintln!("WhiteBeam: Insufficient parameters for 'setting' argument");
-                    return;
+                    return Err("WhiteBeam: Insufficient parameters for 'setting' argument".into());
                 }
             },
             None => {
-                    eprintln!("WhiteBeam: Missing parameters for 'setting' argument");
-                    return;
+                return Err("WhiteBeam: Missing parameters for 'setting' argument".into());
             }
         };
     } else if matches.is_present("start") {
         run_start();
     } else if matches.is_present("status") {
-        run_status();
+        run_status()?;
     } else if matches.is_present("stop") {
-        run_stop();
+        run_stop()?;
     }
+    Ok(())
 }

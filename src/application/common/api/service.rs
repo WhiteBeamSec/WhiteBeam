@@ -6,7 +6,7 @@ use crate::common::db;
 use crate::common::crypto;
 
 fn set_console_secret(secret: &str, expiry: &str) -> String {
-    let conn: rusqlite::Connection = match db::db_open() {
+    let conn: rusqlite::Connection = match db::db_open(false) {
         Ok(c) => c,
         Err(_) => return String::from("OK")
     };

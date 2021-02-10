@@ -88,9 +88,9 @@ fn test(args: Vec<String>) {
     // Initialize test database
     common::db::db_optionally_init(&args[1].to_lowercase()).expect("WhiteBeam: Failed to initialize test database");
     // Load platform-specific Essential hooks through whitebeam command
-    common::db::load_platform_data("essential").expect("WhiteBeam: Failed to load Essential hooks");
+    common::db::db_load("Essential").expect("WhiteBeam: Failed to load Essential hooks");
     // Load platform-specific test data through whitebeam command
-    common::db::load_platform_data("test").expect("WhiteBeam: Failed to load test data");
+    common::db::db_load("Test").expect("WhiteBeam: Failed to load test data");
     // Run tests
     let _exit_status_tests = Command::new("cargo")
         .arg("build").arg("--package").arg("libwhitebeam-tests").arg("--release")
