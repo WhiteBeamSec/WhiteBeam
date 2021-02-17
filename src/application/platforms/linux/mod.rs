@@ -39,11 +39,10 @@ pub fn get_data_file_path(data_file: &str) -> PathBuf {
     PathBuf::from(data_file_path)
 }
 
-pub fn path_open_secure(file_path: &Path) -> File {
-    std::fs::OpenOptions::new()
+pub fn path_open_secure(file_path: &Path) -> Result<File, std::io::Error> {
+    Ok(std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .mode(0o700)
-        .open(file_path)
-        .expect(&format!("WhiteBeam: Could not securely open path {}", file_path.to_string_lossy()))
+        .open(file_path)?)
 }

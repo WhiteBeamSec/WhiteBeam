@@ -93,20 +93,20 @@ fn run_baseline() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_disable() -> Result<(), Box<dyn Error>> {
+fn run_disable(class: &OsStr) -> Result<(), Box<dyn Error>> {
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
-    println!("WhiteBeam: Disabling hook class");
     let conn: rusqlite::Connection = common::db::db_open(false)?;
-    // TODO: Disable hook class
-    Ok(())
+    let class_str = class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
+    println!("WhiteBeam: Disabling hooks in '{}' class", class_str);
+    common::db::update_hook_class_enabled(&conn, class_str, false)
 }
 
-fn run_enable() -> Result<(), Box<dyn Error>> {
+fn run_enable(class: &OsStr) -> Result<(), Box<dyn Error>> {
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
-    println!("WhiteBeam: Enabling hook class");
     let conn: rusqlite::Connection = common::db::db_open(false)?;
-    // TODO: Enable hook class
-    Ok(())
+    let class_str = class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
+    println!("WhiteBeam: Enabling hooks in '{}' class", class_str);
+    common::db::update_hook_class_enabled(&conn, class_str, true)
 }
 
 fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
@@ -420,9 +420,9 @@ fn main() -> Result<(), MainError> {
     } else if matches.is_present("baseline") {
         run_baseline()?;
     } else if matches.is_present("disable") {
-        run_disable()?;
+        run_disable(matches.value_of_os("disable").ok_or(String::from("WhiteBeam: Missing parameter for 'disable' argument"))?)?;
     } else if matches.is_present("enable") {
-        run_enable()?;
+        run_enable(matches.value_of_os("enable").ok_or(String::from("WhiteBeam: Missing parameter for 'enable' argument"))?)?;
     } else if matches.is_present("list") {
         run_list(matches.value_of_os("list").ok_or(String::from("WhiteBeam: Missing parameter for 'list' argument"))?)?;
     } else if matches.is_present("load") {

@@ -196,6 +196,11 @@ pub fn update_setting(conn: &Connection, param: &str, value: &str) -> Result<(),
     Ok(())
 }
 
+pub fn update_hook_class_enabled(conn: &Connection, class: &str, enabled: bool) -> Result<(), Box<dyn Error>> {
+    let _res = conn.execute("UPDATE Hook SET enabled = ?2 WHERE class = (SELECT id from HookClass WHERE class=?1)", params![class, enabled])?;
+    Ok(())
+}
+
 pub fn delete_whitelist(conn: &Connection, id: u32) -> Result<(), Box<dyn Error>> {
     let _res = conn.execute("DELETE FROM Whitelist WHERE id = ?1", params![id])?;
     Ok(())

@@ -39,7 +39,7 @@ fn key_array_from_slice(bytes: &[u8]) -> [u8; SECRETKEYBYTES] {
 fn generate_client_private_key(save_path: &Path) -> Result<(), std::io::Error> {
     let (_public_key, private_key) = box_::gen_keypair();
     let private_key_bytes: &[u8] = private_key.as_ref();
-    let mut key_file = platform::path_open_secure(save_path);
+    let mut key_file = platform::path_open_secure(save_path)?;
     Ok(key_file.write_all(private_key_bytes)?)
 }
 
