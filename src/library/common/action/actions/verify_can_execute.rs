@@ -1,12 +1,12 @@
 #[macro_use]
-build_action! { VerifyCanExecute (src_prog, hooked_fn, arg_id, args, do_return, return_value) {
+build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, return_value) {
         // Permit execution if not running in prevention mode
         if !(crate::common::db::get_prevention()) {
-            return (hooked_fn, args, do_return, return_value);
+            return (hook, args, do_return, return_value);
         }
         // Permit authorized execution
         if crate::common::db::get_valid_auth_env() {
-            return (hooked_fn, args, do_return, return_value);
+            return (hook, args, do_return, return_value);
         }
         // Permit whitelisted executables
         let any = String::from("ANY");
@@ -22,11 +22,11 @@ build_action! { VerifyCanExecute (src_prog, hooked_fn, arg_id, args, do_return, 
         for executable in all_allowed_executables {
             // TODO: Consider removing references
             if (&target_executable == &executable) || (&any == &executable) {
-                return (hooked_fn, args, do_return, return_value);
+                return (hook, args, do_return, return_value);
             }
         }
         // Deny by default
-        if hooked_fn.contains("exec") {
+        if (&hook.symbol).contains("exec") && (&hook.library).contains("libc.so") {
             // Terminate the child process
             eprintln!("WhiteBeam: {}: Permission denied", &target_executable);
             unsafe { libc::exit(126) };

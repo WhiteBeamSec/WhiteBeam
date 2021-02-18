@@ -22,6 +22,7 @@ pub static RULE_CACHE: SyncLazy<Mutex<Vec<RuleRow>>> = SyncLazy::new(|| Mutex::n
 pub static SET_CACHE: SyncLazy<Mutex<Vec<SettingRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
 // TODO: Cache rotation
 
+#[derive(Clone)]
 pub struct HookRow {
     pub language: String,
     pub library: String,

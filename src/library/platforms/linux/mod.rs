@@ -209,19 +209,17 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
     let src_prog: String = { CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     // Hook
     let stack_hook: i64 = { FN_STACK.lock().expect("WhiteBeam: Failed to lock mutex").pop().expect("WhiteBeam: Lost track of environment") };
-    let mut hooked_fn: String = {
+    let mut hook: db::HookRow  = {
         let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-        let hooked_fn_option: Option<&db::HookRow> = hook_cache_lock.iter().find(|hook| hook.id == stack_hook);
-        let hook_row_cloned: &db::HookRow = hooked_fn_option.expect("WhiteBeam: Lost track of environment").clone();
-        (&hook_row_cloned.symbol).to_owned()
+        let hook_option = hook_cache_lock.iter().find(|hook| hook.id == stack_hook);
+        hook_option.expect("WhiteBeam: Lost track of environment").clone()
     };
     // Arguments
     let mut arg_vec: Vec<db::ArgumentRow> = {
         let arg_cache_lock = db::ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         arg_cache_lock.iter().filter(|arg| arg.hook == stack_hook).map(|arg| arg.clone()).collect()
     };
-    // TODO: Expand out variadic arguments (implications for execle)
-    // TODO: Make this less expensive
+    // TODO: Pass by reference/slice
     let mut argc: usize = get_argc(arg_vec.clone());
     if argc > 0 {
         arg_vec[0].real = arg1 as usize;
@@ -241,8 +239,8 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
     for rule in rules {
         // TODO: Eliminate redundancy
         // TODO: Is clone needed?
-        let (hooked_fn_new, arg_vec_new, do_return, return_value) = action::process_action(src_prog.clone(), rule.clone(), hooked_fn.clone(), arg_vec.clone());
-        hooked_fn = hooked_fn_new;
+        let (hook_new, arg_vec_new, do_return, return_value) = action::process_action(src_prog.clone(), rule.clone(), hook.clone(), arg_vec.clone());
+        hook = hook_new;
         arg_vec = arg_vec_new;
         if do_return {
             return return_value;
@@ -252,10 +250,11 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
     static mut REAL: *const u8 = 0 as *const u8;
     static mut ONCE: ::std::sync::Once = ::std::sync::Once::new();
     ONCE.call_once(|| {
-        REAL = crate::platforms::linux::dlsym_next(&hooked_fn);
+        REAL = crate::platforms::linux::dlsym_next(&hook.symbol);
     });
     let hooked_fn_zargs_real: unsafe extern "C" fn() -> isize = std::mem::transmute(REAL);
     let hooked_fn_margs_real: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(REAL);
+    // TODO: Pass by reference/slice
     argc = get_argc(arg_vec.clone());
     match argc {
         0 => return hooked_fn_zargs_real(),
