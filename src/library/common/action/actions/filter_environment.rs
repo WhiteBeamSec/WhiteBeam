@@ -1,8 +1,15 @@
 #[macro_use]
 build_action! { FilterEnvironment (src_prog, hook, arg_id, args, do_return, return_value) {
         // Enforce LD_AUDIT, LD_BIND_NOT, WB_PROG
-        // TODO: Avoid leaking memory (NB: this action is often called before execve)
-        let envp_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
+        // TODO: Avoid leaking memory (NB: this action is often called before execve on Linux)
+        let envp_index: usize = {
+            // Non-positional functions
+            if (&hook.symbol).starts_with("execl") {
+                args.iter().position(|arg| arg.id == -1).expect("WhiteBeam: Lost track of environment")
+            } else {
+                args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment")
+            }
+        };
         let envp_argument: crate::common::db::ArgumentRow = args[envp_index].clone();
         let envp = envp_argument.real as *const *const libc::c_char;
         let orig_env_vec = unsafe {

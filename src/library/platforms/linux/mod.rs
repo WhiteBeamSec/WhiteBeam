@@ -221,12 +221,41 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
     };
     // TODO: Pass by reference/slice
     let mut argc: usize = get_argc(arg_vec.clone());
+    // FIXME: Refactor block, this won't work for edge cases
     if argc > 0 {
-        arg_vec[0].real = arg1 as usize;
-        let mut next_arg: usize = 0 as usize;
-        for i in 1..argc {
-            next_arg = args.arg();
-            arg_vec[i].real = next_arg as usize;
+        let mut current_arg_idx = 0;
+        arg_vec[current_arg_idx].real = arg1 as usize;
+        current_arg_idx += 1;
+        for i in current_arg_idx..argc {
+            if arg_vec[current_arg_idx].variadic {
+                // TODO: arg_vec.splice()
+                let mut loops: usize = 0;
+                let mut do_break: bool = false;
+                let mut next_argv: usize = args.arg();
+                while !(do_break) {
+                    // Excess parameters are truncated in ConsumeVariadic action
+                    if next_argv == 0 {
+                        do_break = true;
+                    }
+                    if loops == 0 {
+                        arg_vec[i].real = next_argv;
+                    } else {
+                        let mut cloned_arg = arg_vec[i].clone();
+                        cloned_arg.real = next_argv;
+                        current_arg_idx += 1;
+                        arg_vec.insert(current_arg_idx, cloned_arg);
+                    }
+                    if do_break {
+                        break;
+                    }
+                    next_argv = args.arg();
+                    loops += 1;
+                }
+                current_arg_idx += 1;
+            } else {
+                arg_vec[current_arg_idx].real = args.arg();
+                current_arg_idx += 1;
+            }
         }
     }
     // Rules

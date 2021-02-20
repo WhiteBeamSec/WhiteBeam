@@ -1,5 +1,6 @@
 #[macro_use]
 build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, return_value) {
+        // TODO: Use OsString?
         // Permit execution if not running in prevention mode
         if !(crate::common::db::get_prevention()) {
             return (hook, args, do_return, return_value);

@@ -109,12 +109,12 @@ pub fn get_hooks_pretty(conn: &Connection) -> Result<Vec<HookRow>, Box<dyn Error
 pub fn get_rules_pretty(conn: &Connection) -> Result<Vec<RuleRow>, Box<dyn Error>> {
     // TODO: Log errors
     let mut result_vec: Vec<RuleRow> = Vec::new();
-    let mut stmt = conn.prepare("SELECT Hook.library, Hook.symbol, Argument.name AS arg, GROUP_CONCAT(Action.name, ', ') AS actions
+    let mut stmt = conn.prepare("SELECT Hook.library, Hook.symbol, IIF(Rule.positional, Argument.name, '-') AS arg, GROUP_CONCAT(Action.name, ', ') AS actions
                                  FROM Rule
                                  INNER JOIN Action ON Rule.action = Action.id
                                  INNER JOIN Argument on Rule.arg = Argument.id
                                  INNER JOIN Hook on Argument.hook = Hook.id
-                                 GROUP BY Hook.id, Argument.id
+                                 GROUP BY Hook.id, Rule.positional, arg
                                  ORDER BY Hook.id, Rule.id")?;
     let result_iter = stmt.query_map(params![], |row| {
         Ok(RuleRow {
