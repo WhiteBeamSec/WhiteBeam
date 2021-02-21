@@ -15,7 +15,7 @@ build_action! { ConsumeVariadic (_src_prog, hook, arg_id, args, do_return, retur
                 for arg in va_arg_iter {
                     argv_vec.push(arg.real as *const libc::c_char);
                 }
-                args[variadic_start].real = (&argv_vec).as_ptr() as usize;
+                args[variadic_start].real = Box::leak(argv_vec.into_boxed_slice()).as_ptr() as usize;
                 args[variadic_start].datatype = String::from("StringArray");
                 args[variadic_start].variadic = false;
                 args[variadic_start].array = true;

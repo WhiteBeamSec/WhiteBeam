@@ -2,12 +2,20 @@
 build_action! { FilterEnvironment (src_prog, hook, arg_id, args, do_return, return_value) {
         // Enforce LD_AUDIT, LD_BIND_NOT, WB_PROG
         // TODO: Avoid leaking memory (NB: this action is often called before execve on Linux)
+        let library: &str = &hook.library;
+        let symbol: &str = &hook.symbol;
         let envp_index: usize = {
             // Non-positional functions
-            if (&hook.symbol).starts_with("execl") {
-                args.iter().position(|arg| arg.id == -1).expect("WhiteBeam: Lost track of environment")
-            } else {
-                args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment")
+            match (library, symbol) {
+                ("/lib/x86_64-linux-gnu/libc.so.6", "execl") |
+                ("/lib/x86_64-linux-gnu/libc.so.6", "execlp") |
+                ("/lib/x86_64-linux-gnu/libc.so.6", "execv") |
+                ("/lib/x86_64-linux-gnu/libc.so.6", "execvp") => {
+                    args.iter().position(|arg| arg.id == -1).expect("WhiteBeam: Lost track of environment")
+                }
+                _ => {
+                    args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment")
+                }
             }
         };
         let envp_argument: crate::common::db::ArgumentRow = args[envp_index].clone();
@@ -105,5 +113,5 @@ build_action! { FilterEnvironment (src_prog, hook, arg_id, args, do_return, retu
         }
         }
         env_vec.push(std::ptr::null());
-        args[envp_index].real = (&env_vec).as_ptr() as usize;
+        args[envp_index].real = Box::leak(env_vec.into_boxed_slice()).as_ptr() as usize;
 }}
