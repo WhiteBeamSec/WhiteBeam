@@ -91,43 +91,25 @@ fn test(args: Vec<String>) {
     common::db::db_load("Essential").expect("WhiteBeam: Failed to load Essential hooks");
     // Load platform-specific test data through whitebeam command
     common::db::db_load("Test").expect("WhiteBeam: Failed to load test data");
-    // Run tests
+    // Compile tests
     let _exit_status_tests = Command::new("cargo")
         .arg("build").arg("--package").arg("libwhitebeam-tests").arg("--release")
         // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
-        .env("RUSTFLAGS", "-C link-arg=-s")
+        .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
         .status()
         .expect("WhiteBeam: Failed to execute cargo command");
-    // TODO: Run tests (cont.): Iterate over tests that just got loaded with application listing them
-    /*
-    for module in &modules {
-        // TODO: fexecve in Linux tests
-        if module == &"fexecve" {
-            eprintln!("WhiteBeam: Skipping fexecve");
-            continue;
-        }
-        for test_type in &["positive", "negative"] {
-            let exit_status_module = Command::new("./target/release/libwhitebeam-tests")
-                .arg(module).arg(test_type)
-                .env("LD_PRELOAD", "./target/release/libwhitebeam.so")
-                .status()
-                .expect("WhiteBeam: Failed to execute cargo command");
-                // TODO: Use OS temp directory/directory relative to cwd instead of hardcoding /tmp/
-            if test_type == &"positive" {
-                // Positive test
-                assert!(exit_status_module.success());
-                let contents = fs::read_to_string("/tmp/test_result").expect("WhiteBeam: Could not read test result file");
-                assert_eq!(contents, String::from("./target/release/libwhitebeam.so"));
-                fs::remove_file("/tmp/test_result").expect("WhiteBeam: Failed to remove /tmp/test_result");
-            } else {
-                // Negative test
-                // TODO: assert!(!exit_status_module.success());
-                assert_eq!(Path::new("/tmp/test_result").exists(), false);
-            }
-            println!("{} passed ({} test).", module, test_type);
-        }
-    }
-    */
+    // Enable prevention
+    let _exit_status_prevention = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+        .args(&["--setting", "Prevention", "true"])
+        .status()
+        .expect("WhiteBeam: Failed to execute whitebeam command");
+    // Run tests
+    let exit_status_tests = Command::new(&format!("{}/target/release/libwhitebeam-tests", env!("PWD")))
+        .env("LD_PRELOAD", &format!("{}/target/release/libwhitebeam.so", env!("PWD")))
+        .status()
+        .expect("WhiteBeam: Failed to execute libwhitebeam-tests command");
+    // TODO: Test actions
+    // TODO: Make sure SQL schema/defaults exist
     // TODO: Test binary (e.g. ./target/release/whitebeam || true)
 }
 

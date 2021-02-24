@@ -10,9 +10,9 @@ build_action! { CanonicalizePath (_src_prog, hook, arg_id, args, do_return, retu
                 std::ffi::OsString::from(format!("/proc/self/fd/{}", file_value))
             } else {
                 unsafe {
-                let file_value = file_argument.real as *const *const libc::c_char;
-                let file_osstr = crate::common::convert::c_char_to_osstring(*file_value);
-                let absolute_path = match crate::platforms::linux::search_path(&file_osstr) {
+                let file_value = file_argument.real as *const libc::c_char;
+                let file_osstring = crate::common::convert::c_char_to_osstring(file_value);
+                let absolute_path = match crate::platforms::linux::search_path(&file_osstring) {
                     Some(abspath) => abspath,
                     None => {
                         libc::exit(127);
