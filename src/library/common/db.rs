@@ -229,8 +229,10 @@ pub fn get_prevention() -> bool {
     get_setting(String::from("Prevention")) == String::from("true")
 }
 
-pub fn get_valid_auth_string(auth: &str) -> bool {
-    let auth_hash: String = hash::common_hash_password(auth);
+pub fn get_valid_auth_string(mut auth: String) -> bool {
+    let algorithm = get_setting(String::from("HashAlgorithm"));
+    let mut auth_bytes: &[u8] = unsafe { &(auth.as_bytes_mut()) };
+    let auth_hash: String = hash::process_hash(&mut auth_bytes, &algorithm);
     let console_secret_expiry: u32 = match get_setting(String::from("ConsoleSecretExpiry")).parse() {
         Ok(v) => v,
         Err(_e) => return false
@@ -246,7 +248,7 @@ pub fn get_valid_auth_string(auth: &str) -> bool {
 pub fn get_valid_auth_env() -> bool {
     match env::var("WB_AUTH") {
         Ok(val) => {
-            get_valid_auth_string(&val)
+            get_valid_auth_string(val)
         }
         Err(_e) => {
             false

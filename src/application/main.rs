@@ -116,6 +116,7 @@ fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
     let param_str = param.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
     let table_struct: TableStruct = match param_str {
         "whitelist" => {
+            // TODO: Highlight path == "ANY" && value == "ANY" in red
             let table: Vec<Vec<CellStruct>> = common::db::get_whitelist(&conn).unwrap_or(Vec::new()).iter()
                                                 .map(|entry| vec![
                                                     entry.id.clone().cell(),
