@@ -35,6 +35,32 @@ macro_rules! exec_hook_template {
 }
 
 macro_rules! test_exec_hook {
+    (test fexecve ($test_name:ident, mod_env: true, mod_path: $mod_path:expr)) => {
+        exec_hook_template! { test fexecve ($test_name, mod_env: true, mod_path: $mod_path, path, args)
+                              custom_routine {
+                                  let pid = unsafe { libc::fork() };
+                                  match pid {
+                                      -1 => {return -1},
+                                      0 => {
+                                          let wb_test_env = CString::new(format!("WB_TEST={}/target/release/libwhitebeam.so", env!("PWD"))).expect("WhiteBeam: CString::new failed");
+                                          let env_vec: Vec<*const libc::c_char> = vec!(wb_test_env.as_ptr(),
+                                                                                 std::ptr::null());
+                                          let fd: libc::c_int = unsafe { libc::open(path.as_ptr(), libc::O_RDONLY) };
+                                          if fd < 0 {
+                                              return -1
+                                          }
+                                          unsafe { fexecve(fd, args.as_ptr(), env_vec.as_ptr()); }
+                                          return -1
+                                      },
+                                      _ => {
+                                          let status = 0 as *mut i32;
+                                          unsafe {libc::waitpid(pid, status, 0);}
+                                          return status as i32
+                                      }
+                                  }
+                              }
+                          }
+    };
     (test $func_name:ident ($test_name:ident, mod_env: true, mod_path: $mod_path:expr)) => {
         exec_hook_template! { test $func_name ($test_name, mod_env: true, mod_path: $mod_path, path, args)
                               custom_routine {

@@ -11,7 +11,7 @@ test_exec_hook! { test execvpe (test_execvpe, mod_env: true, mod_path: true) }
 test_variadic_exec_hook! { test execl (test_execl, mod_env: false, mod_path: false) }
 test_variadic_exec_hook! { test execle (test_execle, mod_env: true, mod_path: false) }
 test_variadic_exec_hook! { test execlp (test_execlp, mod_env: false, mod_path: true) }
-//test_exec_hook! { test fexecve (test_fexecve, mod_env: false, mod_path: false) }
+test_exec_hook! { test fexecve (test_fexecve, mod_env: true, mod_path: false) }
 
 pub fn run_tests() {
     // TODO: Refactor to be similar to action framework
@@ -20,11 +20,6 @@ pub fn run_tests() {
     #[cfg(not(target_os = "linux"))]
     unimplemented!("WhiteBeam: Tests on non-Linux platforms are not currently supported");
     for module in modules.clone() {
-        // TODO: fexecve in Linux tests
-        if module == "fexecve" {
-            eprintln!("WhiteBeam: Skipping fexecve");
-            continue;
-        }
         for test_type in tests.clone() {
             let exit_status_child = match module {
                 "execv" => test_execv(test_type),
@@ -34,7 +29,7 @@ pub fn run_tests() {
                 "execl" => test_execl(test_type),
                 "execle" => test_execle(test_type),
                 "execlp" => test_execlp(test_type),
-                //"fexecve" => test_fexecve(test_type),
+                "fexecve" => test_fexecve(test_type),
                 _ => {eprintln!("WhiteBeam: No test found for {}", &module); -1}
             };
             if test_type == "positive" {
