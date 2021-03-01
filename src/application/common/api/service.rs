@@ -10,8 +10,9 @@ fn set_console_secret(secret: &str, expiry: &str) -> String {
         Ok(c) => c,
         Err(_) => return String::from("OK")
     };
-    db::update_setting(&conn, "console_secret", secret);
-    db::update_setting(&conn, "console_secret_expiry", expiry);
+    // Functionality temporarily disabled until crypto.rs is audited
+    //db::update_setting(&conn, "console_secret", secret);
+    //db::update_setting(&conn, "console_secret_expiry", expiry);
     String::from("OK")
 }
 
@@ -28,7 +29,7 @@ fn invalid_request() -> String {
 // GET /service/public_key
 pub async fn public_key() -> Result<impl warp::Reply, warp::Rejection> {
     match crypto::get_client_public_key() {
-            Ok(client_public_key) => Ok(hex::encode(client_public_key)),
+            Ok(client_public_key) => Ok(hex::encode(client_public_key.as_bytes())),
             Err(_e) => return Err(warp::reject::not_found())
     }
 }

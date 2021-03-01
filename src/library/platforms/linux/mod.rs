@@ -215,6 +215,10 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
         hook_option.expect("WhiteBeam: Lost track of environment").clone()
     };
     // Arguments
+    // TODO: Create Rust structures here with generic T and enum of Datatype rather than passing pointers and leaking memory
+    // Converted back into respective C datatypes when Actions are completed
+    // https://doc.rust-lang.org/book/ch10-01-syntax.html
+    // https://stackoverflow.com/questions/40559931/vector-store-mixed-types-of-data-in-rust
     let mut arg_vec: Vec<db::ArgumentRow> = {
         let arg_cache_lock = db::ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         arg_cache_lock.iter().filter(|arg| arg.hook == stack_hook).map(|arg| arg.clone()).collect()

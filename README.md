@@ -23,7 +23,7 @@ Transparent endpoint security
 ## Features
 
 * Block and detect advanced attacks
-* Modern audited cryptography: [RustCrypto](https://github.com/RustCrypto) for hashing and encryption (TODO: Migrate from Sodium)
+* Modern audited cryptography: [RustCrypto](https://github.com/RustCrypto) for hashing and encryption
 * Highly compatible: Development focused on all platforms (incl. legacy) and architectures
 * Source available: Audits welcome
 * Reviewed by security researchers with combined 100+ years of experience

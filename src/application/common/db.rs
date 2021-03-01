@@ -154,12 +154,34 @@ pub fn get_prevention(conn: &Connection) -> Result<bool, Box<dyn Error>> {
 }
 
 pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> Result<bool, Box<dyn Error>> {
-    let auth_hash: String = hash::common_hash_password(auth);
-    let console_secret_expiry: u32 = get_setting(conn, String::from("ConsoleSecretExpiry"))?.parse()?;
+    // TODO: Support more than ARGON2ID
+    //let algorithm = get_setting(&conn, String::from("SecretAlgorithm"))?;
+    let argon2 = argon2::Argon2::default();
+    let console_secret = get_setting(conn, String::from("ConsoleSecret"))?;
+    let recovery_secret = get_setting(conn, String::from("RecoverySecret"))?;
+    let console_secret_pwhash: Option<argon2::PasswordHash> = match argon2::PasswordHash::new(&console_secret) {
+        Ok(pwhash) => Some(pwhash),
+        Err(_) => None
+    };
+    let recovery_secret_pwhash: Option<argon2::PasswordHash> = match argon2::PasswordHash::new(&recovery_secret) {
+        Ok(pwhash) => Some(pwhash),
+        Err(_) => None
+    };
+    let auth_string = auth.to_owned();
+    let auth_bytes = auth_string.as_bytes();
+    let console_secret_expiry: Option<u32> = match get_setting(conn, String::from("ConsoleSecretExpiry"))?.parse() {
+        Ok(v) => Some(v),
+        Err(_e) => None
+    };
     let time_now = time::get_timestamp();
-    if console_secret_expiry == 0 ||
-       console_secret_expiry >= time_now {
-            return Ok(get_setting(conn, String::from("ConsoleSecret"))? == String::from(auth_hash));
+    if console_secret_expiry.is_some()
+       && (console_secret_expiry.unwrap() == 0 || console_secret_expiry.unwrap() >= time_now)
+       && console_secret_pwhash.is_some()
+       && argon2::PasswordVerifier::verify_password(&argon2, auth_bytes, &console_secret_pwhash.unwrap()).is_ok() {
+        return Ok(true)
+    } else if recovery_secret_pwhash.is_some()
+       && argon2::PasswordVerifier::verify_password(&argon2, auth_bytes, &recovery_secret_pwhash.unwrap()).is_ok() {
+        return Ok(true)
     }
     Ok(false)
 }

@@ -48,7 +48,7 @@ build_action! { VerifyFileHash (_src_prog, hook, arg_id, args, do_return, return
         };
         let passed_all: bool = all_allowed_hashes.iter().all(|hash_tuple| {
             argument_file.seek(std::io::SeekFrom::Start(0)).expect("WhiteBeam: VerifyFileHash failed to seek in target file");
-            hash_tuple.1 == crate::common::hash::process_hash(&mut argument_file, &(hash_tuple.0))
+            hash_tuple.1 == crate::common::hash::process_hash(&mut argument_file, &(hash_tuple.0), None)
         });
         if (hash_count > 0) && passed_all {
             return (hook, args, do_return, return_value);

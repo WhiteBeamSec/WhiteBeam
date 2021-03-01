@@ -98,16 +98,32 @@ fn test(args: Vec<String>) {
         .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
         .status()
         .expect("WhiteBeam: Failed to execute cargo command");
+    // Set a test recovery secret
+    let _exit_status_secret = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+        .args(&["--setting", "RecoverySecret", "test"])
+        .status()
+        .expect("WhiteBeam: Failed to execute whitebeam command");
     // Enable prevention
     let _exit_status_prevention = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
         .args(&["--setting", "Prevention", "true"])
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
     // Run tests
-    let exit_status_tests = Command::new(&format!("{}/target/release/libwhitebeam-tests", env!("PWD")))
+    let _exit_status_tests = Command::new(&format!("{}/target/release/libwhitebeam-tests", env!("PWD")))
         .env("LD_PRELOAD", &format!("{}/target/release/libwhitebeam.so", env!("PWD")))
         .status()
         .expect("WhiteBeam: Failed to execute libwhitebeam-tests command");
+    // Disable prevention
+    let _exit_status_disable = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+        .args(&["--setting", "Prevention", "false"])
+        .env("WB_AUTH", "test")
+        .status()
+        .expect("WhiteBeam: Failed to execute whitebeam command");
+    // Reset recovery secret
+    let _exit_status_reset = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+        .args(&["--setting", "RecoverySecret", "undefined"])
+        .status()
+        .expect("WhiteBeam: Failed to execute whitebeam command");
     // TODO: Test actions
     // TODO: Make sure SQL schema/defaults exist
     // TODO: Test binary (e.g. ./target/release/whitebeam || true)

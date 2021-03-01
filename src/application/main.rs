@@ -1,4 +1,5 @@
 // TODO: Non-zero exit codes for all errors
+// TODO: Update SettingsModified
 use clap::{Arg, App, AppSettings};
 use cli_table::{format::{Justify, Separator}, print_stdout, CellStruct, Cell, Style, Table, TableStruct, Color};
 use std::{env,
@@ -32,11 +33,13 @@ fn valid_auth() -> Result<bool, Box<dyn Error>> {
 
 // Methods
 fn run_add(program: &OsStr) -> Result<(), Box<dyn Error>> {
+    // TODO: Use hook class to determine how to store value
+    // TODO: Hybrid hashing support
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;
-    // TODO: Use hook class to determine how to store value
-    let hash: String = common::hash::common_hash_file(program);
-    if hash == common::hash::hash_null() {
+    let algorithm = common::db::get_setting(&conn, String::from("HashAlgorithm"))?;
+    let hash: String = common::hash::process_hash(&mut std::fs::File::open(program)?, &algorithm, None);
+    if common::hash::hash_is_null(&hash) {
         return Err("WhiteBeam: No such file or directory".into());
     }
     let program_str = program.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
@@ -295,12 +298,20 @@ fn run_setting(param: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error
     }
     let mut val: String = match value.unwrap().to_str().ok_or(String::from("Invalid UTF-8 provided"))? {
         "mask" => {
-            rpassword::read_password_from_tty(Some("Value: "))?
+            let value_orig: String = rpassword::read_password_from_tty(Some("Value: "))?;
+            let value_confirm: String = rpassword::read_password_from_tty(Some("Confirm: "))?;
+            if value_orig == value_confirm {
+                value_orig
+            } else {
+                return Err("WhiteBeam: Values did not match".into());
+            }
         },
         v => String::from(v)
     };
-    if param == "RecoverySecret" {
-        let hash: String = common::hash::common_hash_password(&val);
+    if ((param == "RecoverySecret") || (param == "ConsoleSecret")) && (val != String::from("undefined")) {
+        let algorithm = format!("Hash/{}", common::db::get_setting(&conn, String::from("SecretAlgorithm"))?);
+        let mut val_bytes: &[u8] = unsafe { &(val.as_bytes_mut()) };
+        let hash: String = common::hash::process_hash(&mut val_bytes, &algorithm, None);
         val = hash;
     }
     common::db::update_setting(&conn, param_str, &val)
