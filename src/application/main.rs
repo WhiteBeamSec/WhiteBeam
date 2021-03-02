@@ -32,19 +32,40 @@ fn valid_auth() -> Result<bool, Box<dyn Error>> {
 }
 
 // Methods
-fn run_add(program: &OsStr) -> Result<(), Box<dyn Error>> {
-    // TODO: Use hook class to determine how to store value
-    // TODO: Hybrid hashing support
+fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error>> {
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;
-    let algorithm = common::db::get_setting(&conn, String::from("HashAlgorithm"))?;
-    let hash: String = common::hash::process_hash(&mut std::fs::File::open(program)?, &algorithm, None);
-    if common::hash::hash_is_null(&hash) {
-        return Err("WhiteBeam: No such file or directory".into());
+    let class_string = String::from(class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?);
+    let path_string = String::from(path.to_str().ok_or(String::from("Invalid UTF-8 provided"))?);
+    let algorithm = format!("Hash/{}", common::db::get_setting(&conn, String::from("HashAlgorithm"))?);
+    let mut added_whitelist_entries: Vec<(String, String, String)> = vec![];
+    // Convenience shortcuts occur when value is none
+    match value {
+        Some(v) => {
+            let v_str: &str = v.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
+            added_whitelist_entries.push((class_string.clone(), path_string.clone(), String::from(v_str)));
+            println!("WhiteBeam: Allowing new {} ({}) for {}", &class_string, v_str, &path_string);
+        },
+        None => {
+            let class_str: &str = &class_string;
+            match class_str {
+                "Filesystem/Path/Executable" => {
+                    added_whitelist_entries.push((class_string.clone(), String::from("ANY"), path_string.clone()));
+                    let hash: String = common::hash::process_hash(&mut std::fs::File::open(&path_string)?, &algorithm, None);
+                    if common::hash::hash_is_null(&hash) {
+                        return Err("WhiteBeam: No such file or directory".into());
+                    }
+                    added_whitelist_entries.push((algorithm.clone(), path_string.clone(), hash.clone()));
+                    println!("WhiteBeam: Adding {} ({}: {}) to whitelist", &path_string, &algorithm[5..], &hash);
+                },
+                _ => { return Err("WhiteBeam: Missing parameters for 'setting' argument".into()); }
+            }
+        }
+    };
+    for entry in added_whitelist_entries.iter() {
+        let _res = common::db::insert_whitelist(&conn, &(entry.0), &(entry.1), &(entry.2));
     }
-    let program_str = program.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
-    println!("WhiteBeam: Adding {} (SHA-512: {}) to whitelist", &program_str, hash);
-    common::db::insert_whitelist(&conn, &program_str, &hash)
+    Ok(())
 }
 
 fn run_auth() -> Result<(), Box<dyn Error>> {
@@ -101,7 +122,8 @@ fn run_disable(class: &OsStr) -> Result<(), Box<dyn Error>> {
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     let class_str = class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
     println!("WhiteBeam: Disabling hooks in '{}' class", class_str);
-    common::db::update_hook_class_enabled(&conn, class_str, false)
+    let _res = common::db::update_hook_class_enabled(&conn, class_str, false);
+    Ok(())
 }
 
 fn run_enable(class: &OsStr) -> Result<(), Box<dyn Error>> {
@@ -109,7 +131,8 @@ fn run_enable(class: &OsStr) -> Result<(), Box<dyn Error>> {
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     let class_str = class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
     println!("WhiteBeam: Enabling hooks in '{}' class", class_str);
-    common::db::update_hook_class_enabled(&conn, class_str, true)
+    let _res = common::db::update_hook_class_enabled(&conn, class_str, true);
+    Ok(())
 }
 
 fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
@@ -279,13 +302,17 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
 fn run_remove(id: u32) -> Result<(), Box<dyn Error>> {
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;
-    common::db::delete_whitelist(&conn, id)
+    let _res = common::db::delete_whitelist(&conn, id);
+    Ok(())
 }
 
 #[tokio::main]
-async fn run_service() {
+async fn run_service() -> Result<(), Box<dyn Error>> {
     //common::db::db_optionally_init();
-    common::api::serve().await;
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
+    let service_port: u16 = common::db::get_service_port(&conn)?;
+    common::api::serve(service_port).await;
+    Ok(())
 }
 
 fn run_setting(param: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error>> {
@@ -314,7 +341,8 @@ fn run_setting(param: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error
         let hash: String = common::hash::process_hash(&mut val_bytes, &algorithm, None);
         val = hash;
     }
-    common::db::update_setting(&conn, param_str, &val)
+    let _res = common::db::update_setting(&conn, param_str, &val);
+    Ok(())
 }
 
 fn run_start() {
@@ -323,11 +351,12 @@ fn run_start() {
 }
 
 fn run_status() -> Result<(), Box<dyn Error>> {
-    // TODO: Use ServicePort setting
+    let conn: rusqlite::Connection = common::db::db_open(false)?;
+    let service_port: u16 = common::db::get_service_port(&conn)?;
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(1))
         .build()?;
-    if let Ok(_response) = client.get("http://127.0.0.1:11998/status").send() {
+    if let Ok(_response) = client.get(&format!("http://127.0.0.1:{}/status", service_port)).send() {
         println!("WhiteBeam: OK");
     } else {
         eprintln!("WhiteBeam: Failed to communicate with WhiteBeam service");
@@ -371,7 +400,8 @@ fn main() -> Result<(), MainError> {
         .arg(Arg::with_name("add")
                  .long("add")
                  .takes_value(true)
-                 .help("Add a whitelist rule (+auth with Prevention)")
+                 .multiple(true)
+                 .help("Add policy to whitelist (+auth with Prevention)")
                  .value_name("path"))
         .arg(Arg::with_name("auth")
                  .long("auth")
@@ -426,7 +456,28 @@ fn main() -> Result<(), MainError> {
         .get_matches();
 
     if matches.is_present("add") {
-        run_add(matches.value_of_os("add").ok_or(String::from("WhiteBeam: Missing parameter for 'add' argument"))?)?;
+        match matches.values_of_os("add") {
+            Some(vals) => {
+                let mut vals_iter = vals.clone();
+                // TODO: Refactor
+                if vals_iter.len() == 3 {
+                    // TODO: Error handling
+                    let class: &OsStr = vals_iter.next().ok_or(String::from("Missing class for 'add' argument"))?;
+                    let path: &OsStr = vals_iter.next().ok_or(String::from("Missing path for 'add' argument"))?;
+                    let value: &OsStr = vals_iter.next().ok_or(String::from("Missing value for 'add' argument"))?;
+                    run_add(class, path, Some(value))?
+                } else if vals_iter.len() == 2 {
+                    let class: &OsStr = vals_iter.next().ok_or(String::from("Missing class for 'add' argument"))?;
+                    let path: &OsStr = vals_iter.next().ok_or(String::from("Missing path for 'add' argument"))?;
+                    run_add(class, path, None)?
+                } else {
+                    return Err("WhiteBeam: Insufficient parameters for 'add' argument".into());
+                }
+            },
+            None => {
+                return Err("WhiteBeam: Missing parameters for 'add' argument".into());
+            }
+        };
     } else if matches.is_present("auth") {
         run_auth()?;
     } else if matches.is_present("baseline") {

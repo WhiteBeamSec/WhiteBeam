@@ -3,8 +3,8 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use crate::common::db;
 
-// POST /log/exec
-pub async fn log_exec(exec: db::LogExecObject, addr: Option<SocketAddr>) -> Result<impl warp::Reply, warp::Rejection> {
+// POST /log
+pub async fn log(log: db::LogObject, addr: Option<SocketAddr>) -> Result<impl warp::Reply, warp::Rejection> {
     let localhost = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
     let remote_addr = match addr {
         Some(inetaddr)  => inetaddr.ip(),
@@ -18,6 +18,6 @@ pub async fn log_exec(exec: db::LogExecObject, addr: Option<SocketAddr>) -> Resu
         Ok(c) => c,
         Err(_) => return Err(warp::reject::not_found())
     };
-    db::insert_exec(&conn, exec);
+    db::insert_log(&conn, log);
     return Ok(warp::reply());
 }

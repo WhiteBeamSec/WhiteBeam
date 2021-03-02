@@ -62,7 +62,7 @@ TODO: Repositories, https://repology.org/ badge.
 
 ## Quick start
 1. Become root (`sudo -s`/`su root`)
-2. Set a recovery secret. You'll be able to use this with `whitebeam --auth` to make changes to the system: `whitebeam --setting recovery_secret mask`
+2. Set a recovery secret. You'll be able to use this with `whitebeam --auth` to make changes to the system: `whitebeam --setting RecoverySecret mask`
 
 ### Detect Attacks with WhiteBeam
 There are three options, depending on your preference:

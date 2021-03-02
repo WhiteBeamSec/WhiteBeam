@@ -15,12 +15,10 @@ use rusqlite::{params, Connection};
 use serde::{Serialize, Deserialize};
 
 #[derive(Deserialize, Serialize)]
-pub struct LogExecObject {
-    pub program: String,
-    pub hash: String,
-    pub uid: u32,
-    pub ts: u32,
-    pub success: bool
+pub struct LogObject {
+    class: i64,
+    desc: String,
+    ts: u32
 }
 
 pub struct HookRow {
@@ -153,6 +151,14 @@ pub fn get_prevention(conn: &Connection) -> Result<bool, Box<dyn Error>> {
     Ok(get_setting(conn, String::from("Prevention"))? == String::from("true"))
 }
 
+pub fn get_service_port(conn: &Connection) -> Result<u16, Box<dyn Error>> {
+    match get_setting(&conn, String::from("ServicePort")) {
+        Ok(port) => Ok(port.parse().unwrap_or(11998)),
+        // TODO: Log errors
+        Err(_) => Ok(11998)
+    }
+}
+
 pub fn get_valid_auth_string(conn: &Connection, auth: &str) -> Result<bool, Box<dyn Error>> {
     // TODO: Support more than ARGON2ID
     //let algorithm = get_setting(&conn, String::from("SecretAlgorithm"))?;
@@ -196,36 +202,28 @@ pub fn get_seen_nonce(conn: &Connection, nonce: &str) -> Result<bool, Box<dyn Er
     Ok(count > 0)
 }
 
-pub fn insert_setting(conn: &Connection, param: &str, value: &str) -> Result<(), Box<dyn Error>> {
-    let _res = conn.execute("INSERT INTO Setting (param, value) VALUES (?1, ?2)", params![param, value])?;
-    Ok(())
+pub fn insert_setting(conn: &Connection, param: &str, value: &str) -> Result<usize, rusqlite::Error> {
+    conn.execute("INSERT INTO Setting (param, value) VALUES (?1, ?2)", params![param, value])
 }
 
-pub fn insert_whitelist(conn: &Connection, param: &str, value: &str) -> Result<(), Box<dyn Error>> {
-    // TODO: Verify no duplicate value exists
-    let _res = conn.execute("INSERT INTO Whitelist (param, value) VALUES (?1, ?2)", params![param, value])?;
-    Ok(())
+pub fn insert_whitelist(conn: &Connection, class: &str, path: &str, value: &str) -> Result<usize, rusqlite::Error> {
+    conn.execute("INSERT OR REPLACE INTO Whitelist (path, value, class) VALUES (?1, ?2, (SELECT id from WhitelistClass WHERE class=?3))", params![path, value, class])
 }
 
-pub fn insert_exec(conn: &Connection, exec: LogExecObject) -> Result<(), Box<dyn Error>> {
-    let _res = conn.execute("INSERT INTO Log (program, hash, uid, ts, success) VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![exec.program, exec.hash, exec.uid, exec.ts, exec.success])?;
-    Ok(())
+pub fn insert_log(conn: &Connection, log: LogObject) -> Result<usize, rusqlite::Error> {
+    conn.execute("INSERT INTO Log (class, desc, ts) VALUES (?1, ?2, ?3)", params![log.class, log.desc, log.ts])
 }
 
-pub fn update_setting(conn: &Connection, param: &str, value: &str) -> Result<(), Box<dyn Error>> {
-    let _res = conn.execute("INSERT OR REPLACE INTO Setting (param, value) VALUES (?1, ?2)", params![param, value])?;
-    Ok(())
+pub fn update_setting(conn: &Connection, param: &str, value: &str) -> Result<usize, rusqlite::Error> {
+    conn.execute("INSERT OR REPLACE INTO Setting (param, value) VALUES (?1, ?2)", params![param, value])
 }
 
-pub fn update_hook_class_enabled(conn: &Connection, class: &str, enabled: bool) -> Result<(), Box<dyn Error>> {
-    let _res = conn.execute("UPDATE Hook SET enabled = ?2 WHERE class = (SELECT id from HookClass WHERE class=?1)", params![class, enabled])?;
-    Ok(())
+pub fn update_hook_class_enabled(conn: &Connection, class: &str, enabled: bool) -> Result<usize, rusqlite::Error> {
+    conn.execute("UPDATE Hook SET enabled = ?2 WHERE class = (SELECT id from HookClass WHERE class=?1)", params![class, enabled])
 }
 
-pub fn delete_whitelist(conn: &Connection, id: u32) -> Result<(), Box<dyn Error>> {
-    let _res = conn.execute("DELETE FROM Whitelist WHERE id = ?1", params![id])?;
-    Ok(())
+pub fn delete_whitelist(conn: &Connection, id: u32) -> Result<usize, rusqlite::Error> {
+    conn.execute("DELETE FROM Whitelist WHERE id = ?1", params![id])
 }
 
 pub fn db_open(force: bool) -> Result<Connection, String> {

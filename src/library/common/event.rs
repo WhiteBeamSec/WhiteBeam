@@ -1,17 +1,11 @@
-// TODO: Update for 0.2
-
 use serde::{Deserialize, Serialize};
-use std::ffi::OsStr;
-use crate::common::http;
-use crate::common::time;
+use crate::common::{db, http, time};
 
 #[derive(Deserialize, Serialize)]
-struct LogExecObject {
-    program: String,
-    hash: String,
-    uid: u32,
-    ts: u32,
-    success: bool
+struct LogObject {
+    class: i64,
+    desc: String,
+    ts: u32
 }
 
 fn get_timeout() -> u64 {
@@ -19,21 +13,22 @@ fn get_timeout() -> u64 {
     1
 }
 
-pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) {
-    let program_string = program.to_string_lossy().to_string();
+pub fn send_log_event(class: i64, desc: String) {
     let ts = time::get_timestamp();
-    let log = LogExecObject {
-        program: program_string,
-        hash: hash.to_string(),
-        uid,
-        ts,
-        success
+    let log = LogObject {
+        class,
+        desc,
+        ts
     };
     if cfg!(feature = "whitelist_test") {
         return;
     }
-    // TODO: Use ServicePort setting
-    let request = match http::post("http://127.0.0.1:11998/log/exec")
+    let service_port: i32 = match db::get_setting(String::from("ServicePort")).parse() {
+        Ok(port) => port,
+        // TODO: Log errors
+        Err(_) => 11998
+    };
+    let request = match http::post(format!("http://127.0.0.1:{}/log", service_port))
                               .with_timeout(get_timeout())
                               .with_json(&log) {
                                   Ok(json_data) => json_data,

@@ -23,7 +23,7 @@ macro_rules! build_hash {
 // Load hash modules
 // TODO: Make sure this doesn't conflict with crate namespace
 mod hashes {
-    automod::dir!(pub "src/library/common/hash/hashes");
+    automod::dir!(pub "src/application/common/hash/hashes");
 }
 
 // Collect hashes in distributed slice
