@@ -12,7 +12,9 @@ Please email us at security@whitebeamsec.com. We request at least the following 
 
 gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys 4A3F1233C01563F808B8355125ECFD172151528B
 
-**Current security vulnerability rewards** (Reward program will begin *after* completion of WhiteBeam 0.2, and rewards will be provided at the discretion of the lead developers):
+**Current security vulnerability rewards**
+
+Reward program will begin April 1st 2021. Rewards will be provided at the discretion of the lead developers. All vulnerabilities must be demonstrated in the challenge environment to be eligible for payment.
 
 | Vulnerability                                                                               | Reward         |
 | ------------------------------------------------------------------------------------------- | -------------- |
@@ -28,5 +30,6 @@ Past security advisories can be found here: https://github.com/WhiteBeamSec/Whit
 
 We would like to thank the following security researchers for their contributions to WhiteBeam's security:
 
-* gemini
-* brianx
+| Researchers          | Date        | :trophy:           |
+| -------------------- | ----------- | ------------------ |
+| *gemini*, *brianx*   | Nov 6, 2019 | [WhiteBeam 0.0.5](https://github.com/WhiteBeamSec/WhiteBeam/security/advisories/GHSA-mm3f-f5hg-p2hv)  |
