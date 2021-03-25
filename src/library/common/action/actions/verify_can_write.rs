@@ -1,5 +1,5 @@
 #[macro_use]
-build_action! { VerifyCanWrite (_src_prog, hook, arg_id, args, do_return, return_value) {
+build_action! { VerifyCanWrite (_src_prog, hook, _arg_id, args, do_return, return_value) {
         // https://docs.rs/glob/0.2.11/glob/struct.Pattern.html
         let library: &str = &hook.library;
         let symbol: &str = &hook.symbol;

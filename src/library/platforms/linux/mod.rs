@@ -393,6 +393,14 @@ pub unsafe fn errno_location() -> *mut c_int {
     libc::__errno_location()
 }
 
+pub fn canonicalize_fd(fd: i32) -> Option<PathBuf> {
+    // TODO: Better validation here
+    if (0 <= fd && fd <= 1024) {
+        // TODO: Remove dependency on procfs
+        return std::fs::read_link(format!("/proc/self/fd/{}", fd)).ok();
+    }
+    None
+}
 
 pub fn get_current_gid() -> u32 {
     unsafe { libc::getgid() }

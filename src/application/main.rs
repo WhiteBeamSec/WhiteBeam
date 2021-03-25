@@ -203,6 +203,7 @@ fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
                     )
         },
         "rules" => {
+            // TODO: Columns for actions, separate tables for different classes (easier to follow)
             let table: Vec<Vec<CellStruct>> = common::db::get_rules_pretty(&conn).unwrap_or(Vec::new()).iter()
                                                 .map(|entry| vec![
                                                     entry.library.clone().cell(),

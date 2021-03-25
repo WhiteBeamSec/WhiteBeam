@@ -34,7 +34,7 @@ pub fn run_tests() {
             };
             if test_type == "positive" {
                 // Positive test
-                assert!(exit_status_child >= 0);
+                assert!(exit_status_child >= 0, "WhiteBeam: {} failed ({} test): exit code {}", module, test_type, exit_status_child);
                 let contents = std::fs::read_to_string("/tmp/test_result").expect("WhiteBeam: Could not read test result file");
                 assert_eq!(contents, format!("{}/target/release/libwhitebeam.so", env!("PWD")));
                 std::fs::remove_file("/tmp/test_result").expect("WhiteBeam: Failed to remove /tmp/test_result");

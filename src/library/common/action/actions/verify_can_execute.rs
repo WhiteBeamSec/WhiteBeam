@@ -22,7 +22,8 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
         }
         let target_executable: String = {
             let argument: crate::common::db::ArgumentRow = args.iter().find(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment").clone();
-            String::from(unsafe { std::ffi::CStr::from_ptr(argument.real as *const i8) }.to_str().expect("WhiteBeam: Unexpected null reference"))
+            let canonical_path = platform::canonicalize_fd(argument.real as i32).expect("WhiteBeam: Lost track of environment");
+            canonical_path.into_os_string().into_string().expect("WhiteBeam: Unexpected null reference")
         };
         // Permit whitelisted executables
         if all_allowed_executables.iter().any(|executable| executable == &target_executable) {
