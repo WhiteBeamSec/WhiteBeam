@@ -18,7 +18,7 @@ Transparent endpoint security
 
 ---
 
-**NOTICE**: This repository tracks the pre-alpha release of WhiteBeam 0.2. If you'd like to test WhiteBeam in your environment, [contact us](info@whitebeamsec.com).
+**NOTICE**: This repository tracks the beta release of WhiteBeam 0.2. If you'd like to test WhiteBeam in your environment, [contact us](info@whitebeamsec.com).
 
 ## Features
 

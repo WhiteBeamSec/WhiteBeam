@@ -58,7 +58,7 @@ fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box
                     added_whitelist_entries.push((algorithm.clone(), path_string.clone(), hash.clone()));
                     println!("WhiteBeam: Adding {} ({}: {}) to whitelist", &path_string, &algorithm[5..], &hash);
                 },
-                _ => { return Err("WhiteBeam: Missing parameters for 'setting' argument".into()); }
+                _ => { return Err("WhiteBeam: Missing parameters for 'add' argument".into()); }
             }
         }
     };
@@ -88,6 +88,7 @@ fn run_auth() -> Result<(), Box<dyn Error>> {
 }
 
 fn run_baseline() -> Result<(), Box<dyn Error>> {
+    // TODO: Filter terminal escape sequences
     // TODO: Refactor
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     //let whitelist = common::db::get_baseline(&conn).unwrap_or(Vec::new());
@@ -143,7 +144,7 @@ fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
     let table_struct: TableStruct = match param_str {
         "whitelist" => {
             // TODO: Highlight path == "ANY" && value == "ANY" in red
-            // TODO: Highlight writable directories containing an executable path in red
+            // TODO: Highlight writable directories containing an executable or library path in red
             let table: Vec<Vec<CellStruct>> = common::db::get_whitelist(&conn).unwrap_or(Vec::new()).iter()
                                                 .map(|entry| vec![
                                                     entry.id.clone().cell(),
@@ -433,7 +434,7 @@ fn main() -> Result<(), MainError> {
                  .long("remove")
                  .takes_value(true)
                  .help("Remove a whitelist rule by id (+auth with Prevention)")
-                 .value_name("path"))
+                 .value_name("id"))
         .arg(Arg::with_name("service")
                  .long("service")
                  .takes_value(false)

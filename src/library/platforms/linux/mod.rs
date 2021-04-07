@@ -16,12 +16,11 @@ use std::{env,
 
 const LA_FLG_BINDTO: libc::c_uint = 0x01;
 const LA_FLG_BINDFROM: libc::c_uint = 0x02;
-const RTLD_NEXT: *const c_void = -1isize as *const c_void;
 
 // TODO: Hashmap/BTreemap to avoid race conditions, clean up of pthread_self() keys:
 // Timestamp attribute, vec. len>0, check timestamp, pthread_equal, RefCell/Cell (?)
 static CUR_PROG: SyncLazy<Mutex<OsString>> = SyncLazy::new(|| Mutex::new(OsString::new()));
-static FN_STACK: SyncLazy<Mutex<Vec<i64>>> = SyncLazy::new(|| Mutex::new(vec![]));
+static FN_STACK: SyncLazy<Mutex<Vec<(i64, usize)>>> = SyncLazy::new(|| Mutex::new(vec![]));
 // TODO: Library cookie Hashmap/BTreemap
 
 // LinkMap TODO: Review mut, assign libc datatypes?
@@ -53,6 +52,9 @@ pub struct Elf64_Sym {
     pub st_value: u64,
     pub st_size: u64
 }
+
+// Debug: Cause a breakpoint exception by invoking the `int3` instruction.
+//pub fn int3() { unsafe { asm!("int3"); } }
 
 // init_rtld_audit_interface
 // Initializes WhiteBeam as an LD_AUDIT library
@@ -116,7 +118,6 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                 val
             },
             None => {
-                // TODO: We use procfs anyway for fexecve, so should we use it here?
                 if (argc == 0) || (argv.is_null()) {
                     panic!("WhiteBeam: Lost track of environment");
                 }
@@ -146,7 +147,6 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
         if update_ld_audit {
             // TODO: Log null reference, process errors
             new_ld_audit_cstring = convert::osstr_to_cstring(&new_ld_audit_var).expect("WhiteBeam: Unexpected null reference");
-            // TODO: Check whitelist for path
             env_vec.push(new_ld_audit_cstring.as_ptr());
         }
         if update_ld_bind_not {
@@ -208,12 +208,15 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
     // Program
     let src_prog: String = { CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     // Hook
-    let stack_hook: i64 = { FN_STACK.lock().expect("WhiteBeam: Failed to lock mutex").pop().expect("WhiteBeam: Lost track of environment") };
-    let mut hook: db::HookRow  = {
+    let stack_hook: (i64, usize) = { FN_STACK.lock().expect("WhiteBeam: Failed to lock mutex").pop().expect("WhiteBeam: Lost track of environment") };
+    let stack_hook_id = stack_hook.0;
+    let stack_hook_real = stack_hook.1;
+    let mut hook: db::HookRow = {
         let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-        let hook_option = hook_cache_lock.iter().find(|hook| hook.id == stack_hook);
+        let hook_option = hook_cache_lock.iter().find(|hook| hook.id == stack_hook_id);
         hook_option.expect("WhiteBeam: Lost track of environment").clone()
     };
+    let hook_orig = hook.clone();
     // Arguments
     // TODO: Create Rust structures here with generic T and enum of Datatype rather than passing pointers and leaking memory
     // Converted back into respective C datatypes when Actions are completed
@@ -221,7 +224,7 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
     // https://stackoverflow.com/questions/40559931/vector-store-mixed-types-of-data-in-rust
     let mut arg_vec: Vec<db::ArgumentRow> = {
         let arg_cache_lock = db::ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-        arg_cache_lock.iter().filter(|arg| arg.hook == stack_hook).map(|arg| arg.clone()).collect()
+        arg_cache_lock.iter().filter(|arg| arg.hook == stack_hook_id).map(|arg| arg.clone()).collect()
     };
     // TODO: Pass by reference/slice
     let mut argc: usize = get_argc(arg_vec.clone());
@@ -280,26 +283,53 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
         }
     };
     // Dispatch
-    static mut REAL: *const u8 = 0 as *const u8;
-    static mut ONCE: ::std::sync::Once = ::std::sync::Once::new();
-    ONCE.call_once(|| {
-        REAL = crate::platforms::linux::dlsym_next(&hook.symbol);
-    });
-    let hooked_fn_zargs_real: unsafe extern "C" fn() -> isize = std::mem::transmute(REAL);
-    let hooked_fn_margs_real: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(REAL);
+    // FIXME: Bug in some *64 functions like open64 => openat and fopen64 => fdopen
+    let real = match hook_orig.symbol.as_ref() {
+        "open64" => libc::openat as *const u8,
+        _ => dlsym_next_relative(&hook.symbol, stack_hook_real)
+    };
+    let hooked_fn_zargs_real: unsafe extern "C" fn() -> isize = std::mem::transmute(real);
+    let hooked_fn_margs_real: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(real);
     // TODO: Pass by reference/slice
     argc = get_argc(arg_vec.clone());
-    match argc {
-        0 => return hooked_fn_zargs_real(),
-        1 => return hooked_fn_margs_real(arg_vec[0].real),
-        2 => return hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real),
-        3 => return hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real),
-        4 => return hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real, arg_vec[3].real),
-        5 => return hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real, arg_vec[3].real, arg_vec[4].real),
-        6 => return hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real, arg_vec[3].real, arg_vec[4].real, arg_vec[5].real),
+    let ret: isize = match argc {
+        0 => hooked_fn_zargs_real(),
+        1 => hooked_fn_margs_real(arg_vec[0].real),
+        2 => hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real),
+        3 => hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real),
+        4 => hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real, arg_vec[3].real),
+        5 => hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real, arg_vec[3].real, arg_vec[4].real),
+        6 => hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real, arg_vec[3].real, arg_vec[4].real, arg_vec[5].real),
         // Unsupported
         _ => panic!("WhiteBeam: Unsupported operation"),
-    }
+    };
+    // TODO: Replace below with post action framework (0.2.1 - 0.2.2)
+    // TODO: May need fopen/fopen64 => fdopen
+    match (hook_orig.symbol.as_ref(), hook.symbol.as_ref()) {
+        ("symlink", "symlinkat") => {
+            libc::close(arg_vec[1].real as i32);
+        },
+        ("link", "linkat") |
+        ("rename", "renameat") => {
+            libc::close(arg_vec[0].real as i32);
+            libc::close(arg_vec[2].real as i32);
+        },
+        ("unlink", "unlinkat") |
+        ("rmdir", "unlinkat") |
+        ("chown", "fchownat") |
+        ("lchown", "fchownat") |
+        ("chmod", "fchmodat") |
+        ("creat", "openat") |
+        ("open", "openat") |
+        ("creat64", "openat") |
+        ("open64", "openat") |
+        ("mknod", "mknodat") |
+        ("truncate", "ftruncate") => {
+            libc::close(arg_vec[0].real as i32);
+        },
+        _ => ()
+    };
+    ret
 }
 
 // la_version
@@ -311,15 +341,44 @@ unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
 // la_objsearch
 #[no_mangle]
 unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: libc::uintptr_t, _flag: libc::c_uint) -> *const libc::c_char {
-    // TODO: Whitelisting
-    //libc::printf("WhiteBeam objsearch: %s\n\0".as_ptr() as *const libc::c_char, name);
-	name
+    if !(crate::common::db::get_prevention()) {
+        return name;
+    }
+    // Permit authorized execution
+    if crate::common::db::get_valid_auth_env() {
+        return name;
+    }
+    let src_prog: String = { CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
+    let any = String::from("ANY");
+    let class = String::from("Filesystem/Path/Library");
+    let all_allowed_libraries: Vec<String> = {
+        let whitelist_cache_lock = crate::common::db::WL_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
+        whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class == class) && ((whitelist.path == src_prog) || (whitelist.path == any))).map(|whitelist| whitelist.value.clone()).collect()
+    };
+    // Permit ANY
+    if all_allowed_libraries.iter().any(|library| library == &any) {
+        return name;
+    }
+    let target_library = String::from(CStr::from_ptr(name).to_str().expect("WhiteBeam: Unexpected null reference"));
+    // Permit whitelisted libraries
+    if all_allowed_libraries.iter().any(|library| library == &target_library) {
+        return name;
+    }
+    // Deny by default
+	0 as *const libc::c_char
 }
 
 // la_objopen
 #[no_mangle]
 unsafe extern "C" fn la_objopen(map: *const LinkMap, _lmid: libc::c_long, _cookie: libc::uintptr_t) -> libc::c_uint {
     //libc::printf("WhiteBeam objopen: %s\n\0".as_ptr() as *const libc::c_char, (*map).l_name);
+    /*
+    let libc_string = String::from("/lib/x86_64-linux-gnu/libc.so.6");
+    let library_string = String::from(CStr::from_ptr((*map).l_name).to_str().expect("WhiteBeam: Unexpected null reference"));
+    if library_string == libc_string {
+        println!("Loading libc");
+    }
+    */
     // TODO: Capture library for generic hook (map.l_name:cookie)
     LA_FLG_BINDTO | LA_FLG_BINDFROM
 }
@@ -349,7 +408,8 @@ unsafe extern "C" fn la_symbind64(sym: *const Elf64_Sym, _ndx: libc::c_uint,
             if hook.symbol == symbol_string {
                 //libc::printf("WhiteBeam hook: %s\n\0".as_ptr() as *const libc::c_char, symname);
                 {
-                    FN_STACK.lock().unwrap().push(hook.id);
+                    let real = (*(sym)).st_value as usize;
+                    FN_STACK.lock().unwrap().push((hook.id, real));
                 };
                 return generic_hook as usize
             }
@@ -360,16 +420,73 @@ unsafe extern "C" fn la_symbind64(sym: *const Elf64_Sym, _ndx: libc::c_uint,
 
 #[link(name = "dl")]
 extern "C" {
-    fn dlsym(handle: *const c_void, symbol: *const c_char) -> *const c_void;
+    fn dladdr1(addr: *const c_void, info: *mut libc::Dl_info, extra_info: *mut *mut c_void, flags: c_int) -> c_int;
 }
 
 pub unsafe fn dlsym_next(symbol: &str) -> *const u8 {
     let symbol_cstring: CString = CString::new(symbol).expect("WhiteBeam: Unexpected null reference");
-    let ptr = dlsym(RTLD_NEXT, symbol_cstring.as_ptr() as *const c_char);
+    let ptr = libc::dlsym(libc::RTLD_NEXT, symbol_cstring.as_ptr() as *const c_char);
     if ptr.is_null() {
         panic!("WhiteBeam: Unable to find underlying function for {}", symbol);
     }
     ptr as *const u8
+}
+
+#[allow(non_snake_case)]
+pub unsafe fn dlsym_next_relative(symbol: &str, real_addr: usize) -> *const u8 {
+    // real_addr.base+dlsym_addr.st_addr
+    // TODO: dlopen(NULL)?
+    let RTLD_DL_SYMENT: libc::c_int = 1;
+    let symbol_cstring: CString = CString::new(symbol).expect("WhiteBeam: Unexpected null reference");
+    let mut dl_info_dlsym = libc::Dl_info {
+        dli_fname: core::ptr::null(),
+        dli_fbase: core::ptr::null_mut(),
+        dli_sname: core::ptr::null(),
+        dli_saddr: core::ptr::null_mut(),
+    };
+    let mut dl_info_real = libc::Dl_info {
+        dli_fname: core::ptr::null(),
+        dli_fbase: core::ptr::null_mut(),
+        dli_sname: core::ptr::null(),
+        dli_saddr: core::ptr::null_mut(),
+    };
+    let mut dl_info_verify = libc::Dl_info {
+        dli_fname: core::ptr::null(),
+        dli_fbase: core::ptr::null_mut(),
+        dli_sname: core::ptr::null(),
+        dli_saddr: core::ptr::null_mut(),
+    };
+    let mut extra_info_dlsym = std::mem::MaybeUninit::<*mut Elf64_Sym>::uninit();
+    let dlsym_addr = libc::dlsym(libc::RTLD_NEXT, symbol_cstring.as_ptr() as *const c_char);
+    if dlsym_addr.is_null() {
+        panic!("WhiteBeam: Unable to find underlying function for {}", symbol);
+    }
+    let real_addr_base: usize = match libc::dladdr(real_addr as *const c_void, &mut dl_info_real as *mut libc::Dl_info) {
+        0 => panic!("WhiteBeam: dladdr failed"),
+        _ => dl_info_real.dli_fbase as usize
+    };
+    let dlsym_addr_st_addr: usize = match dladdr1(dlsym_addr as *const c_void, &mut dl_info_dlsym as *mut libc::Dl_info, extra_info_dlsym.as_mut_ptr() as *mut *mut libc::c_void, RTLD_DL_SYMENT) {
+        0 => panic!("WhiteBeam: dladdr1 failed"),
+        _ => {
+            let extra_info_dlsym_init = extra_info_dlsym.assume_init();
+            (*extra_info_dlsym_init).st_value as usize
+        }
+    };
+    let calculated_addr = (real_addr_base+dlsym_addr_st_addr) as *const u8;
+    match libc::dladdr(calculated_addr as *const c_void, &mut dl_info_verify as *mut libc::Dl_info) {
+        0 => panic!("WhiteBeam: dladdr failed"),
+        _ => {
+            if !(dl_info_verify.dli_sname.is_null()) {
+                let sname = String::from(CStr::from_ptr(dl_info_verify.dli_sname).to_str().expect("WhiteBeam: Unexpected null reference"));
+                assert_eq!(symbol, &sname)
+            } else {
+                // Fallback on RTLD_NEXT
+                // TODO: Determine why this gets called
+                return dlsym_next(symbol);
+            }
+        }
+    };
+    calculated_addr
 }
 
 pub fn get_data_file_path(data_file: &str) -> PathBuf {
@@ -441,7 +558,7 @@ pub fn search_path(program: &OsStr) -> Option<PathBuf> {
         };
         match path_stat {
             Ok(valid_path) => {
-                if (valid_path.st_mode & libc::S_IFMT)==libc::S_IFREG {
+                if (valid_path.st_mode & libc::S_IFMT) == libc::S_IFREG {
                     return Some(path);
                 }
             }

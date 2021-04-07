@@ -26,8 +26,14 @@ build_action! { ConsumeVariadic (_src_prog, hook, arg_id, args, do_return, retur
             ("/lib/x86_64-linux-gnu/libc.so.6", "open64") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "openat") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "openat64") => {
-                assert!(va_arg_iter_len > 1, "WhiteBeam: Insufficient arguments to ConsumeVariadic action");
-                args.truncate(va_arg_iter_len-2)
+                assert!(va_arg_iter_len > 0, "WhiteBeam: Insufficient arguments to ConsumeVariadic action");
+                let flags = args[variadic_start-1].real as libc::c_int;
+                let has_variadic_arg: bool = ((flags) & libc::O_CREAT) != 0 || ((flags) & libc::O_TMPFILE) == libc::O_TMPFILE;
+                if !(has_variadic_arg) {
+                    args.retain(|arg| !(arg.variadic && (arg.id == variadic_start_id)));
+                } else {
+                    args.truncate((args.len()-va_arg_iter_len)+1)
+                }
             },
             _ => { unimplemented!("WhiteBeam: The '{}' symbol (from {}) is not supported by the ConsumeVariadic action", symbol, library) }
         };

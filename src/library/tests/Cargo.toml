@@ -12,4 +12,4 @@ path = "main.rs"
 
 # Cross-platform dependencies
 [dependencies]
-libc = { version = "0.2" }
+libc = { version = "~0.2.90" }
