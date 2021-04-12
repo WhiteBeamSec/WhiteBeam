@@ -120,14 +120,12 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                 val
             },
             None => {
-                if (argc == 0) || (argv.is_null()) {
-                    panic!("WhiteBeam: Lost track of environment");
-                }
-                match search_path(&convert::c_char_to_osstring(*argv)) {
-                    Some(v) => {
-                        v.canonicalize().expect("WhiteBeam: Could not canonicalize path").into_os_string()
+                // TODO: Is this mounted early enough? May need some combination of the canonicalized argv[0] and exe
+                match std::fs::read_link("/proc/self/exe") {
+                    Ok(v) => {
+                        v.into_os_string()
                     },
-                    None => {
+                    Err(_e) => {
                         panic!("WhiteBeam: Lost track of environment");
                     }
                 }
@@ -401,20 +399,23 @@ unsafe extern "C" fn la_symbind64(sym: *const Elf64_Sym, _ndx: libc::c_uint,
     // Warning: The Rust standard library is not guaranteed to be available during this function
     //libc::printf("WhiteBeam symbind64: %s\n\0".as_ptr() as *const libc::c_char, symname);
     let symbol_string = String::from(CStr::from_ptr(symname).to_str().expect("WhiteBeam: Unexpected null reference"));
-    // TODO: Shorten into a single lock
-    //let calling_library_string = { LIB_MAP.lock().expect("WhiteBeam: Failed to lock mutex")[&(refcook as usize)].clone() };
-    let library_string = { LIB_MAP.lock().expect("WhiteBeam: Failed to lock mutex")[&(defcook as usize)].clone() };
-    /*
-    if calling_library_string == "/lib/x86_64-linux-gnu/libpam.so.0" {
-        println!("{} is binding {} to {}", calling_library_string, symbol_string, library_string);
+    let mut library_string: String = String::new();
+    let mut calling_library_string: String = String::new();
+    {
+        let lib_map_lock = LIB_MAP.lock().expect("WhiteBeam: Failed to lock mutex");
+        calling_library_string = lib_map_lock.get(&(refcook as usize)).unwrap_or(&String::from("")).clone();
+        library_string = lib_map_lock.get(&(defcook as usize)).unwrap_or(&String::from("")).clone();
+    };
+    // FIXME: Hack around libpam issue
+    if (calling_library_string == "/lib/x86_64-linux-gnu/libpam.so.0") && (symbol_string == "dlopen") {
+        return (*(sym)).st_value as usize;
     }
-    */
     {
         let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         let hook_cache_iter = hook_cache_lock.iter();
         for hook in hook_cache_iter {
             // TODO: Library match
-            if hook.symbol == symbol_string && hook.library == library_string {
+            if (hook.symbol == symbol_string) && (hook.library == library_string) {
                 //libc::printf("WhiteBeam hook: %s\n\0".as_ptr() as *const libc::c_char, symname);
                 {
                     let real = (*(sym)).st_value as usize;
