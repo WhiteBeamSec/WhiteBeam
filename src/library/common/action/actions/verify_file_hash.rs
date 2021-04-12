@@ -6,12 +6,12 @@ fn fail(library: &str, symbol: &str, argument_path: &str) {
         eprintln!("WhiteBeam: {}: Permission denied", argument_path);
         unsafe { libc::exit(126) };
     } else {
-        unimplemented!("WhiteBeam: The '{}' symbol (from {}) is not supported by the ConsumeVariadic action", symbol, library);
+        unimplemented!("WhiteBeam: The '{}' symbol (from {}) is not supported by the VerifyFileHash action", symbol, library);
     }
 }
 
 #[macro_use]
-build_action! { VerifyFileHash (_src_prog, hook, arg_id, args, do_return, return_value) {
+build_action! { VerifyFileHash (src_prog, hook, arg_id, args, do_return, return_value) {
         // TODO: Depending on LogVerbosity, log all use of this action
         // NB: For Execution hooks, system executables that aren't read world may be whitelisted as ANY
         if !(crate::common::db::get_prevention()) {
@@ -55,5 +55,6 @@ build_action! { VerifyFileHash (_src_prog, hook, arg_id, args, do_return, return
             return (hook, args, do_return, return_value);
         }
         // Deny by default
+        event::send_log_event(event::LogClass::Warn as i64, format!("Blocked {} due to incorrect hash of {} (VerifyFileHash)", &src_prog, &argument_path));
         fail(library, symbol, &argument_path);
 }}

@@ -104,6 +104,7 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
             return (hook, args, do_return, return_value);
         }
         // Deny by default
+        event::send_log_event(event::LogClass::Warn as i64, format!("Blocked {} from writing to {} (VerifyCanWrite)", &src_prog, &target_directory));
         eprintln!("WhiteBeam: {}: Permission denied", &full_path);
         do_return = true;
         match (library, symbol) {

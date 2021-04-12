@@ -47,6 +47,7 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
             return (hook, args, do_return, return_value);
         }
         // Deny by default
+        event::send_log_event(event::LogClass::Warn as i64, format!("Blocked {} from executing {} (VerifyCanExecute)", &src_prog, &target_executable));
         eprintln!("WhiteBeam: {}: Permission denied", &target_executable);
         if (&hook.symbol).contains("exec") && (&hook.library).contains("libc.so") {
             // Terminate the child process

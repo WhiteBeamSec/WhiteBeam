@@ -16,9 +16,9 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Deserialize, Serialize)]
 pub struct LogObject {
-    class: i64,
-    desc: String,
-    ts: u32
+    pub class: i64,
+    pub desc: String,
+    pub ts: u32
 }
 
 pub struct HookRow {
@@ -145,6 +145,14 @@ pub fn get_baseline(conn: &Connection) -> Result<Vec<BaselineResult>, Box<dyn Er
         result_vec.push(result?);
     }
     Ok(result_vec)
+}
+
+pub fn get_log_level(conn: &Connection) -> Result<i64, Box<dyn Error>> {
+    match get_setting(&conn, String::from("LogVerbosity")) {
+        Ok(level) => Ok(level.parse().unwrap_or(1)),
+        // TODO: Log errors
+        Err(_) => Ok(1)
+    }
 }
 
 pub fn get_prevention(conn: &Connection) -> Result<bool, Box<dyn Error>> {

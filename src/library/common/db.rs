@@ -19,6 +19,7 @@ pub static HOOK_CACHE: SyncLazy<Mutex<Vec<HookRow>>> = SyncLazy::new(|| Mutex::n
 pub static ARG_CACHE: SyncLazy<Mutex<Vec<ArgumentRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
 pub static WL_CACHE: SyncLazy<Mutex<Vec<WhitelistRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
 pub static RULE_CACHE: SyncLazy<Mutex<Vec<RuleRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
+// TODO: BTreemap for Settings?
 pub static SET_CACHE: SyncLazy<Mutex<Vec<SettingRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
 // TODO: Cache rotation
 

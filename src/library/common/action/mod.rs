@@ -8,6 +8,8 @@ pub struct ActionObject {
 // Action template
 macro_rules! build_action {
     ($alias:ident ($src_prog:ident, $hook:ident, $arg_id:ident, $args:ident, $do_return:ident, $return_value:ident) $body:block) => {
+        #[allow(unused_imports)]
+        use crate::common::event;
         #[cfg(target_os = "windows")]
         #[allow(unused_imports)]
         use crate::platforms::windows as platform;
