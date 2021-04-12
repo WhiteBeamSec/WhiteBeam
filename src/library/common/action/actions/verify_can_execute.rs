@@ -14,8 +14,8 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
         }
         let any = String::from("ANY");
         let class = match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libc.so.6", "dlopen") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "dlmopen") => {
+            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlopen") |
+            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlmopen") => {
                 String::from("Filesystem/Path/Library")
             },
             _ => String::from("Filesystem/Path/Executable")
@@ -30,8 +30,8 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
         }
         let argument: crate::common::db::ArgumentRow = args.iter().find(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment").clone();
         let target_executable: String = match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libc.so.6", "dlopen") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "dlmopen") => {
+            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlopen") |
+            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlmopen") => {
                 if argument.real == 0 {
                     return (hook, args, do_return, return_value);
                 }
@@ -54,8 +54,8 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
         }
         do_return = true;
         match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libc.so.6", "dlopen") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "dlmopen") => {
+            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlopen") |
+            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlmopen") => {
                 // TODO: dlerror?
                 return_value = 0;
             },
