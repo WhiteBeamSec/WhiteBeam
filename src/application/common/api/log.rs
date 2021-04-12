@@ -22,7 +22,7 @@ pub async fn log(log: db::LogObject, addr: Option<SocketAddr>) -> Result<impl wa
         Ok(l) => l,
         Err(_) => return Err(warp::reject::not_found())
     };
-    if log.class >= log_level {
+    if log_level >= log.class {
         let _res = db::insert_log(&conn, log);
     }
     return Ok(warp::reply());

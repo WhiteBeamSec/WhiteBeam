@@ -365,6 +365,7 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: libc::uint
         return name;
     }
     // Deny by default
+    crate::common::event::send_log_event(crate::common::event::LogClass::Warn as i64, format!("Blocked {} from executing {} (la_objsearch)", &src_prog, &target_library));
 	0 as *const libc::c_char
 }
 

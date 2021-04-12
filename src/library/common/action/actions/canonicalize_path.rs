@@ -1,6 +1,6 @@
 #[macro_use]
 build_action! { CanonicalizePath (_src_prog, hook, arg_id, args, do_return, return_value) {
-        // TODO: Don't fatal if the Path cannot be canonicalized? NULL handling for dlopen?
+        // TODO: Don't fatal if the Path cannot be canonicalized (return -1/0). NULL handling for dlopen?
         let library: &str = &hook.library;
         let symbol: &str = &hook.symbol;
         let file_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
