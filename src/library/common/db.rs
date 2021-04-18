@@ -11,7 +11,7 @@ use std::{env,
           path::Path,
           lazy::SyncLazy,
           sync::Mutex};
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OpenFlags};
 
 // TODO: Hashmap/BTreemap to avoid race conditions, clean up of pthread_self() keys:
 // Timestamp attribute, vec. len>0, check timestamp, pthread_equal, RefCell/Cell (?)
@@ -71,7 +71,7 @@ pub fn db_open() -> Result<Connection, String> {
     //if no_db {
     //    return Err("No database file found".to_string());
     //}
-    match Connection::open(db_path) {
+    match Connection::open_with_flags(db_path, OpenFlags::SQLITE_OPEN_READ_ONLY) {
         Ok(conn) => Ok(conn),
         Err(_e) => {
             return Err("Could not open database file".to_string());
