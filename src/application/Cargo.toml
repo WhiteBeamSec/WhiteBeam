@@ -26,6 +26,8 @@ cli-table = { version = "0.4" }
 linkme = { version = "0.2" }
 automod = { version = "1.0" }
 rand = { version = "0.7" }
+glob = { version = "0.3" }
+goblin = { version = "0.4" }
 # Cryptographic dependencies
 sha3 = { version = "0.9" }
 blake3 = { version = "0.3" }
