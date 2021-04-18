@@ -1,5 +1,5 @@
 #[macro_use]
-build_action! { FilterEnvironment (src_prog, hook, arg_id, args, do_return, return_value) {
+build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, do_return, return_value) {
         // Enforce LD_AUDIT, LD_BIND_NOT, WB_PROG
         // TODO: Avoid leaking memory (NB: this action is often called before execve on Linux)
         let library: &str = &hook.library;
@@ -81,7 +81,7 @@ build_action! { FilterEnvironment (src_prog, hook, arg_id, args, do_return, retu
             }
         };
         let mut env_vec: Vec<*const libc::c_char> = Vec::new();
-        let program_path: String = src_prog.clone();
+        let program_path: std::ffi::OsString = platform::canonicalize_fd(args[0].real as i32).expect("WhiteBeam: Lost track of environment").into_os_string();
         if update_ld_audit {
             // TODO: Log null reference, process errors
             let new_ld_audit_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(&new_ld_audit_var).expect("WhiteBeam: Unexpected null reference"));

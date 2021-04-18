@@ -73,12 +73,11 @@ fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box
                                                                           .filter_map(|filename| filename.to_str())
                                                                           .map(|filename_str| String::from(filename_str))
                                                                           .collect();
-                    // TODO: Use path_string.clone() here instead of String::from("ANY")
                     for lib_name in all_library_names.iter() {
-                        added_whitelist_entries.push((String::from("Filesystem/Path/Library"), String::from("ANY"), String::from(lib_name)));
+                        added_whitelist_entries.push((String::from("Filesystem/Path/Library"), path_string.clone(), String::from(lib_name)));
                     }
                     for lib_path in all_library_paths.iter() {
-                        added_whitelist_entries.push((String::from("Filesystem/Path/Library"), String::from("ANY"), String::from(lib_path)));
+                        added_whitelist_entries.push((String::from("Filesystem/Path/Library"), path_string.clone(), String::from(lib_path)));
                     }
                     println!("WhiteBeam: Adding {} ({}: {}) to whitelist", &path_string, &algorithm[5..], &hash);
                 },
