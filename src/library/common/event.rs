@@ -4,7 +4,7 @@ use crate::common::{db, http, time};
 #[derive(Deserialize, Serialize)]
 struct LogObject {
     class: i64,
-    desc: String,
+    log: String,
     ts: u32
 }
 
@@ -22,7 +22,7 @@ fn get_timeout() -> u64 {
     1
 }
 
-pub fn send_log_event(class: i64, desc: String) {
+pub fn send_log_event(class: i64, log: String) {
     if cfg!(feature = "whitelist_test") {
         return;
     }
@@ -35,9 +35,9 @@ pub fn send_log_event(class: i64, desc: String) {
         return;
     }
     let ts = time::get_timestamp();
-    let log = LogObject {
+    let log_object = LogObject {
         class,
-        desc,
+        log,
         ts
     };
     let service_port: i32 = match db::get_setting(String::from("ServicePort")).parse() {
@@ -47,7 +47,7 @@ pub fn send_log_event(class: i64, desc: String) {
     };
     let request = match http::post(format!("http://127.0.0.1:{}/log", service_port))
                               .with_timeout(get_timeout())
-                              .with_json(&log) {
+                              .with_json(&log_object) {
                                   Ok(json_data) => json_data,
                                   Err(_e) => {
                                       eprintln!("WhiteBeam: Failed to serialize JSON");

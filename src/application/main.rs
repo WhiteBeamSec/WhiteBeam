@@ -112,33 +112,28 @@ fn run_auth() -> Result<(), Box<dyn Error>> {
 
 fn run_baseline() -> Result<(), Box<dyn Error>> {
     // TODO: Filter terminal escape sequences
-    // TODO: Refactor
     let conn: rusqlite::Connection = common::db::db_open(false)?;
-    //let whitelist = common::db::get_baseline(&conn).unwrap_or(Vec::new());
-    /*
-    let justify_right = CellFormat::builder().justify(Justify::Right).build();
-    let bold = CellFormat::builder().bold(true).build();
-    let mut table_vec: Vec<Row> = Vec::new();
-    table_vec.push(Row::new(vec![
-        Cell::new("Path", bold),
-        Cell::new("Total Blocked", bold)
-    ]));
-    for result in whitelist {
-        table_vec.push(Row::new(vec![
-                Cell::new(&result.program, Default::default()),
-                Cell::new(&result.total_blocked, justify_right)
-            ]));
-    }
-    let table = match Table::new(table_vec, cli_table::format::BORDER_COLUMN_TITLE) {
-        Ok(table_obj) => table_obj,
-        Err(_e) => {
-            eprintln!("WhiteBeam: Could not create table");
-            return;
-        }
+    let table_struct: TableStruct = {
+        let table: Vec<Vec<CellStruct>> = common::db::get_baseline(&conn).unwrap_or(Vec::new()).iter()
+                                                .map(|entry| vec![
+                                                    entry.log.clone().cell(),
+                                                    entry.total.clone().cell(),
+                                                ])
+                                                .collect();
+        table.table()
+                .title(vec![
+                    "Log".cell().bold(true),
+                    "Total Blocked".cell().bold(true)
+                ])
+                .separator(
+                    Separator::builder()
+                    .title(Some(Default::default()))
+                    .row(None)
+                    .column(Some(Default::default()))
+                    .build(),
+                )
     };
-    let _res = table.print_stdout();
-    */
-    Ok(())
+    Ok(print_stdout(table_struct)?)
 }
 
 fn run_disable(class: &OsStr) -> Result<(), Box<dyn Error>> {

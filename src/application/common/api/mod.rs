@@ -13,7 +13,7 @@ pub async fn serve(service_port: u16) {
         .and(warp::path::end())
         .map(status::status);
 
-    // POST /log {"class":1,"desc":"..","ts":1566162863}
+    // POST /log {"class":1,"log":"..","ts":1566162863}
     let log_route = warp::post()
         .and(warp::path("log"))
         .and(warp::path::end())
