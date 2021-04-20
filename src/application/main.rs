@@ -272,6 +272,7 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
     }
     let conn: rusqlite::Connection = common::db::db_open(true)?;
     let path_str = path.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
+    let base_version: String = platform::parse_os_version()?;
     if (path_str == "stdin") || (path_str == "-") {
         println!("WhiteBeam: Loading SQL from standard input");
         let mut buffer = String::new();
@@ -286,7 +287,6 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
     // Try loading from repository
-    // TODO: Rewrite path if str is "Base"
     let repository = match common::db::get_setting(&conn, String::from("Repository")) {
         Ok(repo) => repo,
         // TODO: Package Schema, Default, and Essential
@@ -294,14 +294,27 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
     };
     let mut url_common: String = format!("{}/sql/common/{}.sql", repository, path_str);
     let mut url_platform: String = format!("{}/sql/platforms/{}/{}.sql", repository, std::env::consts::OS, path_str);
+    let mut url_base: String = format!("{}/sql/platforms/{}/base/{}.sql", repository, std::env::consts::OS, base_version);
     if repository.starts_with("https://github.com/") {
         url_common.push_str("?raw=true");
         url_platform.push_str("?raw=true");
+        url_base.push_str("?raw=true");
     }
     // TODO: Identify ourselves with a user agent
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()?;
+    if path_str == "Base" {
+        // Base whitelist
+        let response_base = client.get(&url_base).send()?;
+        if response_base.status().is_success() {
+            println!("WhiteBeam: Loading '{}' ({}) from repository", path_str, base_version);
+            let buffer = response_base.text()?;
+            conn.execute_batch(&buffer)?;
+            return Ok(());
+        }
+        return Err("WhiteBeam: Failed to load SQL from all available sources".into());
+    }
     let response_common = client.get(&url_common).send()?;
     if response_common.status().is_success() {
         println!("WhiteBeam: Loading '{}' from repository", path_str);

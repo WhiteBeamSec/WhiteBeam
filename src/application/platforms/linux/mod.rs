@@ -130,3 +130,26 @@ pub fn recursive_library_scan(elf_path_str: &str, collected_library_paths_opt: O
     }
     Ok(collected_library_paths)
 }
+
+pub fn parse_os_version() -> Result<String, Box<dyn Error>> {
+    let file = std::fs::read_to_string("/etc/os-release")?;
+    let mut distro = String::from("");
+    let mut version = String::from("");
+    for line in file.lines() {
+        if line.starts_with("ID=") {
+            distro = os_version_value(line)?;
+        } else if line.starts_with("VERSION_ID=") {
+            version = os_version_value(line)?;
+        }
+    }
+    Ok(format!("{}_{}", distro, version))
+}
+
+fn os_version_value(line: &str) -> Result<String, Box<dyn Error>> {
+    let idx = line.find('=').unwrap();
+    let mut value = &line[idx+1..];
+    if value.starts_with('"') && value.ends_with('"') && value.len() >= 2 {
+        value = &value[1..value.len()-1];
+    }
+    Ok(value.to_string())
+}
