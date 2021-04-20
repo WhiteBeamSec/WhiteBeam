@@ -1,21 +1,20 @@
-#[cfg(target_os = "windows")]
-use crate::platforms::windows as platform;
-#[cfg(target_os = "linux")]
-use crate::platforms::linux as platform;
-#[cfg(target_os = "macos")]
-use crate::platforms::macos as platform;
 use serde::{Deserialize, Serialize};
-use std::ffi::OsStr;
-use crate::common::http;
-use crate::common::time;
+use crate::common::{db, http, time};
 
 #[derive(Deserialize, Serialize)]
-struct LogExecObject {
-    program: String,
-    hash: String,
-    uid: u32,
-    ts: u32,
-    success: bool
+struct LogObject {
+    class: i64,
+    log: String,
+    ts: u32
+}
+
+pub enum LogClass {
+    Off = 1,
+    Error, // 2
+    Warn, // 3
+    Info, // 4
+    Debug, // 5
+    Trace // 6
 }
 
 fn get_timeout() -> u64 {
@@ -23,31 +22,32 @@ fn get_timeout() -> u64 {
     1
 }
 
-pub fn send_exec_event(uid: u32, program: &OsStr, hash: &str, success: bool) {
-    let program_string = program.to_string_lossy().to_string();
-    let ts = time::get_timestamp();
-    let log = LogExecObject {
-        program: program_string,
-        hash: hash.to_string(),
-        uid: uid,
-        ts: ts,
-        success: success
-    };
+pub fn send_log_event(class: i64, log: String) {
     if cfg!(feature = "whitelist_test") {
         return;
     }
-    // https://github.com/WhiteBeamSec/WhiteBeam/blob/master/src/library/common/whitelist.rs#L59
-    match platform::get_uptime() {
-        Ok(uptime) => {
-            if uptime.as_secs() < (60*5) {
-                return;
-            }
-        },
-        Err(e) => eprintln!("WhiteBeam: {}", e)
+    let log_level: i64 = match db::get_setting(String::from("LogVerbosity")).parse() {
+        Ok(level) => level,
+        // TODO: Log errors
+        Err(_) => 1
     };
-    let request = match http::post("http://127.0.0.1:11998/log/exec")
+    if log_level < class {
+        return;
+    }
+    let ts = time::get_timestamp();
+    let log_object = LogObject {
+        class,
+        log,
+        ts
+    };
+    let service_port: i32 = match db::get_setting(String::from("ServicePort")).parse() {
+        Ok(port) => port,
+        // TODO: Log errors
+        Err(_) => 11998
+    };
+    let request = match http::post(format!("http://127.0.0.1:{}/log", service_port))
                               .with_timeout(get_timeout())
-                              .with_json(&log) {
+                              .with_json(&log_object) {
                                   Ok(json_data) => json_data,
                                   Err(_e) => {
                                       eprintln!("WhiteBeam: Failed to serialize JSON");

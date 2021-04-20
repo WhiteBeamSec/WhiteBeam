@@ -1,9 +1,10 @@
+// TODO: Log failures
 // Database
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use crate::common::db;
 
-// POST /log/exec
-pub async fn log_exec(exec: db::LogExecObject, addr: Option<SocketAddr>) -> Result<impl warp::Reply, warp::Rejection> {
+// POST /log
+pub async fn log(log: db::LogObject, addr: Option<SocketAddr>) -> Result<impl warp::Reply, warp::Rejection> {
     let localhost = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
     let remote_addr = match addr {
         Some(inetaddr)  => inetaddr.ip(),
@@ -13,7 +14,16 @@ pub async fn log_exec(exec: db::LogExecObject, addr: Option<SocketAddr>) -> Resu
         return Err(warp::reject::not_found());
     }
     // Input to this function is untrusted
-    let conn: rusqlite::Connection = db::db_open();
-    db::insert_exec(&conn, exec);
+    let conn: rusqlite::Connection = match db::db_open(false) {
+        Ok(c) => c,
+        Err(_) => return Err(warp::reject::not_found())
+    };
+    let log_level = match db::get_log_level(&conn) {
+        Ok(l) => l,
+        Err(_) => return Err(warp::reject::not_found())
+    };
+    if log_level >= log.class {
+        let _res = db::insert_log(&conn, log);
+    }
     return Ok(warp::reply());
 }

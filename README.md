@@ -18,4 +18,62 @@ Transparent endpoint security
 
 ---
 
-<p align="center"><b>Coming soon: 0.2</b></p>
+## Features
+
+* Block and detect advanced attacks
+* Modern audited cryptography: [RustCrypto](https://github.com/RustCrypto) for hashing and encryption
+* Highly compatible: Development focused on all platforms (incl. legacy) and architectures
+* Source available: Audits welcome
+* Reviewed by security researchers with combined 100+ years of experience
+
+## In Action
+
+* [Video demonstration of detection and prevention capabilities](TODO)
+* [Recorded attacks against the WhiteBeam 0.2 honeypot](TODO) <font color="red">[ LIVE ]</font>
+
+TODO: New video coming soon!
+
+[![asciicast](https://asciinema.org/a/296135.svg)](https://asciinema.org/a/296135)
+
+## Installation
+
+### From Repositories
+
+TODO: Repositories
+
+### From Packages (Linux)
+
+TODO: Using your package manager of choice (on Ubuntu/Debian (apt/snap classic)/Gentoo (emerge)/Arch (pacman AUR)/RHEL/Amazon Linux/Rocky Linux (yum)/OpenSUSE/etc.), details on installing `whitebeam` package.
+
+**Important**: Always ensure the downloaded file hash matches official hashes ([How-to](https://github.com/WhiteBeamSec/WhiteBeam/wiki/Verifying-file-hashes)).
+
+https://github.com/WhiteBeamSec/WhiteBeam/releases
+
+### From Source (Linux)
+
+1. Run tests (_Optional_):
+    * `cargo run test`
+2. Compile:
+    * `cargo run build`
+3. Install WhiteBeam:
+    * `cargo run install`
+
+## Quick start
+1. Become root (`sudo -s`/`su root`)
+2. Set a recovery secret. You'll be able to use this with `whitebeam --auth` to make changes to the system: `whitebeam --setting RecoverySecret mask`
+
+### How to Detect Attacks with WhiteBeam
+Multiple guides are provided depending on your preference. [Contact us](info@whitebeamsec.com) so we can help you integrate WhiteBeam with your environment.
+1. [Serverless guide](TODO), for passive review
+2. [osquery Fleet setup guide](TODO), for passive review
+3. [WhiteBeam Server setup guide](TODO), for active response
+
+### How to Prevent Attacks with WhiteBeam
+1. Become root (`sudo -s`/`su root`)
+2. Download default whitelists for your platform:
+    * `whitebeam --load Base`
+3. Review the baseline after a minimum of 24 hours:
+    * `whitebeam --baseline`
+4. Add trusted behavior to the whitelist, following the [whitelisting guide](TODO)
+5. Enable WhiteBeam prevention:
+    * `whitebeam --setting Prevention true`

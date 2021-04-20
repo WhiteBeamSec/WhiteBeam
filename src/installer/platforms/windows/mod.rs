@@ -1,15 +1,18 @@
 // Load OS-specific modules
 
 //use std::env;
-use std::{path::Path,
-          path::PathBuf};
+use std::path::PathBuf;
 
-pub fn get_data_file_path(data_file: &str) -> PathBuf {
-    // TODO: Change this when registry and environment are secured
-    //Path::new(env::var("ProgramFiles").unwrap_or("C:\\ProgramFiles").push_str("\\WhiteBeam\\data\\"))
-    let data_path: String = String::from("C:\\Program Files\\WhiteBeam\\data\\");
+pub fn get_data_file_path(data_file: &str, release: &str) -> PathBuf {
+    // TODO: Use PWD for Powershell with feature="whitelist_test"?
+    // TODO: May change this when registry and environment are secured
+    //PathBuf::from(env::var("ProgramFiles").unwrap_or("C:\\ProgramFiles").push_str("\\WhiteBeam\\data\\"))
+    let data_path: String = match release {
+        "test" => format!("{}\\target\\release\\examples\\", env!("CD")),
+        _ => String::from("C:\\Program Files\\WhiteBeam\\data\\")
+    };
     let data_file_path = data_path + data_file;
-    Path::new(&data_file_path).to_owned()
+    PathBuf::from(data_file_path)
 }
 
 pub fn check_build_environment() {
