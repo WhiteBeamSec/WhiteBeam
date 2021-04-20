@@ -513,7 +513,7 @@ pub fn get_rtld_audit_lib_path() -> PathBuf {
     #[cfg(feature = "whitelist_test")]
     let rtld_audit_lib_path = PathBuf::from(format!("{}/target/release/libwhitebeam.so", env!("PWD")));
     #[cfg(not(feature = "whitelist_test"))]
-    let rtld_audit_lib_path = PathBuf::from(format!("/lib/libwhitebeam_{}.so", env::consts::ARCH));
+    let rtld_audit_lib_path = PathBuf::from(String::from("/lib/libwhitebeam.so"));
     rtld_audit_lib_path
 }
 
