@@ -1,4 +1,3 @@
-// TODO: Modify this ahead of WhiteBeam 0.2 release?
 // Load OS-specific modules
 use std::{env,
           ffi::OsStr,

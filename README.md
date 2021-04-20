@@ -18,8 +18,6 @@ Transparent endpoint security
 
 ---
 
-**NOTICE**: This repository tracks the beta release of WhiteBeam 0.2. If you'd like to test WhiteBeam in your environment, [contact us](info@whitebeamsec.com).
-
 ## Features
 
 * Block and detect advanced attacks
@@ -33,7 +31,7 @@ Transparent endpoint security
 * [Video demonstration of detection and prevention capabilities](TODO)
 * [Recorded attacks against the WhiteBeam 0.2 honeypot](TODO) <font color="red">[ LIVE ]</font>
 
-TODO: Update video for 0.2
+TODO: New video coming soon!
 
 [![asciicast](https://asciinema.org/a/296135.svg)](https://asciinema.org/a/296135)
 
@@ -65,9 +63,9 @@ https://github.com/WhiteBeamSec/WhiteBeam/releases
 2. Set a recovery secret. You'll be able to use this with `whitebeam --auth` to make changes to the system: `whitebeam --setting RecoverySecret mask`
 
 ### How to Detect Attacks with WhiteBeam
-There are three options, depending on your preference:
+Multiple guides are provided depending on your preference. [Contact us](info@whitebeamsec.com) so we can help you integrate WhiteBeam with your environment.
 1. [Serverless guide](TODO), for passive review
-2. [Kolide Fleet setup guide](TODO), for passive review
+2. [osquery Fleet setup guide](TODO), for passive review
 3. [WhiteBeam Server setup guide](TODO), for active response
 
 ### How to Prevent Attacks with WhiteBeam

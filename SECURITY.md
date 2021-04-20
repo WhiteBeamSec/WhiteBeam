@@ -14,7 +14,7 @@ gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys 4A3F1233C01563F808B8355125ECFD1
 
 **Current security vulnerability rewards**
 
-Reward program will begin April 1st 2021. Rewards will be provided at the discretion of the lead developers. All vulnerabilities must be demonstrated in the challenge environment to be eligible for payment.
+Rewards will be provided at the discretion of the lead developers. All vulnerabilities must be demonstrated in the challenge environment to be eligible for payment.
 
 | Vulnerability                                                                               | Reward         |
 | ------------------------------------------------------------------------------------------- | -------------- |

@@ -1,5 +1,3 @@
-// TODO: Modify heavily ahead of 0.2 release
-
 #[cfg(target_os = "windows")]
 use crate::platforms::windows as platform;
 #[cfg(target_os = "linux")]

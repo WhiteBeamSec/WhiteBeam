@@ -1,6 +1,3 @@
-// TODO: Update for 0.2
-// https://github.com/RustCrypto/AEADs/blob/master/crypto_box/src/lib.rs
-
 #[cfg(target_os = "windows")]
 use crate::platforms::windows as platform;
 #[cfg(target_os = "linux")]

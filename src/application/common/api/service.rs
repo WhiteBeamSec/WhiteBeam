@@ -17,7 +17,8 @@ fn set_console_secret(secret: &str, expiry: &str) -> String {
 }
 
 fn query(statement: &str) -> String {
-    // TODO: Send to osquery, return JSON rows
+    // TODO: Dispatch to integrations
+    // Integrations to read WhiteBeam's database are currently provided for osquery
     String::from("OK")
 }
 

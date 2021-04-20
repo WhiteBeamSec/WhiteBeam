@@ -9,10 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- N/A
+
+## [0.2.0] - 2021-04-20
+
+### Added
+
 - Project changelog
-- Linux LD_PRELOAD library: LD_AUDIT loader
-- Linux LD_PRELOAD library: Generic hook
-- TODO: Add the rest of the 0.2 changes here
+- Linux LD_PRELOAD/LD_AUDIT library: Generic hook
+- Linux LD_PRELOAD/LD_AUDIT library: Support for 40 hooks including Execution and Filesystem hooks
+- Database-driven design
+- Settings
+- Commands to modify WhiteBeam settings, toggle hooks, and load SQL
+- Modular action framework (compile time reflection), 12 actions
+- Modular hash framework (compile time reflection), added hashing algorithms (ARGON2ID, BLAKE3, SHA-3)
+- Hybrid hashing
+- Recovery secret
+
+### Changed
+
+- Linux LD_PRELOAD/LD_AUDIT library: LD_AUDIT loader
+- Replaced SodiumOxide with pure Rust audited cryptography library (RustCrypto)
+- Improved whitelisting system
+- Updated to latest dependencies
+
+### Removed
+
+- SHA-2 hash family
+
+### Security
+- A user with local access to a server running WhiteBeam could bypass whitelisting functionality
+  Fixed in 0.2.0: https://github.com/WhiteBeamSec/WhiteBeam/security/advisories/GHSA-7wf6-3j4p-jm8x
 
 ## [0.1.3] - 2020-03-25
 
@@ -172,7 +199,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Project license
 
-[unreleased]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.1.3...HEAD
+[unreleased]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.1.0...v0.1.1
