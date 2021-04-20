@@ -109,16 +109,20 @@ pub fn run_install() {
     // TODO: Use Rust instead of coreutils
     Command::new(search_path(OsStr::new("bash")).unwrap())
             .arg("-c")
-            .arg("cp ./src/installer/platforms/linux/resources/service.sh /etc/init.d/whitebeam;
-                  mkdir -p /opt/WhiteBeam/;
-                  cp ./target/release/whitebeam /opt/WhiteBeam/whitebeam;
+            .arg("mkdir -p /opt/WhiteBeam/data/;
+                  cp ./src/installer/platforms/linux/resources/service.sh /etc/init.d/whitebeam;
                   cp ./target/release/libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so;
-                  mkdir /opt/WhiteBeam/data/;
+                  cp ./target/release/whitebeam /opt/WhiteBeam/whitebeam;
+                  ln -s /etc/init.d/whitebeam /etc/rc3.d/S01whitebeam;
+                  ln -s /opt/WhiteBeam/libwhitebeam.so /lib/libwhitebeam.so;
                   ln -s /opt/WhiteBeam/whitebeam /usr/local/bin/whitebeam;
                   chmod 775 /etc/init.d/whitebeam;
-                  ln -s /etc/init.d/whitebeam /etc/rc3.d/S01whitebeam;
+                  chmod 4555 /opt/WhiteBeam/libwhitebeam.so;
+                  whitebeam --load Schema;
+                  whitebeam --load Default;
+                  whitebeam --load Essential;
                   /etc/init.d/whitebeam start;
-                  echo '/opt/WhiteBeam/libwhitebeam.so' | tee -a /etc/ld.so.preload")
+                  echo '/lib/libwhitebeam.so' | tee -a /etc/ld.so.preload")
             .status()
             .expect("WhiteBeam: Installation failed");
     println!("Installation complete");

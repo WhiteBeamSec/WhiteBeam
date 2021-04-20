@@ -39,6 +39,10 @@ TODO: Update video for 0.2
 
 ## Installation
 
+### From Repositories
+
+TODO: Repositories
+
 ### From Packages (Linux)
 
 TODO: Using your package manager of choice (on Ubuntu/Debian (apt/snap classic)/Gentoo (emerge)/Arch (pacman AUR)/RHEL/Amazon Linux/Rocky Linux (yum)/OpenSUSE/etc.), details on installing `whitebeam` package.
@@ -46,10 +50,6 @@ TODO: Using your package manager of choice (on Ubuntu/Debian (apt/snap classic)/
 **Important**: Always ensure the downloaded file hash matches official hashes ([How-to](https://github.com/WhiteBeamSec/WhiteBeam/wiki/Verifying-file-hashes)).
 
 https://github.com/WhiteBeamSec/WhiteBeam/releases
-
-### From Repositories
-
-TODO: Repositories, https://repology.org/ badge.
 
 ### From Source (Linux)
 
@@ -64,7 +64,7 @@ TODO: Repositories, https://repology.org/ badge.
 1. Become root (`sudo -s`/`su root`)
 2. Set a recovery secret. You'll be able to use this with `whitebeam --auth` to make changes to the system: `whitebeam --setting RecoverySecret mask`
 
-### Detect Attacks with WhiteBeam
+### How to Detect Attacks with WhiteBeam
 There are three options, depending on your preference:
 1. [Serverless guide](TODO), for passive review
 2. [Kolide Fleet setup guide](TODO), for passive review
@@ -73,7 +73,7 @@ There are three options, depending on your preference:
 ### How to Prevent Attacks with WhiteBeam
 1. Become root (`sudo -s`/`su root`)
 2. Download default whitelists for your platform:
-    * `whitebeam --load base`
+    * `whitebeam --load Base`
 3. Review the baseline after a minimum of 24 hours:
     * `whitebeam --baseline`
 4. Add trusted behavior to the whitelist, following the [whitelisting guide](TODO)
