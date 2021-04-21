@@ -1,3 +1,11 @@
+fn get_restricted() -> Vec<std::ffi::OsString> {
+    vec!(
+        std::ffi::OsString::from("LD_PROFILE"),
+        std::ffi::OsString::from("LD_PROFILE_OUTPUT"),
+        std::ffi::OsString::from("LD_DEBUG_OUTPUT")
+    )
+}
+
 #[macro_use]
 build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, do_return, return_value) {
         // Enforce LD_AUDIT, LD_BIND_NOT, WB_PROG
@@ -102,6 +110,9 @@ build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, do_return, ret
             let mut envp_iter = envp;
             while !(*envp_iter).is_null() {
                 if let Some(key_value) = crate::common::convert::parse_env_single(std::ffi::CStr::from_ptr(*envp_iter).to_bytes()) {
+                    if get_restricted().contains(&key_value.0) {
+                         panic!("WhiteBeam: LD output variables restricted");
+                    }
                     if  (!(update_ld_audit) && (key_value.0 == std::ffi::OsString::from("LD_AUDIT")))
                      || (!(update_ld_bind_not) && (key_value.0 == std::ffi::OsString::from("LD_BIND_NOT")))
                      || ((key_value.0 != std::ffi::OsString::from("LD_AUDIT")) && (key_value.0 != std::ffi::OsString::from("LD_BIND_NOT")) && (key_value.0 != std::ffi::OsString::from("WB_PROG"))) {
