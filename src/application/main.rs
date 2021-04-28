@@ -99,9 +99,13 @@ fn run_auth() -> Result<(), Box<dyn Error>> {
         return Err("WhiteBeam: Authorization failed".into());
     }
     println!("WhiteBeam: Opening administrative shell");
-    let mut command = Command::new("/bin/sh");
-    if let Ok(mut child) = command.env("WB_AUTH", &password)
-                                  .spawn() {
+    let mut shell = Command::new("/bin/bash");
+    shell.arg("--noprofile")
+         .arg("--norc")
+         .env("WB_AUTH", &password)
+         // Theme
+         .env("PS1", "\\[\x1b[34m\\][WhiteBeam \\[\x1b[37m\\]\\W\\[\x1b[34m\\]]\\[\x1b[37m\\]\\$ \\[\x1b(B\x1b[m\\]\\[\x1b(B\x1b[m\\]");
+    if let Ok(mut child) = shell.spawn() {
         child.wait()?;
         println!("WhiteBeam: Session closed");
     } else {
