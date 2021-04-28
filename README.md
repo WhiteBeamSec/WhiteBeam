@@ -33,8 +33,6 @@ Transparent endpoint security
 
 TODO: New video coming soon!
 
-[![asciicast](https://asciinema.org/a/296135.svg)](https://asciinema.org/a/296135)
-
 ## Installation
 
 ### From Repositories
