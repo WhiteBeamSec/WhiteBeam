@@ -23,7 +23,7 @@ glob = { version = "0.3" }
 # Cryptographic dependencies
 sha3 = { version = "0.9" }
 blake3 = { version = "0.3" }
-argon2 = { version = "0.1" }
+argon2 = { version = "0.2" }
 
 [features]
 whitelist_test = []
