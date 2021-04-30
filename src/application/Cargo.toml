@@ -32,7 +32,7 @@ goblin = { version = "0.4" }
 sha3 = { version = "0.9" }
 blake3 = { version = "0.3" }
 argon2 = { version = "0.1" }
-crypto_box = { version = "0.5" }
+crypto_box = { version = "0.6" }
 
 [features]
 whitelist_test = []
