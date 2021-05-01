@@ -1,7 +1,7 @@
 # General info
 [package]
 name = "whitebeam"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["WhiteBeam Security, Inc."]
 edition = "2018"
 
@@ -25,14 +25,14 @@ rpassword = { version = "5.0" }
 cli-table = { version = "0.4" }
 linkme = { version = "0.2" }
 automod = { version = "1.0" }
-rand = { version = "0.7" }
+rand = { version = "0.8" }
 glob = { version = "0.3" }
 goblin = { version = "0.4" }
 # Cryptographic dependencies
 sha3 = { version = "0.9" }
 blake3 = { version = "0.3" }
-argon2 = { version = "0.1" }
-crypto_box = { version = "0.5" }
+argon2 = { version = "0.2" }
+crypto_box = { version = "0.6" }
 
 [features]
 whitelist_test = []

@@ -7,7 +7,7 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
         if !(crate::common::db::get_prevention()) {
             return (hook, args, do_return, return_value);
         }
-        // Permit authorized execution
+        // Permit authorized writes
         if crate::common::db::get_valid_auth_env() {
             return (hook, args, do_return, return_value);
         }

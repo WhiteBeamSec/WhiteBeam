@@ -303,7 +303,7 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
         // Unsupported
         _ => panic!("WhiteBeam: Unsupported operation"),
     };
-    // TODO: Replace below with post action framework (0.2.1 - 0.2.2)
+    // TODO: Replace below with post action framework (0.2.2 - 0.2.3)
     // TODO: May need fopen/fopen64 => fdopen
     match (hook_orig.symbol.as_ref(), hook.symbol.as_ref()) {
         ("symlink", "symlinkat") => {
@@ -500,13 +500,17 @@ pub unsafe fn dlsym_next_relative(symbol: &str, real_addr: usize) -> *const u8 {
     calculated_addr
 }
 
-pub fn get_data_file_path(data_file: &str) -> PathBuf {
+pub fn get_data_file_path_string(data_file: &str) -> String {
     #[cfg(feature = "whitelist_test")]
     let data_path: String = format!("{}/target/release/examples/", env!("PWD"));
     #[cfg(not(feature = "whitelist_test"))]
     let data_path: String = String::from("/opt/WhiteBeam/data/");
     let data_file_path = data_path + data_file;
-    PathBuf::from(data_file_path)
+    data_file_path
+}
+
+pub fn get_data_file_path(data_file: &str) -> PathBuf {
+    PathBuf::from(get_data_file_path_string(data_file))
 }
 
 pub fn get_rtld_audit_lib_path() -> PathBuf {

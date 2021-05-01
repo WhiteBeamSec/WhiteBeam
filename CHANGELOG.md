@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
+## [0.2.1] - 2021-05-01
+
+### Added
+
+- VerifyCanTerminate action
+
+### Changed
+
+- Updated to latest dependencies
+
+### Security
+- A privileged user (such as root) with local access to a server running WhiteBeam can kill the WhiteBeam logging service
+  Fixed in 0.2.1: https://github.com/WhiteBeamSec/WhiteBeam/security/advisories/GHSA-h543-6328-8f64
+
 ## [0.2.0] - 2021-04-20
 
 ### Added

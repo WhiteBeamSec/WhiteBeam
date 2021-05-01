@@ -17,7 +17,7 @@ use std::{error::Error,
           path::Path,
           fmt::Write as FmtWrite,
           num::ParseIntError};
-use crypto_box::{ChaChaBox, PublicKey, SecretKey, aead::{Aead, Nonce}, KEY_SIZE};
+use crypto_box::{ChaChaBox, PublicKey, SecretKey, aead::{Aead, generic_array::GenericArray}, KEY_SIZE};
 pub const NONCE_SIZE: usize = 24;
 
 // TODO: Test, probably doesn't work as-is. Especially the ChaChaBox without the postfix tag: https://stackoverflow.com/a/62140062
@@ -135,7 +135,7 @@ fn generate_ciphertext(plaintext: &[u8], nonce: &[u8]) -> Result<Vec<u8>, Box<dy
     let (_client_public_key, client_private_key) = get_client_public_private_key()?;
     let server_public_key = get_server_public_key()?;
     let server_box = ChaChaBox::new(&server_public_key, &client_private_key);
-    let nonce_obj = Nonce::from_slice(nonce);
+    let nonce_obj = GenericArray::from_slice(nonce);
     match server_box.encrypt(&nonce_obj, plaintext) {
         Ok(ciphertext) => Ok(ciphertext),
         Err(_e) => return Err("Could not generate ciphertext".into())
@@ -146,7 +146,7 @@ fn decrypt_server_ciphertext(ciphertext: &[u8], nonce: &[u8]) -> Result<Vec<u8>,
     let (_client_public_key, client_private_key) = get_client_public_private_key()?;
     let server_public_key = get_server_public_key()?;
     let client_box = ChaChaBox::new(&server_public_key, &client_private_key);
-    let nonce_obj = Nonce::from_slice(nonce);
+    let nonce_obj = GenericArray::from_slice(nonce);
     // Verification and decryption
     match client_box.decrypt(&nonce_obj, ciphertext) {
         Ok(plaintext) => Ok(plaintext),
