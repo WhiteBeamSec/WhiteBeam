@@ -1,30 +1,3 @@
-pub fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
-    let mut components = path.components().peekable();
-    let mut ret = if let Some(c @ std::path::Component::Prefix(..)) = components.peek().cloned() {
-        components.next();
-        std::path::PathBuf::from(c.as_os_str())
-    } else {
-        std::path::PathBuf::new()
-    };
-
-    for component in components {
-        match component {
-            std::path::Component::Prefix(..) => unreachable!(),
-            std::path::Component::RootDir => {
-                ret.push(component.as_os_str());
-            }
-            std::path::Component::CurDir => {}
-            std::path::Component::ParentDir => {
-                ret.pop();
-            }
-            std::path::Component::Normal(c) => {
-                ret.push(c);
-            }
-        }
-    }
-    ret
-}
-
 #[macro_use]
 build_action! { SplitFilePath (_src_prog, hook, arg_id, args, do_return, return_value) {
         let path_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
@@ -32,7 +5,7 @@ build_action! { SplitFilePath (_src_prog, hook, arg_id, args, do_return, return_
         let path_value = path_argument.real as *const libc::c_char;
         let path_osstring = unsafe { crate::common::convert::c_char_to_osstring(path_value) };
         let path_pathbuf: std::path::PathBuf = std::path::PathBuf::from(path_osstring);
-        let path_normal: std::path::PathBuf = normalize_path(&path_pathbuf);
+        let path_normal: std::path::PathBuf = crate::common::convert::normalize_path(&path_pathbuf);
         // TODO: Error handling
         let basename: &std::ffi::OsStr = (&path_normal).file_name().unwrap_or(&std::ffi::OsStr::new("."));
         let basename_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(basename).expect("WhiteBeam: Unexpected null reference"));

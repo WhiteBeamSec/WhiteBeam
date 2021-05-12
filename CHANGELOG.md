@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
+## [0.2.2] - 2021-05-12
+
+### Added
+
+- Linux LD_PRELOAD/LD_AUDIT library: Support for 10 hooks
+
+### Security
+- The fopen/fopen64/truncate hooks (included in the Essential whitelist) allowed a file to be truncated in the OpenFileDescriptor action prior to the VerifyCanWrite action. This allowed arbitrary files to be truncated with sufficient privileges on Linux, including WhiteBeam startup files.
+  Further, the FORTIFY_SOURCE variants of libc functions, truncate64, and ftruncate64 may have allowed similar bypasses to be possible.
+  Fixed in 0.2.2: https://github.com/WhiteBeamSec/WhiteBeam/security/advisories/GHSA-3f8r-9483-pfxj
+
 ## [0.2.1] - 2021-05-01
 
 ### Added
@@ -22,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated to latest dependencies
 
 ### Security
-- A privileged user (such as root) with local access to a server running WhiteBeam can kill the WhiteBeam logging service
+- A privileged user (such as root) with local access to a server running WhiteBeam could kill the WhiteBeam logging service
   Fixed in 0.2.1: https://github.com/WhiteBeamSec/WhiteBeam/security/advisories/GHSA-h543-6328-8f64
 
 ## [0.2.0] - 2021-04-20
@@ -174,8 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored library HTTP requests to reduce crashes
 
 ### Security
-- If the LD_PRELOAD/LD_AUDIT environment variables were defined to a nonexecutable
-  shared object library, execution of non-whitelisted library functions was possible.
+- If the LD_PRELOAD/LD_AUDIT environment variables were defined to a nonexecutable shared object library, execution of non-whitelisted library functions was possible.
   Fixed in 0.0.6: https://github.com/WhiteBeamSec/WhiteBeam/security/advisories/GHSA-mm3f-f5hg-p2hv
 
 ## [0.0.5] - 2019-08-26
@@ -213,7 +223,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Project license
 
-[unreleased]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.2.1...HEAD
+[unreleased]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.1.2...v0.1.3

@@ -195,7 +195,7 @@ fn get_argc(args: Vec<db::ArgumentRow>) -> usize {
 }
 
 #[allow(unused_mut)]
-unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
+unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     // TODO: Test zero argument case
     /*
     Notes on limitations of WhiteBeam's generic Linux hook, planned to be resolved in future versions of WhiteBeam:
@@ -303,7 +303,7 @@ unsafe extern "C" fn generic_hook (mut arg1: usize, mut args: ...) -> isize {
         // Unsupported
         _ => panic!("WhiteBeam: Unsupported operation"),
     };
-    // TODO: Replace below with post action framework (0.2.2 - 0.2.3)
+    // TODO: Replace below with post action framework (0.2.3 - 0.2.4)
     // TODO: May need fopen/fopen64 => fdopen
     match (hook_orig.symbol.as_ref(), hook.symbol.as_ref()) {
         ("symlink", "symlinkat") => {

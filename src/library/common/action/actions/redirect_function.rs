@@ -14,7 +14,8 @@ build_action! { RedirectFunction (_src_prog, hook, _arg_id, args, do_return, ret
                 String::from("fexecve")
             },
             // Filesystem
-            ("/lib/x86_64-linux-gnu/libc.so.6", "truncate") => {
+            ("/lib/x86_64-linux-gnu/libc.so.6", "truncate") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "truncate64") => {
                 String::from("ftruncate")
             },
             ("/lib/x86_64-linux-gnu/libc.so.6", "fopen") |
@@ -49,6 +50,15 @@ build_action! { RedirectFunction (_src_prog, hook, _arg_id, args, do_return, ret
             },
             ("/lib/x86_64-linux-gnu/libc.so.6", "mknod") => {
                 String::from("mknodat")
+            },
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open_2") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open64") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open64_2") => {
+                String::from("__openat_2")
+            },
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__xmknod") => {
+                String::from("__xmknodat")
             },
             _ => { unimplemented!("WhiteBeam: The '{}' symbol (from {}) is not supported by the RedirectFunction action", symbol, library) }
         };

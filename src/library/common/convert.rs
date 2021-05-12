@@ -7,7 +7,7 @@ use std::{ffi::CStr,
           os::unix::ffi::OsStrExt,
           os::unix::ffi::OsStringExt};
 
-// TODO: impl/trait? Extend types? .into()? 0.2.2
+// TODO: impl/trait? Extend types? .into()? 0.2.3
 
 pub unsafe fn c_char_to_osstring(char_ptr: *const c_char) -> OsString {
     match char_ptr.is_null() {
@@ -64,4 +64,31 @@ pub unsafe fn parse_env_collection(envp: *const *const c_char) -> Vec<(OsString,
 
 pub fn u8_slice_as_os_str(s: &[u8]) -> &OsStr {
     unsafe { &*(s as *const [u8] as *const OsStr) }
+}
+
+pub fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
+    let mut components = path.components().peekable();
+    let mut ret = if let Some(c @ std::path::Component::Prefix(..)) = components.peek().cloned() {
+        components.next();
+        std::path::PathBuf::from(c.as_os_str())
+    } else {
+        std::path::PathBuf::new()
+    };
+
+    for component in components {
+        match component {
+            std::path::Component::Prefix(..) => unreachable!(),
+            std::path::Component::RootDir => {
+                ret.push(component.as_os_str());
+            }
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                ret.pop();
+            }
+            std::path::Component::Normal(c) => {
+                ret.push(c);
+            }
+        }
+    }
+    ret
 }

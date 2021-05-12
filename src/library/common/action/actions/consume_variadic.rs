@@ -25,10 +25,16 @@ build_action! { ConsumeVariadic (_src_prog, hook, arg_id, args, do_return, retur
             ("/lib/x86_64-linux-gnu/libc.so.6", "open") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "open64") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "openat") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "openat64") => {
+            ("/lib/x86_64-linux-gnu/libc.so.6", "openat64") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open_2") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open64") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open64_2") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__openat_2") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__openat64_2") => {
                 assert!(va_arg_iter_len > 0, "WhiteBeam: Insufficient arguments to ConsumeVariadic action");
                 let flags = args[variadic_start-1].real as libc::c_int;
-                let has_variadic_arg: bool = ((flags) & libc::O_CREAT) != 0 || ((flags) & libc::O_TMPFILE) == libc::O_TMPFILE;
+                let has_variadic_arg: bool = (flags & (libc::O_CREAT | libc::O_TMPFILE)) > 0;
                 if !(has_variadic_arg) {
                     args.retain(|arg| !(arg.variadic && (arg.id == variadic_start_id)));
                 } else {

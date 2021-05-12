@@ -28,13 +28,15 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
             ("/lib/x86_64-linux-gnu/libc.so.6", "open") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "open64") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "openat") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "openat64") => {
+            ("/lib/x86_64-linux-gnu/libc.so.6", "openat64") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open_2") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open64") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__open64_2") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__openat_2") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "__openat64_2") => {
                 let flags = args[2].real as libc::c_int;
-                if !(((flags & libc::O_RDWR) > 0) ||
-                     ((flags & libc::O_WRONLY) > 0) ||
-                     ((flags & libc::O_CREAT) > 0) ||
-                     ((flags & libc::O_TMPFILE) > 0) ||
-                     ((flags & libc::O_APPEND) > 0)) {
+                if !((flags & (libc::O_RDWR | libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | libc::O_TMPFILE | libc::O_APPEND | libc::O_TRUNC)) > 0) {
                     true
                 } else {
                     false
@@ -68,10 +70,12 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
             ("/lib/x86_64-linux-gnu/libc.so.6", "fopen") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "fopen64") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "truncate") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "truncate64") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "fchmod") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "fchown") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "fdopen") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "ftruncate") => {
+            ("/lib/x86_64-linux-gnu/libc.so.6", "ftruncate") |
+            ("/lib/x86_64-linux-gnu/libc.so.6", "ftruncate64") => {
                 // This function passes file descriptors
                 filename = String::from((&canonical_path).file_name().unwrap_or(&std::ffi::OsStr::new(".")).to_str().expect("WhiteBeam: Unexpected null reference"));
                 parent.into_os_string().into_string().expect("WhiteBeam: Unexpected null reference")

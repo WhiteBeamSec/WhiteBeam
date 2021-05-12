@@ -32,4 +32,5 @@ We would like to thank the following security researchers for their contribution
 
 | Researchers          | Date        | :trophy:           |
 | -------------------- | ----------- | ------------------ |
-| *gemini*, *brianx*   | Nov 6, 2019 | [WhiteBeam 0.0.5](https://github.com/WhiteBeamSec/WhiteBeam/security/advisories/GHSA-mm3f-f5hg-p2hv)  |
+| Lesley De Keyser [:octocat:](https://github.com/lesleyxyz) | May 6, 2021 | [WhiteBeam 0.2.1](https://github.com/WhiteBeamSec/WhiteBeam/security/advisories/GHSA-3f8r-9483-pfxj) |
+| *gemini*, *brianx* | Nov 6, 2019 | [WhiteBeam 0.0.5](https://github.com/WhiteBeamSec/WhiteBeam/security/advisories/GHSA-mm3f-f5hg-p2hv) |
