@@ -20,7 +20,7 @@ Rewards will be provided at the discretion of the lead developers. All vulnerabi
 | ------------------------------------------------------------------------------------------- | -------------- |
 | Remote code execution (RCE)                                                                 | $5000, Credits |
 | Local privilege escalation (LPE)                                                            | $2000, Credits |
-| Bypass whitelisting<sup>\*</sup> ([Try the challenge!](https://challenge.whitebeamsec.com)) | $1000, Credits |
+| Bypass whitelisting<sup>\*</sup> ([Try the challenge!](http://challenge.whitebeamsec.com))  | $1000, Credits |
 | Cryptographic vulnerability                                                                 | $250, Credits  |
 | WhiteBeam service crash (DoS)                                                               | $50            |
 
