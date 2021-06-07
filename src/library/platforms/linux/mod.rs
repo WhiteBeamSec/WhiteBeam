@@ -341,13 +341,6 @@ unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
 // la_objsearch
 #[no_mangle]
 unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: libc::uintptr_t, _flag: libc::c_uint) -> *const libc::c_char {
-    if !(crate::common::db::get_prevention()) {
-        return name;
-    }
-    // Permit authorized execution
-    if crate::common::db::get_valid_auth_env() {
-        return name;
-    }
     let src_prog: String = { CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     let any = String::from("ANY");
     let class = String::from("Filesystem/Path/Library");
@@ -364,8 +357,17 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: libc::uint
     if all_allowed_libraries.iter().any(|library| library == &target_library) {
         return name;
     }
+    if !(crate::common::db::get_prevention()) {
+        // TODO: Check if file exists?
+        crate::common::event::send_log_event(crate::common::event::LogClass::Info as i64, format!("Detection: {} executed {} (la_objsearch)", &src_prog, &target_library));
+        return name;
+    }
+    // Permit authorized execution
+    if crate::common::db::get_valid_auth_env() {
+        return name;
+    }
     // Deny by default
-    crate::common::event::send_log_event(crate::common::event::LogClass::Warn as i64, format!("Blocked {} from executing {} (la_objsearch)", &src_prog, &target_library));
+    crate::common::event::send_log_event(crate::common::event::LogClass::Warn as i64, format!("Prevention: Blocked {} from executing {} (la_objsearch)", &src_prog, &target_library));
 	0 as *const libc::c_char
 }
 

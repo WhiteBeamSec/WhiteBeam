@@ -127,7 +127,7 @@ fn run_baseline() -> Result<(), Box<dyn Error>> {
         table.table()
                 .title(vec![
                     "Log".cell().bold(true),
-                    "Total Blocked".cell().bold(true)
+                    "Total".cell().bold(true)
                 ])
                 .separator(
                     Separator::builder()

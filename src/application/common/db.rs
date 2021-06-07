@@ -130,7 +130,7 @@ pub fn get_baseline(conn: &Connection) -> Result<Vec<BaselineResult>, Box<dyn Er
     let mut result_vec: Vec<BaselineResult> = Vec::new();
     let mut stmt = conn.prepare("SELECT log, count(log) AS total
                                  FROM Log
-                                 WHERE log LIKE 'Blocked%'
+                                 WHERE log LIKE 'Prevention: %' OR log LIKE 'Detection: %'
                                  GROUP BY log
                                  ORDER BY total DESC")?;
     let result_iter = stmt.query_map(params![], |row| {

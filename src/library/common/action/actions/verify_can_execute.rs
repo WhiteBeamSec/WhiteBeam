@@ -4,14 +4,6 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
         // TODO: Use OsString?
         let library: &str = &hook.library;
         let symbol: &str = &hook.symbol;
-        // Permit execution if not running in prevention mode
-        if !(crate::common::db::get_prevention()) {
-            return (hook, args, do_return, return_value);
-        }
-        // Permit authorized execution
-        if crate::common::db::get_valid_auth_env() {
-            return (hook, args, do_return, return_value);
-        }
         let any = String::from("ANY");
         let class = match (library, symbol) {
             ("/lib/x86_64-linux-gnu/libdl.so.2", "dlopen") |
@@ -46,8 +38,17 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
         if all_allowed_executables.iter().any(|executable| executable == &target_executable) {
             return (hook, args, do_return, return_value);
         }
+        // Permit execution if not running in prevention mode
+        if !(crate::common::db::get_prevention()) {
+            event::send_log_event(event::LogClass::Info as i64, format!("Detection: {} executed {} (VerifyCanExecute)", &src_prog, &target_executable));
+            return (hook, args, do_return, return_value);
+        }
+        // Permit authorized execution
+        if crate::common::db::get_valid_auth_env() {
+            return (hook, args, do_return, return_value);
+        }
         // Deny by default
-        event::send_log_event(event::LogClass::Warn as i64, format!("Blocked {} from executing {} (VerifyCanExecute)", &src_prog, &target_executable));
+        event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} from executing {} (VerifyCanExecute)", &src_prog, &target_executable));
         eprintln!("WhiteBeam: {}: Permission denied", &target_executable);
         if (&hook.symbol).contains("exec") && (&hook.library).contains("libc.so") {
             // Terminate the child process

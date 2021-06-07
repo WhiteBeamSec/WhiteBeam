@@ -4,13 +4,6 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
         let directory_argument: crate::common::db::ArgumentRow = args[directory_index].clone();
         let library: &str = &hook.library;
         let symbol: &str = &hook.symbol;
-        if !(crate::common::db::get_prevention()) {
-            return (hook, args, do_return, return_value);
-        }
-        // Permit authorized writes
-        if crate::common::db::get_valid_auth_env() {
-            return (hook, args, do_return, return_value);
-        }
         let is_read_only: bool = match (library, symbol) {
             ("/lib/x86_64-linux-gnu/libc.so.6", "fdopen") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "fopen") |
@@ -107,8 +100,16 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
         if all_allowed_directories.iter().any(|directory| glob::Pattern::new(directory).expect("WhiteBeam: Invalid glob pattern").matches(&target_directory)) {
             return (hook, args, do_return, return_value);
         }
+        if !(crate::common::db::get_prevention()) {
+            event::send_log_event(event::LogClass::Info as i64, format!("Detection: {} wrote to {} (VerifyCanWrite)", &src_prog, &target_directory));
+            return (hook, args, do_return, return_value);
+        }
+        // Permit authorized writes
+        if crate::common::db::get_valid_auth_env() {
+            return (hook, args, do_return, return_value);
+        }
         // Deny by default
-        event::send_log_event(event::LogClass::Warn as i64, format!("Blocked {} from writing to {} (VerifyCanWrite)", &src_prog, &target_directory));
+        event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} from writing to {} (VerifyCanWrite)", &src_prog, &target_directory));
         eprintln!("WhiteBeam: {}: Permission denied", &full_path);
         do_return = true;
         match (library, symbol) {

@@ -77,21 +77,6 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
         // The operating system masks the default permissions with the umask to produce the final permissions.
         let default_permissions: libc::mode_t = 0o666;
         let need_permissions: bool = (flags & (libc::O_CREAT | libc::O_TMPFILE)) > 0;
-        // Permit authorized writes
-        if (!(crate::common::db::get_prevention())) || crate::common::db::get_valid_auth_env() {
-            let fd: libc::c_int = match need_permissions {
-                true => unsafe { libc::open(file_value, flags, default_permissions) },
-                false => unsafe { libc::open(file_value, flags) }
-            };
-            if fd >= 0 {
-                args[file_index].datatype = String::from("IntegerSigned");
-                args[file_index].real = fd as usize;
-                return (hook, args, do_return, return_value);
-            }
-            do_return = true;
-            return_value = fail(library, symbol);
-            return (hook, args, do_return, return_value);
-        }
         let is_read_only: bool = !((flags & (libc::O_RDWR | libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | libc::O_TMPFILE | libc::O_APPEND | libc::O_TRUNC)) > 0);
         // Permit read-only
         if is_read_only {
@@ -170,8 +155,26 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
             return_value = fail(library, symbol);
             return (hook, args, do_return, return_value);
         }
+        // Permit authorized writes
+        if (!(crate::common::db::get_prevention())) || crate::common::db::get_valid_auth_env() {
+            if !(crate::common::db::get_prevention()) {
+                event::send_log_event(event::LogClass::Info as i64, format!("Detection: {} wrote to {} (OpenFileDescriptor)", &src_prog, &target_directory));
+            }
+            let fd: libc::c_int = match need_permissions {
+                true => unsafe { libc::open(file_value, flags, default_permissions) },
+                false => unsafe { libc::open(file_value, flags) }
+            };
+            if fd >= 0 {
+                args[file_index].datatype = String::from("IntegerSigned");
+                args[file_index].real = fd as usize;
+                return (hook, args, do_return, return_value);
+            }
+            do_return = true;
+            return_value = fail(library, symbol);
+            return (hook, args, do_return, return_value);
+        }
         // Deny by default
-        event::send_log_event(event::LogClass::Warn as i64, format!("Blocked {} from writing to {} (OpenFileDescriptor)", &src_prog, &target_directory));
+        event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} from writing to {} (OpenFileDescriptor)", &src_prog, &target_directory));
         eprintln!("WhiteBeam: {}: Permission denied", &full_path);
         do_return = true;
         return_value = fail(library, symbol);
