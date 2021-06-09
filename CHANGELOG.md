@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- N/A
+- Improved baselines
+
+### Fixed
+
+- Linux LD_PRELOAD/LD_AUDIT library: Poisoned mutexes in multithreaded programs
 
 ## [0.2.2] - 2021-05-12
 
