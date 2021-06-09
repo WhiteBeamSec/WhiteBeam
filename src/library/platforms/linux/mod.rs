@@ -13,7 +13,8 @@ use std::{collections::BTreeMap,
           os::unix::ffi::OsStrExt,
           path::PathBuf,
           lazy::SyncLazy,
-          sync::Mutex};
+          sync::Mutex,
+          sync::RwLock};
 
 const LA_FLG_BINDTO: libc::c_uint = 0x01;
 const LA_FLG_BINDFROM: libc::c_uint = 0x02;
@@ -21,7 +22,7 @@ const LA_FLG_BINDFROM: libc::c_uint = 0x02;
 // TODO: Hashmap/BTreemap to avoid race conditions, clean up of pthread_self() keys:
 // Timestamp attribute, vec. len>0, check timestamp, pthread_equal, RefCell/Cell (?)
 static CUR_PROG: SyncLazy<Mutex<OsString>> = SyncLazy::new(|| Mutex::new(OsString::new()));
-static LIB_MAP: SyncLazy<Mutex<BTreeMap<usize, String>>> = SyncLazy::new(|| Mutex::new(BTreeMap::new()));
+static LIB_MAP: SyncLazy<RwLock<BTreeMap<usize, &str>>> = SyncLazy::new(|| RwLock::new(BTreeMap::new()));
 static FN_STACK: SyncLazy<Mutex<Vec<(i64, usize)>>> = SyncLazy::new(|| Mutex::new(vec![]));
 // TODO: Library cookie Hashmap/BTreemap
 
@@ -375,9 +376,14 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: libc::uint
 #[no_mangle]
 unsafe extern "C" fn la_objopen(map: *const LinkMap, _lmid: libc::c_long, cookie: libc::uintptr_t) -> libc::c_uint {
     //libc::printf("WhiteBeam objopen: %s\n\0".as_ptr() as *const libc::c_char, (*map).l_name);
-    let library_string = String::from(CStr::from_ptr((*map).l_name).to_str().expect("WhiteBeam: Unexpected null reference"));
+    let library_string = CStr::from_ptr((*map).l_name).to_str().expect("WhiteBeam: Unexpected null reference");
     {
-        LIB_MAP.lock().unwrap().insert(cookie, library_string);
+        match LIB_MAP.write() {
+                Ok(mut m) => {
+                        m.insert(cookie, library_string);
+                }
+                Err(_e) => { panic!("WhiteBeam: Failed to acquire write lock in la_objopen"); }
+        }
     }
     LA_FLG_BINDTO | LA_FLG_BINDFROM
 }
@@ -401,16 +407,18 @@ unsafe extern "C" fn la_symbind64(sym: *const Elf64_Sym, _ndx: libc::c_uint,
                                       _flags: *const libc::c_uint, symname: *const libc::c_char) -> libc::uintptr_t {
     // Warning: The Rust standard library is not guaranteed to be available during this function
     //libc::printf("WhiteBeam symbind64: %s\n\0".as_ptr() as *const libc::c_char, symname);
-    let symbol_string = String::from(CStr::from_ptr(symname).to_str().expect("WhiteBeam: Unexpected null reference"));
-    let mut library_string: String = String::new();
-    let mut calling_library_string: String = String::new();
-    {
-        let lib_map_lock = LIB_MAP.lock().expect("WhiteBeam: Failed to lock mutex");
-        calling_library_string = lib_map_lock.get(&(refcook as usize)).unwrap_or(&String::from("")).clone();
-        library_string = lib_map_lock.get(&(defcook as usize)).unwrap_or(&String::from("")).clone();
+    let symbol_str = CStr::from_ptr(symname).to_str().expect("WhiteBeam: Unexpected null reference");
+    let empty: &str = "";
+    let library_str: &str = match LIB_MAP.read() {
+        Ok(lib_map_lock) => { match lib_map_lock.get(&(refcook as libc::uintptr_t)) { Some(cook) => cook, None => empty } }
+        Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in la_symbind64"); /* empty */ }
+    };
+    let calling_library_str: &str = match LIB_MAP.read() {
+        Ok(lib_map_lock) => { match lib_map_lock.get(&(defcook as libc::uintptr_t)) { Some(cook) => cook, None => empty } }
+        Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in la_symbind64"); /* empty */ }
     };
     // FIXME: Hack around libpam issue
-    if (calling_library_string == "/lib/x86_64-linux-gnu/libpam.so.0") && (symbol_string == "dlopen") {
+    if (calling_library_str == "/lib/x86_64-linux-gnu/libpam.so.0") && (symbol_str == "dlopen") {
         return (*(sym)).st_value as usize;
     }
     {
@@ -418,7 +426,7 @@ unsafe extern "C" fn la_symbind64(sym: *const Elf64_Sym, _ndx: libc::c_uint,
         let hook_cache_iter = hook_cache_lock.iter();
         for hook in hook_cache_iter {
             // TODO: Library match
-            if (hook.symbol == symbol_string) && (hook.library == library_string) {
+            if (hook.symbol == symbol_str) && (hook.library == library_str) {
                 //libc::printf("WhiteBeam hook: %s\n\0".as_ptr() as *const libc::c_char, symname);
                 {
                     let real = (*(sym)).st_value as usize;
