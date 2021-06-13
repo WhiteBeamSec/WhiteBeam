@@ -33,6 +33,8 @@ fn valid_auth() -> Result<bool, Box<dyn Error>> {
 
 // Methods
 fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error>> {
+    // TODO: Single argument shortcut whitelist creation
+    // TODO: Warn when static is being whitelisted
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     let class_string = String::from(class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?);

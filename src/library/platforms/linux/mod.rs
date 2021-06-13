@@ -24,7 +24,6 @@ const LA_FLG_BINDFROM: libc::c_uint = 0x02;
 static CUR_PROG: SyncLazy<Mutex<OsString>> = SyncLazy::new(|| Mutex::new(OsString::new()));
 static LIB_MAP: SyncLazy<RwLock<BTreeMap<usize, &str>>> = SyncLazy::new(|| RwLock::new(BTreeMap::new()));
 static FN_STACK: SyncLazy<Mutex<Vec<(i64, usize)>>> = SyncLazy::new(|| Mutex::new(vec![]));
-// TODO: Library cookie Hashmap/BTreemap
 
 // LinkMap TODO: Review mut, assign libc datatypes?
 #[repr(C)]
@@ -499,7 +498,8 @@ pub unsafe fn dlsym_next_relative(symbol: &str, real_addr: usize) -> *const u8 {
         _ => {
             if !(dl_info_verify.dli_sname.is_null()) {
                 let sname = String::from(CStr::from_ptr(dl_info_verify.dli_sname).to_str().expect("WhiteBeam: Unexpected null reference"));
-                assert_eq!(symbol, &sname)
+                // TODO: Sometimes ftruncate64 resolves to ftruncate
+                assert!((symbol == &sname) || (symbol == "ftruncate64" && &sname == "ftruncate"))
             } else {
                 // Fallback on RTLD_NEXT
                 // TODO: Determine why this gets called

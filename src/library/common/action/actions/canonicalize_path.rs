@@ -11,6 +11,11 @@ build_action! { CanonicalizePath (_src_prog, hook, arg_id, args, do_return, retu
             ("/lib/x86_64-linux-gnu/libdl.so.2", "dlmopen") => {
                 // TODO: Remove dependency on procfs here
                 let fd: libc::c_int = unsafe { libc::open(file_value, libc::O_PATH) };
+                if fd == -1 {
+                    do_return = true;
+                    return_value = 0;
+                    return (hook, args, do_return, return_value);
+                }
                 let canonical_path = platform::canonicalize_fd(fd as i32).expect("WhiteBeam: Lost track of environment");
                 canonical_path.into_os_string()
             },
