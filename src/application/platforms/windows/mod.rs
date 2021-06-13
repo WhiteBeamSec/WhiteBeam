@@ -25,3 +25,7 @@ pub fn get_data_file_path(data_file: &str) -> PathBuf {
 pub fn path_open_secure(file_path: &Path) {
     unimplemented!("WhiteBeam: Secure file opening is not currently supported on Windows");
 }
+
+pub fn is_superuser() -> bool {
+    unimplemented!("WhiteBeam: Checking user capabilities is not currently supported on Windows");
+}

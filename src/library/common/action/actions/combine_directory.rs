@@ -56,6 +56,7 @@ build_action! { CombineDirectory (_src_prog, hook, arg_id, args, do_return, retu
         if fd >= 0 {
             args[dirfd_index].real = fd as usize;
             args[dirfd_index+1].real = Box::leak(filename_new_cstring).as_ptr() as usize;
+            return (hook, args, do_return, return_value);
         }
         do_return = true;
         return_value = -1;

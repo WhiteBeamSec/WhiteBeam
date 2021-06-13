@@ -52,7 +52,10 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
             return (hook, args, do_return, return_value);
         }
         // NB: Do not dereference paths here
-        let canonical_path = platform::canonicalize_fd(directory_argument.real as i32).expect("WhiteBeam: Lost track of environment");
+        let canonical_path: std::path::PathBuf = match directory_argument.real as i32 {
+            libc::AT_FDCWD => std::env::current_dir().expect("WhiteBeam: Lost track of environment"),
+            _ => platform::canonicalize_fd(directory_argument.real as i32).expect("WhiteBeam: Lost track of environment")
+        };
         // Minor performance hit by defining here instead of match statement
         let parent: std::path::PathBuf = match (&canonical_path).parent() {
             Some(f) => f.to_owned(),

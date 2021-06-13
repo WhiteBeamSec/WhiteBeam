@@ -153,3 +153,7 @@ fn os_version_value(line: &str) -> Result<String, Box<dyn Error>> {
     }
     Ok(value.to_string())
 }
+
+pub fn is_superuser() -> bool {
+    unsafe { libc::getuid() == 0 }
+}

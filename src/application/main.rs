@@ -35,6 +35,7 @@ fn valid_auth() -> Result<bool, Box<dyn Error>> {
 fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error>> {
     // TODO: Single argument shortcut whitelist creation
     // TODO: Warn when static is being whitelisted
+    if !platform::is_superuser() { return Err("WhiteBeam: Insufficient privileges for database changes".into()); }
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     let class_string = String::from(class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?);
@@ -143,6 +144,7 @@ fn run_baseline() -> Result<(), Box<dyn Error>> {
 }
 
 fn run_disable(class: &OsStr) -> Result<(), Box<dyn Error>> {
+    if !platform::is_superuser() { return Err("WhiteBeam: Insufficient privileges for database changes".into()); }
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     let class_str = class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
@@ -152,6 +154,7 @@ fn run_disable(class: &OsStr) -> Result<(), Box<dyn Error>> {
 }
 
 fn run_enable(class: &OsStr) -> Result<(), Box<dyn Error>> {
+    if !platform::is_superuser() { return Err("WhiteBeam: Insufficient privileges for database changes".into()); }
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     let class_str = class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
@@ -260,6 +263,7 @@ fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
 }
 
 fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
+   if !platform::is_superuser() { return Err("WhiteBeam: Insufficient privileges for database changes".into()); }
    match valid_auth() {
        Ok(is_valid) => {
            if !is_valid {
@@ -340,6 +344,7 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
 }
 
 fn run_remove(id: u32) -> Result<(), Box<dyn Error>> {
+    if !platform::is_superuser() { return Err("WhiteBeam: Insufficient privileges for database changes".into()); }
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     let _res = common::db::delete_whitelist(&conn, id);
@@ -356,6 +361,7 @@ async fn run_service() -> Result<(), Box<dyn Error>> {
 }
 
 fn run_setting(param: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error>> {
+    if !platform::is_superuser() { return Err("WhiteBeam: Insufficient privileges for database changes".into()); }
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     let param_str = param.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
@@ -405,6 +411,7 @@ fn run_status() -> Result<(), Box<dyn Error>> {
 }
 
 fn run_stop() -> Result<(), Box<dyn Error>> {
+    if !platform::is_superuser() { return Err("WhiteBeam: Insufficient privileges to stop WhiteBeam service".into()); }
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     println!("WhiteBeam: Stopping WhiteBeam service");
     platform::stop_service();
