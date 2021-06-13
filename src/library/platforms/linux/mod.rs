@@ -409,11 +409,11 @@ unsafe extern "C" fn la_symbind64(sym: *const Elf64_Sym, _ndx: libc::c_uint,
     //libc::printf("WhiteBeam symbind64: %s\n\0".as_ptr() as *const libc::c_char, symname);
     let symbol_str = CStr::from_ptr(symname).to_str().expect("WhiteBeam: Unexpected null reference");
     let empty: &str = "";
-    let library_str: &str = match LIB_MAP.read() {
+    let calling_library_str: &str = match LIB_MAP.read() {
         Ok(lib_map_lock) => { match lib_map_lock.get(&(refcook as libc::uintptr_t)) { Some(cook) => cook, None => empty } }
         Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in la_symbind64"); /* empty */ }
     };
-    let calling_library_str: &str = match LIB_MAP.read() {
+    let library_str: &str = match LIB_MAP.read() {
         Ok(lib_map_lock) => { match lib_map_lock.get(&(defcook as libc::uintptr_t)) { Some(cook) => cook, None => empty } }
         Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in la_symbind64"); /* empty */ }
     };
