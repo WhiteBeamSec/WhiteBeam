@@ -50,3 +50,35 @@ pub fn process_action(src_prog: String, rule: db::RuleRow, hook: db::HookRow, ar
         None => panic!("WhiteBeam: Invalid action: {}", action)
     }
 }
+
+pub fn process_post_action(_src_prog: String, hook_orig: db::HookRow, hook: db::HookRow, args: Vec<db::ArgumentRow>) -> (bool, isize) {
+    let do_return = false;
+    let return_value = 0 as isize;
+    // TODO: Replace below with post action framework (0.2.4)
+    // TODO: May need fopen/fopen64 => fdopen
+    match (hook_orig.symbol.as_ref(), hook.symbol.as_ref()) {
+        ("symlink", "symlinkat") => {
+            unsafe { libc::close(args[1].real as i32) };
+        },
+        ("link", "linkat") |
+        ("rename", "renameat") => {
+            unsafe { libc::close(args[0].real as i32) };
+            unsafe { libc::close(args[2].real as i32) };
+        },
+        ("unlink", "unlinkat") |
+        ("rmdir", "unlinkat") |
+        ("chown", "fchownat") |
+        ("lchown", "fchownat") |
+        ("chmod", "fchmodat") |
+        ("creat", "openat") |
+        ("open", "openat") |
+        ("creat64", "openat") |
+        ("open64", "openat") |
+        ("mknod", "mknodat") |
+        ("truncate", "ftruncate") => {
+            unsafe { libc::close(args[0].real as i32) };
+        },
+        _ => ()
+    };
+    (do_return, return_value)
+}

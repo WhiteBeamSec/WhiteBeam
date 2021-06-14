@@ -439,7 +439,6 @@ impl Debug for MainError {
 }
 
 fn main() -> Result<(), MainError> {
-    // TODO: List enabled/disabled hook classes or individual hooks
     let matches = App::new("WhiteBeam")
         .setting(AppSettings::ArgRequiredElseHelp)
         .version(env!("CARGO_PKG_VERSION"))

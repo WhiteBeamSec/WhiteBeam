@@ -184,16 +184,6 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
     init_rtld_audit_interface
 };
 
-fn get_argc(args: Vec<db::ArgumentRow>) -> usize {
-    let mut argc = 0;
-    for arg in args {
-        if arg.parent.is_none() {
-            argc += 1;
-        }
-    }
-    argc
-}
-
 #[allow(unused_mut)]
 unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     // TODO: Test zero argument case
@@ -226,8 +216,7 @@ unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
         let arg_cache_lock = db::ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         arg_cache_lock.iter().filter(|arg| arg.hook == stack_hook_id).map(|arg| arg.clone()).collect()
     };
-    // TODO: Pass by reference/slice
-    let mut argc: usize = get_argc(arg_vec.clone());
+    let mut argc: usize = arg_vec.iter().filter(|arg| arg.parent.is_none()).count();
     // FIXME: Refactor block, this won't work for edge cases
     if argc > 0 {
         let mut current_arg_idx = 0;
@@ -274,8 +263,8 @@ unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     // Actions
     for rule in rules {
         // TODO: Eliminate redundancy
-        // TODO: Is clone needed?
-        let (hook_new, arg_vec_new, do_return, return_value) = action::process_action(src_prog.clone(), rule.clone(), hook.clone(), arg_vec.clone());
+        // TODO: Is clone of src_prog needed?
+        let (hook_new, arg_vec_new, do_return, return_value) = action::process_action(src_prog.clone(), rule, hook, arg_vec);
         hook = hook_new;
         arg_vec = arg_vec_new;
         if do_return {
@@ -290,8 +279,7 @@ unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     };
     let hooked_fn_zargs_real: unsafe extern "C" fn() -> isize = std::mem::transmute(real);
     let hooked_fn_margs_real: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(real);
-    // TODO: Pass by reference/slice
-    argc = get_argc(arg_vec.clone());
+    argc = arg_vec.iter().filter(|arg| arg.parent.is_none()).count();
     let ret: isize = match argc {
         0 => hooked_fn_zargs_real(),
         1 => hooked_fn_margs_real(arg_vec[0].real),
@@ -303,32 +291,11 @@ unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
         // Unsupported
         _ => panic!("WhiteBeam: Unsupported operation"),
     };
-    // TODO: Replace below with post action framework (0.2.3 - 0.2.4)
-    // TODO: May need fopen/fopen64 => fdopen
-    match (hook_orig.symbol.as_ref(), hook.symbol.as_ref()) {
-        ("symlink", "symlinkat") => {
-            libc::close(arg_vec[1].real as i32);
-        },
-        ("link", "linkat") |
-        ("rename", "renameat") => {
-            libc::close(arg_vec[0].real as i32);
-            libc::close(arg_vec[2].real as i32);
-        },
-        ("unlink", "unlinkat") |
-        ("rmdir", "unlinkat") |
-        ("chown", "fchownat") |
-        ("lchown", "fchownat") |
-        ("chmod", "fchmodat") |
-        ("creat", "openat") |
-        ("open", "openat") |
-        ("creat64", "openat") |
-        ("open64", "openat") |
-        ("mknod", "mknodat") |
-        ("truncate", "ftruncate") => {
-            libc::close(arg_vec[0].real as i32);
-        },
-        _ => ()
-    };
+    // TODO: Post actions
+    let (do_return, return_value) = action::process_post_action(src_prog.clone(), hook_orig, hook, arg_vec);
+    if do_return {
+        return return_value;
+    }
     ret
 }
 
