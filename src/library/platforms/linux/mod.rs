@@ -200,7 +200,7 @@ unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     // Hook
     let stack_hook: (i64, usize) = { FN_STACK.lock().expect("WhiteBeam: Failed to lock mutex").pop().expect("WhiteBeam: Lost track of environment") };
     let stack_hook_id = stack_hook.0;
-    let stack_hook_real = stack_hook.1;
+    let stack_hook_addr = stack_hook.1;
     let mut hook: db::HookRow = {
         let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         let hook_option = hook_cache_lock.iter().find(|hook| hook.id == stack_hook_id);
@@ -218,6 +218,7 @@ unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     };
     let mut argc: usize = arg_vec.iter().filter(|arg| arg.parent.is_none()).count();
     // FIXME: Refactor block, this won't work for edge cases
+    // TODO: Only do this for parent arguments?
     if argc > 0 {
         let mut current_arg_idx = 0;
         arg_vec[current_arg_idx].real = arg1 as usize;
@@ -273,21 +274,22 @@ unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     };
     // Dispatch
     // FIXME: Bug in some *64 functions like open64 => openat and fopen64 => fdopen
-    let real = match hook_orig.symbol.as_ref() {
+    let fn_addr = match hook_orig.symbol.as_ref() {
         "open64" => libc::openat as *const u8,
-        _ => dlsym_next_relative(&hook.symbol, stack_hook_real)
+        _ => dlsym_next_relative(&hook.symbol, stack_hook_addr)
     };
-    let hooked_fn_zargs_real: unsafe extern "C" fn() -> isize = std::mem::transmute(real);
-    let hooked_fn_margs_real: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(real);
-    argc = arg_vec.iter().filter(|arg| arg.parent.is_none()).count();
+    let hooked_fn_zargs: unsafe extern "C" fn() -> isize = std::mem::transmute(fn_addr);
+    let hooked_fn_margs: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(fn_addr);
+    let par_args: Vec<&db::ArgumentRow> = arg_vec.iter().filter(|arg| arg.parent.is_none()).collect();
+    argc = par_args.len();
     let ret: isize = match argc {
-        0 => hooked_fn_zargs_real(),
-        1 => hooked_fn_margs_real(arg_vec[0].real),
-        2 => hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real),
-        3 => hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real),
-        4 => hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real, arg_vec[3].real),
-        5 => hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real, arg_vec[3].real, arg_vec[4].real),
-        6 => hooked_fn_margs_real(arg_vec[0].real, arg_vec[1].real, arg_vec[2].real, arg_vec[3].real, arg_vec[4].real, arg_vec[5].real),
+        0 => hooked_fn_zargs(),
+        1 => hooked_fn_margs(par_args[0].real),
+        2 => hooked_fn_margs(par_args[0].real, par_args[1].real),
+        3 => hooked_fn_margs(par_args[0].real, par_args[1].real, par_args[2].real),
+        4 => hooked_fn_margs(par_args[0].real, par_args[1].real, par_args[2].real, par_args[3].real),
+        5 => hooked_fn_margs(par_args[0].real, par_args[1].real, par_args[2].real, par_args[3].real, par_args[4].real),
+        6 => hooked_fn_margs(par_args[0].real, par_args[1].real, par_args[2].real, par_args[3].real, par_args[4].real, par_args[5].real),
         // Unsupported
         _ => panic!("WhiteBeam: Unsupported operation"),
     };
@@ -395,8 +397,8 @@ unsafe extern "C" fn la_symbind64(sym: *const Elf64_Sym, _ndx: libc::c_uint,
             if (hook.symbol == symbol_str) && (hook.library == library_str) {
                 //libc::printf("WhiteBeam hook: %s\n\0".as_ptr() as *const libc::c_char, symname);
                 {
-                    let real = (*(sym)).st_value as usize;
-                    FN_STACK.lock().unwrap().push((hook.id, real));
+                    let addr = (*(sym)).st_value as usize;
+                    FN_STACK.lock().unwrap().push((hook.id, addr));
                 };
                 return generic_hook as usize
             }

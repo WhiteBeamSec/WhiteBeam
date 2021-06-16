@@ -48,6 +48,20 @@ pub fn parse_env_single(input: &[u8]) -> Option<(OsString, OsString)> {
 	})
 }
 
+pub unsafe fn parse_arg_collection_lossy(args_c: *const *const c_char) -> Vec<String> {
+    let mut args: Vec<String> = Vec::new();
+    if !(args_c.is_null()) {
+        let mut args_c_iter = args_c;
+        while !(*args_c_iter).is_null() {
+                if let lossy_string = String::from(CStr::from_ptr(*args_c_iter).to_string_lossy()) {
+                    args.push(lossy_string);
+                }
+                args_c_iter = args_c_iter.add(1);
+        }
+    }
+    args
+}
+
 pub unsafe fn parse_env_collection(envp: *const *const c_char) -> Vec<(OsString, OsString)> {
     let mut env: Vec<(OsString, OsString)> = Vec::new();
     if !(envp.is_null()) {
