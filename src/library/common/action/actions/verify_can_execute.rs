@@ -29,10 +29,11 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
                 }
                 unsafe { String::from(std::ffi::CStr::from_ptr(argument.real as *const libc::c_char).to_str().expect("WhiteBeam: Unexpected null reference")) }
             },
-            _ => {
+            ("/lib/x86_64-linux-gnu/libc.so.6", "fexecve") => {
                 let canonical_path = platform::canonicalize_fd(argument.real as i32).expect("WhiteBeam: Lost track of environment");
                 canonical_path.into_os_string().into_string().expect("WhiteBeam: Unexpected null reference")
-            }
+            },
+            _ => unsafe { String::from(std::ffi::CStr::from_ptr(argument.real as *const libc::c_char).to_str().expect("WhiteBeam: Unexpected null reference")) }
         };
         // Permit whitelisted executables
         if all_allowed_executables.iter().any(|executable| executable == &target_executable) {

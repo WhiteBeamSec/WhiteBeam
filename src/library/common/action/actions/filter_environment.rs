@@ -89,7 +89,10 @@ build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, do_return, ret
             }
         };
         let mut env_vec: Vec<*const libc::c_char> = Vec::new();
-        let program_path: std::ffi::OsString = platform::canonicalize_fd(args[0].real as i32).expect("WhiteBeam: Lost track of environment").into_os_string();
+        let program_path: std::ffi::OsString = match (library, symbol) {
+            ("/lib/x86_64-linux-gnu/libc.so.6", "fexecve") => platform::canonicalize_fd(args[0].real as i32).expect("WhiteBeam: Lost track of environment").into_os_string(),
+            _ => unsafe { crate::common::convert::c_char_to_osstring(args[0].real as *const libc::c_char) }
+        };
         if update_ld_audit {
             // TODO: Log null reference, process errors
             let new_ld_audit_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(&new_ld_audit_var).expect("WhiteBeam: Unexpected null reference"));

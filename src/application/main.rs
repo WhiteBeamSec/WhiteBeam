@@ -35,6 +35,7 @@ fn valid_auth() -> Result<bool, Box<dyn Error>> {
 fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error>> {
     // TODO: Single argument shortcut whitelist creation
     // TODO: Warn when static is being whitelisted
+    // TODO: Warn when an executable is in a writable directory
     if !platform::is_superuser() { return Err("WhiteBeam: Insufficient privileges for database changes".into()); }
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;

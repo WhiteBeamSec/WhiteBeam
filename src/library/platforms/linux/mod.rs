@@ -280,7 +280,7 @@ unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     };
     let hooked_fn_zargs: unsafe extern "C" fn() -> isize = std::mem::transmute(fn_addr);
     let hooked_fn_margs: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(fn_addr);
-    let par_args: Vec<&db::ArgumentRow> = arg_vec.iter().filter(|arg| arg.parent.is_none()).collect();
+    let par_args: Vec<&db::ArgumentRow> = arg_vec.iter().filter(|arg| arg.parent.is_none()).collect(); // Parent arguments
     argc = par_args.len();
     let ret: isize = match argc {
         0 => hooked_fn_zargs(),

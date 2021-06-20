@@ -16,7 +16,6 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
         let file_argument: crate::common::db::ArgumentRow = args[file_index].clone();
         let file_value = file_argument.real as *const libc::c_char;
         let flags: i32 = match (library, symbol) {
-            // Execution: handled by default case
             // Filesystem
             ("/lib/x86_64-linux-gnu/libc.so.6", "fopen") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "fopen64") => {

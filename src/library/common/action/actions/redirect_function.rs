@@ -8,10 +8,9 @@ build_action! { RedirectFunction (_src_prog, hook, _arg_id, args, do_return, ret
             ("/lib/x86_64-linux-gnu/libc.so.6", "execle") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "execlp") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "execv") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "execve") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "execvp") |
             ("/lib/x86_64-linux-gnu/libc.so.6", "execvpe") => {
-                String::from("fexecve")
+                String::from("execve")
             },
             // Filesystem
             ("/lib/x86_64-linux-gnu/libc.so.6", "truncate") |
