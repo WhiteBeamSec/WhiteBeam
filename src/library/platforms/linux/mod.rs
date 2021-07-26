@@ -1,7 +1,6 @@
 // Load OS-specific modules
 
-use crate::common::{action,
-                    convert,
+use crate::common::{convert,
                     db};
 use libc::{c_char, c_int, c_void};
 use std::{collections::BTreeMap,
@@ -13,19 +12,14 @@ use std::{collections::BTreeMap,
           os::unix::ffi::OsStrExt,
           path::PathBuf,
           lazy::SyncLazy,
-          sync::Mutex,
           sync::RwLock};
 
 const LA_FLG_BINDTO: libc::c_uint = 0x01;
 const LA_FLG_BINDFROM: libc::c_uint = 0x02;
 
-// TODO: Hashmap/BTreemap to avoid race conditions, clean up of pthread_self() keys:
-// Timestamp attribute, vec. len>0, check timestamp, pthread_equal, RefCell/Cell (?)
-static CUR_PROG: SyncLazy<Mutex<OsString>> = SyncLazy::new(|| Mutex::new(OsString::new()));
 static LIB_MAP: SyncLazy<RwLock<BTreeMap<usize, &str>>> = SyncLazy::new(|| RwLock::new(BTreeMap::new()));
-static FN_STACK: SyncLazy<Mutex<Vec<(i64, usize)>>> = SyncLazy::new(|| Mutex::new(vec![]));
 
-// LinkMap TODO: Review mut, assign libc datatypes?
+// LinkMap TODO: Review mut, assign libc datatypes? Upstream into Rust libc
 #[repr(C)]
 pub struct LinkMap {
     pub l_addr: usize,
@@ -33,26 +27,6 @@ pub struct LinkMap {
     pub l_ld: usize,
     pub l_next: *mut LinkMap,
     pub l_prev: *mut LinkMap
-}
-
-#[repr(C)]
-pub struct Elf32_Sym {
-	pub st_name: u32,
-    pub st_value: u32,
-    pub st_size: u32,
-    pub st_info: u8,
-	pub st_other: u8,
-	pub st_shndx: u16
-}
-
-#[repr(C)]
-pub struct Elf64_Sym {
-    pub st_name: u32,
-    pub st_info: u8,
-    pub st_other: u8,
-    pub st_shndx: u16,
-    pub st_value: u64,
-    pub st_size: u64
 }
 
 // Debug: Cause a breakpoint exception by invoking the `int3` instruction.
@@ -114,7 +88,7 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
         let program_path: OsString = match env::var_os("WB_PROG") {
             Some(val) => {
                 wb_prog_present = true;
-                let mut cur_prog_lock = CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex");
+                let mut cur_prog_lock = crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex");
                 cur_prog_lock.clear();
                 cur_prog_lock.push(&val);
                 val
@@ -184,123 +158,6 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
     init_rtld_audit_interface
 };
 
-#[allow(unused_mut)]
-unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
-    // TODO: Test zero argument case
-    /*
-    Notes on limitations of WhiteBeam's generic Linux hook, planned to be resolved in future versions of WhiteBeam:
-    - Can receive any function call and arguments, but hardcoded to call functions with up to 6 arguments
-      (supports 1,587 out of 1,589 glibc functions)
-    - 6 out of 1,589 glibc functions are unsupported due to no VaList equivalent
-      (argp_failure, fcntl, ioctl, makecontext, strfmon, syscall, and ulimit)
-    - No known security implications while Execution and Filesystem hooks are enforcing prevention mode
-    */
-    // Program
-    let src_prog: String = { CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
-    // Hook
-    let stack_hook: (i64, usize) = { FN_STACK.lock().expect("WhiteBeam: Failed to lock mutex").pop().expect("WhiteBeam: Lost track of environment") };
-    let stack_hook_id = stack_hook.0;
-    let stack_hook_addr = stack_hook.1;
-    let mut hook: db::HookRow = {
-        let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-        let hook_option = hook_cache_lock.iter().find(|hook| hook.id == stack_hook_id);
-        hook_option.expect("WhiteBeam: Lost track of environment").clone()
-    };
-    let hook_orig = hook.clone();
-    // Arguments
-    // TODO: Create Rust structures here with generic T and enum of Datatype rather than passing pointers and leaking memory
-    // Converted back into respective C datatypes when Actions are completed
-    // https://doc.rust-lang.org/book/ch10-01-syntax.html
-    // https://stackoverflow.com/questions/40559931/vector-store-mixed-types-of-data-in-rust
-    let mut arg_vec: Vec<db::ArgumentRow> = {
-        let arg_cache_lock = db::ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-        arg_cache_lock.iter().filter(|arg| arg.hook == stack_hook_id).map(|arg| arg.clone()).collect()
-    };
-    let mut argc: usize = arg_vec.iter().filter(|arg| arg.parent.is_none()).count();
-    // FIXME: Refactor block, this won't work for edge cases
-    // TODO: Only do this for parent arguments?
-    if argc > 0 {
-        let mut current_arg_idx = 0;
-        arg_vec[current_arg_idx].real = arg1 as usize;
-        current_arg_idx += 1;
-        for i in current_arg_idx..argc {
-            if arg_vec[current_arg_idx].variadic {
-                // TODO: arg_vec.splice()
-                let mut loops: usize = 0;
-                let mut do_break: bool = false;
-                let mut next_argv: usize = args.arg();
-                while !(do_break) {
-                    // Excess parameters are truncated in ConsumeVariadic action
-                    if next_argv == 0 {
-                        do_break = true;
-                    }
-                    if loops == 0 {
-                        arg_vec[i].real = next_argv;
-                    } else {
-                        let mut cloned_arg = arg_vec[i].clone();
-                        cloned_arg.real = next_argv;
-                        current_arg_idx += 1;
-                        arg_vec.insert(current_arg_idx, cloned_arg);
-                    }
-                    if do_break {
-                        break;
-                    }
-                    next_argv = args.arg();
-                    loops += 1;
-                }
-                current_arg_idx += 1;
-            } else {
-                arg_vec[current_arg_idx].real = args.arg();
-                current_arg_idx += 1;
-            }
-        }
-    }
-    // Rules
-    let mut rules: Vec<db::RuleRow> = {
-        let rule_cache_lock = db::RULE_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-        let all_arg_ids: Vec<i64> = arg_vec.iter().map(|arg| arg.id).collect();
-        rule_cache_lock.iter().filter(|rule| all_arg_ids.contains(&rule.arg)).map(|rule| rule.clone()).collect()
-    };
-    // Actions
-    for rule in rules {
-        // TODO: Eliminate redundancy
-        // TODO: Is clone of src_prog needed?
-        let (hook_new, arg_vec_new, do_return, return_value) = action::process_action(src_prog.clone(), rule, hook, arg_vec);
-        hook = hook_new;
-        arg_vec = arg_vec_new;
-        if do_return {
-            return return_value;
-        }
-    };
-    // Dispatch
-    // FIXME: Bug in some *64 functions like open64 => openat and fopen64 => fdopen
-    let fn_addr = match hook_orig.symbol.as_ref() {
-        "open64" => libc::openat as *const u8,
-        _ => dlsym_next_relative(&hook.symbol, stack_hook_addr)
-    };
-    let hooked_fn_zargs: unsafe extern "C" fn() -> isize = std::mem::transmute(fn_addr);
-    let hooked_fn_margs: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(fn_addr);
-    let par_args: Vec<&db::ArgumentRow> = arg_vec.iter().filter(|arg| arg.parent.is_none()).collect(); // Parent arguments
-    argc = par_args.len();
-    let ret: isize = match argc {
-        0 => hooked_fn_zargs(),
-        1 => hooked_fn_margs(par_args[0].real),
-        2 => hooked_fn_margs(par_args[0].real, par_args[1].real),
-        3 => hooked_fn_margs(par_args[0].real, par_args[1].real, par_args[2].real),
-        4 => hooked_fn_margs(par_args[0].real, par_args[1].real, par_args[2].real, par_args[3].real),
-        5 => hooked_fn_margs(par_args[0].real, par_args[1].real, par_args[2].real, par_args[3].real, par_args[4].real),
-        6 => hooked_fn_margs(par_args[0].real, par_args[1].real, par_args[2].real, par_args[3].real, par_args[4].real, par_args[5].real),
-        // Unsupported
-        _ => panic!("WhiteBeam: Unsupported operation"),
-    };
-    // TODO: Post actions
-    let (do_return, return_value) = action::process_post_action(src_prog.clone(), hook_orig, hook, arg_vec);
-    if do_return {
-        return return_value;
-    }
-    ret
-}
-
 // la_version
 #[no_mangle]
 unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
@@ -310,7 +167,7 @@ unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
 // la_objsearch
 #[no_mangle]
 unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: libc::uintptr_t, _flag: libc::c_uint) -> *const libc::c_char {
-    let src_prog: String = { CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
+    let src_prog: String = { crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     let any = String::from("ANY");
     let class = String::from("Filesystem/Path/Library");
     let all_allowed_libraries: Vec<String> = {
@@ -361,7 +218,7 @@ unsafe extern "C" fn la_objopen(map: *const LinkMap, _lmid: libc::c_long, cookie
 
 // la_symbind32
 #[no_mangle]
-unsafe extern "C" fn la_symbind32(sym: *const Elf32_Sym, _ndx: libc::c_uint,
+unsafe extern "C" fn la_symbind32(sym: *const libc::Elf32_Sym, _ndx: libc::c_uint,
                                       _refcook: *const libc::uintptr_t, _defcook: *const libc::uintptr_t,
                                       _flags: *const libc::c_uint, symname: *const libc::c_char) -> libc::uintptr_t {
     //libc::printf("WhiteBeam symbind32: %s\n\0".as_ptr() as *const libc::c_char, symname);
@@ -370,7 +227,7 @@ unsafe extern "C" fn la_symbind32(sym: *const Elf32_Sym, _ndx: libc::c_uint,
 
 // la_symbind64
 #[no_mangle]
-unsafe extern "C" fn la_symbind64(sym: *const Elf64_Sym, _ndx: libc::c_uint,
+unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uint,
                                       refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t,
                                       _flags: *const libc::c_uint, symname: *const libc::c_char) -> libc::uintptr_t {
     // Warning: The Rust standard library is not guaranteed to be available during this function
@@ -398,18 +255,13 @@ unsafe extern "C" fn la_symbind64(sym: *const Elf64_Sym, _ndx: libc::c_uint,
                 //libc::printf("WhiteBeam hook: %s\n\0".as_ptr() as *const libc::c_char, symname);
                 {
                     let addr = (*(sym)).st_value as usize;
-                    FN_STACK.lock().unwrap().push((hook.id, addr));
+                    crate::common::hook::FN_STACK.lock().unwrap().push((hook.id, addr));
                 };
-                return generic_hook as usize
+                return crate::common::hook::generic_hook as usize
             }
         }
     };
 	(*(sym)).st_value as usize
-}
-
-#[link(name = "dl")]
-extern "C" {
-    fn dladdr1(addr: *const c_void, info: *mut libc::Dl_info, extra_info: *mut *mut c_void, flags: c_int) -> c_int;
 }
 
 pub unsafe fn dlsym_next(symbol: &str) -> *const u8 {
@@ -445,7 +297,7 @@ pub unsafe fn dlsym_next_relative(symbol: &str, real_addr: usize) -> *const u8 {
         dli_sname: core::ptr::null(),
         dli_saddr: core::ptr::null_mut(),
     };
-    let mut extra_info_dlsym = std::mem::MaybeUninit::<*mut Elf64_Sym>::uninit();
+    let mut extra_info_dlsym = std::mem::MaybeUninit::<*mut libc::Elf64_Sym>::uninit();
     let dlsym_addr = libc::dlsym(libc::RTLD_NEXT, symbol_cstring.as_ptr() as *const c_char);
     if dlsym_addr.is_null() {
         panic!("WhiteBeam: Unable to find underlying function for {}", symbol);
@@ -454,7 +306,7 @@ pub unsafe fn dlsym_next_relative(symbol: &str, real_addr: usize) -> *const u8 {
         0 => panic!("WhiteBeam: dladdr failed"),
         _ => dl_info_real.dli_fbase as usize
     };
-    let dlsym_addr_st_addr: usize = match dladdr1(dlsym_addr as *const c_void, &mut dl_info_dlsym as *mut libc::Dl_info, extra_info_dlsym.as_mut_ptr() as *mut *mut libc::c_void, RTLD_DL_SYMENT) {
+    let dlsym_addr_st_addr: usize = match libc::dladdr1(dlsym_addr as *const c_void, &mut dl_info_dlsym as *mut libc::Dl_info, extra_info_dlsym.as_mut_ptr() as *mut *mut libc::c_void, RTLD_DL_SYMENT) {
         0 => panic!("WhiteBeam: dladdr1 failed"),
         _ => {
             let extra_info_dlsym_init = extra_info_dlsym.assume_init();
@@ -506,7 +358,7 @@ pub unsafe fn errno_location() -> *mut c_int {
 
 pub fn canonicalize_fd(fd: i32) -> Option<PathBuf> {
     // TODO: Better validation here
-    if (0 <= fd && fd <= 1024) {
+    if (0 <= fd) && (fd <= 1024) {
         // TODO: Remove dependency on procfs
         return std::fs::read_link(format!("/proc/self/fd/{}", fd)).ok();
     }

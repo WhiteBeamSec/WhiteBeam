@@ -155,5 +155,9 @@ fn os_version_value(line: &str) -> Result<String, Box<dyn Error>> {
 }
 
 pub fn is_superuser() -> bool {
-    unsafe { libc::getuid() == 0 }
+    #[cfg(feature = "whitelist_test")]
+    let res: bool = true;
+    #[cfg(not(feature = "whitelist_test"))]
+    let res: bool = unsafe { libc::getuid() == 0 };
+    res
 }

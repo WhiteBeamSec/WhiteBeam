@@ -1,3 +1,5 @@
+// Generic hook
+pub mod hook;
 // Datatype conversion functions
 pub mod convert;
 // Database
