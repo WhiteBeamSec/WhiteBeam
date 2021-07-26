@@ -22,7 +22,7 @@ automod = { version = "1.0" }
 glob = { version = "0.3" }
 # Cryptographic dependencies
 sha3 = { version = "0.9" }
-blake3 = { version = "0.3" }
+blake3 = { version = "1.0" }
 argon2 = { version = "0.2" }
 
 [features]
