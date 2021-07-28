@@ -3,11 +3,12 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
         // TODO: Depending on LogVerbosity, log all use of this action
         // TODO: Use OsString?
         let library: &str = &hook.library;
+        let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
         let any = String::from("ANY");
-        let class = match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlopen") |
-            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlmopen") => {
+        let class = match (library_basename, symbol) {
+            ("libdl.so.2", "dlopen") |
+            ("libdl.so.2", "dlmopen") => {
                 String::from("Filesystem/Path/Library")
             },
             _ => String::from("Filesystem/Path/Executable")
@@ -21,15 +22,15 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
             return (hook, args, do_return, return_value);
         }
         let argument: crate::common::db::ArgumentRow = args.iter().find(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment").clone();
-        let target_executable: String = match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlopen") |
-            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlmopen") => {
+        let target_executable: String = match (library_basename, symbol) {
+            ("libdl.so.2", "dlopen") |
+            ("libdl.so.2", "dlmopen") => {
                 if argument.real == 0 {
                     return (hook, args, do_return, return_value);
                 }
                 unsafe { String::from(std::ffi::CStr::from_ptr(argument.real as *const libc::c_char).to_str().expect("WhiteBeam: Unexpected null reference")) }
             },
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fexecve") => {
+            ("libc.so.6", "fexecve") => {
                 let canonical_path = platform::canonicalize_fd(argument.real as i32).expect("WhiteBeam: Lost track of environment");
                 canonical_path.into_os_string().into_string().expect("WhiteBeam: Unexpected null reference")
             },
@@ -51,14 +52,14 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, retur
         // Deny by default
         event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} from executing {} (VerifyCanExecute)", &src_prog, &target_executable));
         eprintln!("WhiteBeam: {}: Permission denied", &target_executable);
-        if (&hook.symbol).contains("exec") && (&hook.library).contains("libc.so") {
+        if symbol.contains("exec") && (library_basename == "libc.so.6") {
             // Terminate the child process
             unsafe { libc::exit(126) };
         }
         do_return = true;
-        match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlopen") |
-            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlmopen") => {
+        match (library_basename, symbol) {
+            ("libdl.so.2", "dlopen") |
+            ("libdl.so.2", "dlmopen") => {
                 // TODO: dlerror?
                 return_value = 0;
             },

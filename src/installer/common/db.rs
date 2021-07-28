@@ -13,6 +13,14 @@ use std::{error::Error,
 fn db_init() -> Result<(), Box<dyn Error>> {
     db_load("Schema")?;
     db_load("Default")?;
+    let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
+    let mut child = Command::new(bin_target_path).args(&["--setting", "SystemArchitecture", std::env::consts::ARCH]).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
+    // TODO: _output, debugging information follows:
+    let output = child.wait_with_output()?;
+    print!("stdout: {}", std::str::from_utf8(&output.stdout).unwrap());
+    if output.stderr.len() > 0 {
+        eprint!("stderr: {}", std::str::from_utf8(&output.stderr).unwrap());
+    }
     Ok(())
 }
 

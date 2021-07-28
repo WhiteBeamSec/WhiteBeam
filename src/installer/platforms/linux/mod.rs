@@ -119,6 +119,7 @@ pub fn run_install() {
                   chmod 4555 /opt/WhiteBeam/libwhitebeam.so;
                   whitebeam --load Schema;
                   whitebeam --load Default;
+                  whitebeam --setting SystemArchitecture `arch`;
                   whitebeam --load Essential;
                   /etc/init.d/whitebeam start;
                   echo '/lib/libwhitebeam.so' | tee -a /etc/ld.so.preload")

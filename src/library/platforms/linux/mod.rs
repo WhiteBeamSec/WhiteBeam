@@ -170,17 +170,25 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: libc::uint
     let src_prog: String = { crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     let any = String::from("ANY");
     let class = String::from("Filesystem/Path/Library");
-    let all_allowed_libraries: Vec<String> = {
+    let all_allowed_library_paths: Vec<String> = {
         let whitelist_cache_lock = crate::common::db::WL_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class == class) && ((whitelist.path == src_prog) || (whitelist.path == any))).map(|whitelist| whitelist.value.clone()).collect()
     };
+    let all_allowed_library_names: Vec<String> = all_allowed_library_paths.iter()
+                                                                          .filter_map(|lib| std::path::Path::new(lib).file_name())
+                                                                          .filter_map(|filename| filename.to_str())
+                                                                          .map(|filename_str| String::from(filename_str))
+                                                                          .collect();
     // Permit ANY
-    if all_allowed_libraries.iter().any(|library| library == &any) {
+    if all_allowed_library_paths.iter().any(|library| library == &any) {
         return name;
     }
     let target_library = String::from(CStr::from_ptr(name).to_str().expect("WhiteBeam: Unexpected null reference"));
     // Permit whitelisted libraries
-    if all_allowed_libraries.iter().any(|library| library == &target_library) {
+    if all_allowed_library_names.iter().any(|library| library == &target_library) {
+        return name;
+    }
+    if all_allowed_library_paths.iter().any(|library| library == &target_library) {
         return name;
     }
     if !(crate::common::db::get_prevention()) {

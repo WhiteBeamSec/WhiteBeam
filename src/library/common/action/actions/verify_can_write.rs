@@ -3,11 +3,12 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
         let directory_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
         let directory_argument: crate::common::db::ArgumentRow = args[directory_index].clone();
         let library: &str = &hook.library;
+        let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
-        let is_read_only: bool = match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fdopen") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fopen") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fopen64") => {
+        let is_read_only: bool = match (library_basename, symbol) {
+            ("libc.so.6", "fdopen") |
+            ("libc.so.6", "fopen") |
+            ("libc.so.6", "fopen64") => {
                 let mode = args[1].real as *const libc::c_char;
                 let mode_string = String::from(unsafe { std::ffi::CStr::from_ptr(mode) }.to_str().expect("WhiteBeam: Unexpected null reference"));
                 if !(mode_string.contains("w") ||
@@ -18,16 +19,16 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
                     false
                 }
             },
-            ("/lib/x86_64-linux-gnu/libc.so.6", "open") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "open64") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "openat") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "openat64") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "__open") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "__open_2") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "__open64") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "__open64_2") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "__openat_2") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "__openat64_2") => {
+            ("libc.so.6", "open") |
+            ("libc.so.6", "open64") |
+            ("libc.so.6", "openat") |
+            ("libc.so.6", "openat64") |
+            ("libc.so.6", "__open") |
+            ("libc.so.6", "__open_2") |
+            ("libc.so.6", "__open64") |
+            ("libc.so.6", "__open64_2") |
+            ("libc.so.6", "__openat_2") |
+            ("libc.so.6", "__openat64_2") => {
                 let flags = args[2].real as libc::c_int;
                 if !((flags & (libc::O_RDWR | libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | libc::O_TMPFILE | libc::O_APPEND | libc::O_TRUNC)) > 0) {
                     true
@@ -62,22 +63,22 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
             None => std::path::PathBuf::from("/")
         };
         let mut filename: String = String::from(".");
-        let mut target_directory: String = match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fopen") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fopen64") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "truncate") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "truncate64") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fchmod") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fchown") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fdopen") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "ftruncate") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "ftruncate64") => {
+        let mut target_directory: String = match (library_basename, symbol) {
+            ("libc.so.6", "fopen") |
+            ("libc.so.6", "fopen64") |
+            ("libc.so.6", "truncate") |
+            ("libc.so.6", "truncate64") |
+            ("libc.so.6", "fchmod") |
+            ("libc.so.6", "fchown") |
+            ("libc.so.6", "fdopen") |
+            ("libc.so.6", "ftruncate") |
+            ("libc.so.6", "ftruncate64") => {
                 // This function passes file descriptors
                 filename = String::from((&canonical_path).file_name().unwrap_or(&std::ffi::OsStr::new(".")).to_str().expect("WhiteBeam: Unexpected null reference"));
                 parent.into_os_string().into_string().expect("WhiteBeam: Unexpected null reference")
             },
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fchownat") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "linkat") => {
+            ("libc.so.6", "fchownat") |
+            ("libc.so.6", "linkat") => {
                 let flags = args.last().expect("WhiteBeam: Lost track of environment");
                 if (flags.real as i32 & libc::AT_EMPTY_PATH) > 0 {
                     filename = String::from((&canonical_path).file_name().unwrap_or(&std::ffi::OsStr::new(".")).to_str().expect("WhiteBeam: Unexpected null reference"));
@@ -115,10 +116,10 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
         event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} from writing to {} (VerifyCanWrite)", &src_prog, &target_directory));
         eprintln!("WhiteBeam: {}: Permission denied", &full_path);
         do_return = true;
-        match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fopen") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fopen64") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fdopen") => {
+        match (library_basename, symbol) {
+            ("libc.so.6", "fopen") |
+            ("libc.so.6", "fopen64") |
+            ("libc.so.6", "fdopen") => {
                 return_value = 0;
             }
             _ => {

@@ -1,12 +1,13 @@
 use std::io::prelude::*;
 
-fn fail(library: &str, symbol: &str, argument_path: &str) {
-    if symbol.contains("exec") && library.contains("libc.so") {
+fn fail(library_basename: &str, symbol: &str, argument_path: &str) {
+    // TODO: Library path in error inconsistent with rest of application
+    if symbol.contains("exec") && (library_basename == "libc.so.6") {
         // Terminate the child process
         eprintln!("WhiteBeam: {}: Permission denied", argument_path);
         unsafe { libc::exit(126) };
     } else {
-        unimplemented!("WhiteBeam: The '{}' symbol (from {}) is not supported by the VerifyFileHash action", symbol, library);
+        unimplemented!("WhiteBeam: The '{}' symbol (from {}) is not supported by the VerifyFileHash action", symbol, library_basename);
     }
 }
 
@@ -15,12 +16,13 @@ build_action! { VerifyFileHash (src_prog, hook, arg_id, args, do_return, return_
         // TODO: Depending on LogVerbosity, log all use of this action
         // NB: For Execution hooks, system executables that aren't read world may be whitelisted as ANY
         let library: &str = &hook.library;
+        let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
         let any = String::from("ANY");
         let class = String::from("Hash/");
         let argument: crate::common::db::ArgumentRow = args.iter().find(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment").clone();
-        let argument_path: String = match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fexecve") => {
+        let argument_path: String = match (library_basename, symbol) {
+            ("libc.so.6", "fexecve") => {
                 let canonical_path = platform::canonicalize_fd(argument.real as i32).expect("WhiteBeam: Lost track of environment");
                 canonical_path.into_os_string().into_string().expect("WhiteBeam: Unexpected null reference")
             },
@@ -39,7 +41,7 @@ build_action! { VerifyFileHash (src_prog, hook, arg_id, args, do_return, return_
         let mut argument_file: std::fs::File = match std::fs::File::open(&argument_path) {
             Ok(f) => f,
             Err(_e) => {
-                fail(library, symbol, &argument_path);
+                fail(library_basename, symbol, &argument_path);
                 unreachable!("WhiteBeam: Lost track of environment");
             }
         };
@@ -60,5 +62,5 @@ build_action! { VerifyFileHash (src_prog, hook, arg_id, args, do_return, return_
         }
         // Deny by default
         event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} due to incorrect hash of {} (VerifyFileHash)", &src_prog, &argument_path));
-        fail(library, symbol, &argument_path);
+        fail(library_basename, symbol, &argument_path);
 }}

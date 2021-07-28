@@ -2,13 +2,14 @@
 build_action! { CanonicalizePath (_src_prog, hook, arg_id, args, do_return, return_value) {
         // TODO: Don't fatal if the Path cannot be canonicalized (return -1/0). NULL handling for dlopen?
         let library: &str = &hook.library;
+        let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
         let file_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
         let file_argument: crate::common::db::ArgumentRow = args[file_index].clone();
         let file_value = file_argument.real as *const libc::c_char;
-        let new_file_value: std::ffi::OsString = match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlopen") |
-            ("/lib/x86_64-linux-gnu/libdl.so.2", "dlmopen") => {
+        let new_file_value: std::ffi::OsString = match (library_basename, symbol) {
+            ("libdl.so.2", "dlopen") |
+            ("libdl.so.2", "dlmopen") => {
                 // TODO: Remove dependency on procfs here
                 let fd: libc::c_int = unsafe { libc::open(file_value, libc::O_PATH) };
                 if fd == -1 {

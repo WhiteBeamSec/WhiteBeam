@@ -1,7 +1,7 @@
-fn fail(library: &str, symbol: &str) -> isize {
-    match (library, symbol) {
-        ("/lib/x86_64-linux-gnu/libc.so.6", "fopen") |
-        ("/lib/x86_64-linux-gnu/libc.so.6", "fopen64") => 0,
+fn fail(library_basename: &str, symbol: &str) -> isize {
+    match (library_basename, symbol) {
+        ("libc.so.6", "fopen") |
+        ("libc.so.6", "fopen64") => 0,
         _ => -1
     }
 }
@@ -11,14 +11,15 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
         // TODO: Refactor
         // TODO: No O_CLOEXEC leads to inherited fd's in children
         let library: &str = &hook.library;
+        let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
         let file_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
         let file_argument: crate::common::db::ArgumentRow = args[file_index].clone();
         let file_value = file_argument.real as *const libc::c_char;
-        let flags: i32 = match (library, symbol) {
+        let flags: i32 = match (library_basename, symbol) {
             // Filesystem
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fopen") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fopen64") => {
+            ("libc.so.6", "fopen") |
+            ("libc.so.6", "fopen64") => {
                 let mode_osstring: std::ffi::OsString = unsafe { crate::common::convert::c_char_to_osstring(args[file_index+1].clone().real as *const libc::c_char) };
                 let mode_string = mode_osstring.into_string().expect("WhiteBeam: Unexpected null reference");
                 // Ignore ",ccs=?"
@@ -44,8 +45,8 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
                 };
                 regular_flags | glibc_extensions
             },
-            ("/lib/x86_64-linux-gnu/libc.so.6", "truncate") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "truncate64") => {
+            ("libc.so.6", "truncate") |
+            ("libc.so.6", "truncate64") => {
                 let length: i64 = args[file_index+1].clone().real as i64;
                 match length {
                     0 => libc::O_WRONLY | libc::O_TRUNC,
@@ -86,7 +87,7 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
                 return (hook, args, do_return, return_value);
             }
             do_return = true;
-            return_value = fail(library, symbol);
+            return_value = fail(library_basename, symbol);
             return (hook, args, do_return, return_value);
         }
         let any = String::from("ANY");
@@ -107,7 +108,7 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
                 return (hook, args, do_return, return_value);
             }
             do_return = true;
-            return_value = fail(library, symbol);
+            return_value = fail(library_basename, symbol);
             return (hook, args, do_return, return_value);
         }
         // NB: Do not dereference paths here
@@ -115,7 +116,7 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
             Some(p) => p,
             None => {
                 do_return = true;
-                return_value = fail(library, symbol);
+                return_value = fail(library_basename, symbol);
                 return (hook, args, do_return, return_value);
             }
         };
@@ -136,7 +137,7 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
                 return (hook, args, do_return, return_value);
             }
             do_return = true;
-            return_value = fail(library, symbol);
+            return_value = fail(library_basename, symbol);
             return (hook, args, do_return, return_value);
         }
         // Permit whitelisted directories
@@ -151,7 +152,7 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
                 return (hook, args, do_return, return_value);
             }
             do_return = true;
-            return_value = fail(library, symbol);
+            return_value = fail(library_basename, symbol);
             return (hook, args, do_return, return_value);
         }
         // Permit authorized writes
@@ -169,12 +170,12 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
                 return (hook, args, do_return, return_value);
             }
             do_return = true;
-            return_value = fail(library, symbol);
+            return_value = fail(library_basename, symbol);
             return (hook, args, do_return, return_value);
         }
         // Deny by default
         event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} from writing to {} (OpenFileDescriptor)", &src_prog, &target_directory));
         eprintln!("WhiteBeam: {}: Permission denied", &full_path);
         do_return = true;
-        return_value = fail(library, symbol);
+        return_value = fail(library_basename, symbol);
 }}

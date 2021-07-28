@@ -72,14 +72,6 @@ fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box
                                                                       ||lib.contains("ld-linux")))
                                                         .map(|lib| String::from(lib))
                                                         .collect();
-                    let all_library_names: Vec<String> = all_library_paths.iter()
-                                                                          .filter_map(|lib| std::path::Path::new(lib).file_name())
-                                                                          .filter_map(|filename| filename.to_str())
-                                                                          .map(|filename_str| String::from(filename_str))
-                                                                          .collect();
-                    for lib_name in all_library_names.iter() {
-                        added_whitelist_entries.push((String::from("Filesystem/Path/Library"), path_string.clone(), String::from(lib_name)));
-                    }
                     for lib_path in all_library_paths.iter() {
                         added_whitelist_entries.push((String::from("Filesystem/Path/Library"), path_string.clone(), String::from(lib_path)));
                     }

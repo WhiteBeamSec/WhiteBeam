@@ -1,26 +1,27 @@
 #[macro_use]
 build_action! { AddFlags (_src_prog, hook, _arg_id, args, do_return, return_value) {
         let library: &str = &hook.library;
+        let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
         let num_args = args.len();
-        let flags = match (library, symbol) {
+        let flags = match (library_basename, symbol) {
             // Filesystem
-            ("/lib/x86_64-linux-gnu/libc.so.6", "creat") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "creat64") => {
+            ("libc.so.6", "creat") |
+            ("libc.so.6", "creat64") => {
                 libc::O_WRONLY | libc::O_CREAT | libc::O_TRUNC
             },
-            ("/lib/x86_64-linux-gnu/libc.so.6", "lchown") => {
+            ("libc.so.6", "lchown") => {
                 libc::AT_SYMLINK_NOFOLLOW
             },
-            ("/lib/x86_64-linux-gnu/libc.so.6", "rmdir") => {
+            ("libc.so.6", "rmdir") => {
                 libc::AT_REMOVEDIR
             },
             _ => 0
         } as usize;
-        let position = match (library, symbol) {
+        let position = match (library_basename, symbol) {
             // Filesystem
-            ("/lib/x86_64-linux-gnu/libc.so.6", "creat") |
-            ("/lib/x86_64-linux-gnu/libc.so.6", "creat64") => {
+            ("libc.so.6", "creat") |
+            ("libc.so.6", "creat64") => {
                 if num_args == 3 {
                     2
                 } else {

@@ -11,14 +11,15 @@ build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, do_return, ret
         // Enforce LD_AUDIT, LD_BIND_NOT, WB_PROG
         // TODO: Avoid leaking memory (NB: this action is often called before execve on Linux)
         let library: &str = &hook.library;
+        let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
         let envp_index: usize = {
             // Non-positional functions
-            match (library, symbol) {
-                ("/lib/x86_64-linux-gnu/libc.so.6", "execl") |
-                ("/lib/x86_64-linux-gnu/libc.so.6", "execlp") |
-                ("/lib/x86_64-linux-gnu/libc.so.6", "execv") |
-                ("/lib/x86_64-linux-gnu/libc.so.6", "execvp") => {
+            match (library_basename, symbol) {
+                ("libc.so.6", "execl") |
+                ("libc.so.6", "execlp") |
+                ("libc.so.6", "execv") |
+                ("libc.so.6", "execvp") => {
                     args.iter().position(|arg| arg.id == -1).expect("WhiteBeam: Lost track of environment")
                 }
                 _ => {
@@ -89,8 +90,8 @@ build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, do_return, ret
             }
         };
         let mut env_vec: Vec<*const libc::c_char> = Vec::new();
-        let program_path: std::ffi::OsString = match (library, symbol) {
-            ("/lib/x86_64-linux-gnu/libc.so.6", "fexecve") => platform::canonicalize_fd(args[0].real as i32).expect("WhiteBeam: Lost track of environment").into_os_string(),
+        let program_path: std::ffi::OsString = match (library_basename, symbol) {
+            ("libc.so.6", "fexecve") => platform::canonicalize_fd(args[0].real as i32).expect("WhiteBeam: Lost track of environment").into_os_string(),
             _ => unsafe { crate::common::convert::c_char_to_osstring(args[0].real as *const libc::c_char) }
         };
         if update_ld_audit {
