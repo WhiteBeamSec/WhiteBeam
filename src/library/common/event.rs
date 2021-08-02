@@ -23,9 +23,8 @@ fn get_timeout() -> u64 {
 }
 
 pub fn send_log_event(class: i64, log: String) {
-    if cfg!(feature = "whitelist_test") {
-        return;
-    }
+    #[cfg(feature = "whitelist_test")]
+    return;
     let log_level: i64 = match db::get_setting(String::from("LogVerbosity")).parse() {
         Ok(level) => level,
         // TODO: Log errors

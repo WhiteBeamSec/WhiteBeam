@@ -7,7 +7,7 @@ use std::{ffi::CStr,
           os::unix::ffi::OsStrExt,
           os::unix::ffi::OsStringExt};
 
-// TODO: impl/trait? Extend types? .into()? 0.2.3
+// TODO: impl/trait? Extend types? .into()?
 
 pub unsafe fn c_char_to_osstring(char_ptr: *const c_char) -> OsString {
     match char_ptr.is_null() {

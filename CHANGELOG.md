@@ -7,13 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2021-08-02
+
 ### Added
 
 - Improved baselines
+- Linux LD_PRELOAD/LD_AUDIT library: Support for mkdir/mkdirat hooks
+- Multi-architecture support, aarch64 (ARM64) builds
+- PrintArguments action
+
+### Changed
+
+- Updated to latest dependencies
 
 ### Fixed
 
-- Linux LD_PRELOAD/LD_AUDIT library: Poisoned mutexes in multithreaded programs
+- Linux LD_PRELOAD/LD_AUDIT library: Poisoned mutexes in multithreaded programs, misc. stability enhancements (10/20)
 
 ## [0.2.2] - 2021-05-12
 
@@ -44,22 +53,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Project changelog
+- Commands to modify WhiteBeam settings, toggle hooks, and load SQL
+- Database-driven design
+- Hybrid hashing
 - Linux LD_PRELOAD/LD_AUDIT library: Generic hook
 - Linux LD_PRELOAD/LD_AUDIT library: Support for 40 hooks including Execution and Filesystem hooks
-- Database-driven design
-- Settings
-- Commands to modify WhiteBeam settings, toggle hooks, and load SQL
 - Modular action framework (compile time reflection), 12 actions
 - Modular hash framework (compile time reflection), added hashing algorithms (ARGON2ID, BLAKE3, SHA-3)
-- Hybrid hashing
+- Project changelog
 - Recovery secret
+- Settings
 
 ### Changed
 
+- Improved whitelisting system
 - Linux LD_PRELOAD/LD_AUDIT library: LD_AUDIT loader
 - Replaced SodiumOxide with pure Rust audited cryptography library (RustCrypto)
-- Improved whitelisting system
 - Updated to latest dependencies
 
 ### Removed
@@ -227,7 +236,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Project license
 
-[unreleased]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.2.2...HEAD
+[unreleased]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/WhiteBeamSec/WhiteBeam/compare/v0.1.3...v0.2.0

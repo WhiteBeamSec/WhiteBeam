@@ -1,5 +1,7 @@
 #[macro_use]
 build_action! { VerifyCanTerminate (src_prog, hook, arg_id, args, do_return, return_value) {
+        #[cfg(feature = "whitelist_test")]
+        return (hook, args, do_return, return_value);
         let pid_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
         let pid: i32 = args[pid_index].clone().real as i32;
         let service_pid_string: String = std::fs::read_to_string(platform::get_data_file_path_string("whitebeam.pid")).expect("WhiteBeam: Lost track of environment");

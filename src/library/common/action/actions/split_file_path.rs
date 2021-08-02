@@ -5,7 +5,11 @@ build_action! { SplitFilePath (_src_prog, hook, arg_id, args, do_return, return_
         let path_value = path_argument.real as *const libc::c_char;
         let path_osstring = unsafe { crate::common::convert::c_char_to_osstring(path_value) };
         let path_pathbuf: std::path::PathBuf = std::path::PathBuf::from(path_osstring);
-        let path_normal: std::path::PathBuf = crate::common::convert::normalize_path(&path_pathbuf);
+        let path_abspathbuf: std::path::PathBuf = match path_pathbuf.is_absolute() {
+            true => path_pathbuf,
+            false => std::env::current_dir().expect("WhiteBeam: Lost track of environment").join(path_pathbuf)
+        };
+        let path_normal: std::path::PathBuf = crate::common::convert::normalize_path(&path_abspathbuf);
         // TODO: Error handling
         let basename: &std::ffi::OsStr = (&path_normal).file_name().unwrap_or(&std::ffi::OsStr::new("."));
         let basename_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(basename).expect("WhiteBeam: Unexpected null reference"));
