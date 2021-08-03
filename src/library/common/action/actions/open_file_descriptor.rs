@@ -77,7 +77,8 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, ret
         // The operating system masks the default permissions with the umask to produce the final permissions.
         let default_permissions: libc::mode_t = 0o666;
         let need_permissions: bool = (flags & (libc::O_CREAT | libc::O_TMPFILE)) > 0;
-        let is_read_only: bool = !((flags & (libc::O_RDWR | libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | libc::O_TMPFILE | libc::O_APPEND | libc::O_TRUNC)) > 0);
+        const TMPFILE_MINUS_DIRECTORY: libc::c_int = 0o20000000;
+        let is_read_only: bool = !((flags & (libc::O_RDWR | libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | TMPFILE_MINUS_DIRECTORY | libc::O_APPEND | libc::O_TRUNC)) > 0);
         // Permit read-only
         if is_read_only {
             let fd: libc::c_int = unsafe { libc::open(file_value, flags) };

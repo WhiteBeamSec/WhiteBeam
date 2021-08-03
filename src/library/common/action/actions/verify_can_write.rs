@@ -30,7 +30,8 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
             ("libc.so.6", "__openat_2") |
             ("libc.so.6", "__openat64_2") => {
                 let flags = args[2].real as libc::c_int;
-                if !((flags & (libc::O_RDWR | libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | libc::O_TMPFILE | libc::O_APPEND | libc::O_TRUNC)) > 0) {
+                const TMPFILE_MINUS_DIRECTORY: libc::c_int = 0o20000000;
+                if !((flags & (libc::O_RDWR | libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | TMPFILE_MINUS_DIRECTORY | libc::O_APPEND | libc::O_TRUNC)) > 0) {
                     true
                 } else {
                     false
@@ -94,7 +95,9 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_
                 canonical_path.into_os_string().into_string().expect("WhiteBeam: Unexpected null reference")
             }
         };
-        target_directory.push('/');
+        if target_directory != "/" {
+            target_directory.push('/');
+        }
         let full_path = format!("{}{}", target_directory, filename);
         // Special cases. We don't want to whitelist /dev (although pts and related subdirectories are fine).
         if (full_path == "/dev/tty") || (full_path == "/dev/null") {

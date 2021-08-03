@@ -94,8 +94,8 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                 val
             },
             None => {
-                // TODO: Is this mounted early enough? May need some combination of the canonicalized argv[0] and exe
-                match std::fs::read_link("/proc/self/exe") {
+                // TODO: Is proc mounted early enough? May need some combination of the canonicalized argv[0] and exe
+                match std::env::current_exe() {
                     Ok(v) => {
                         v.into_os_string()
                     },
