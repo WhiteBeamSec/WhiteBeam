@@ -9,7 +9,9 @@ use std::{collections::BTreeMap,
           ffi::CString,
           ffi::OsStr,
           ffi::OsString,
+          io::prelude::*,
           os::unix::ffi::OsStrExt,
+          os::unix::ffi::OsStringExt,
           path::PathBuf,
           lazy::SyncLazy,
           sync::RwLock};
@@ -64,10 +66,18 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                 }
             }
             None => {
+                let procfs_ld_audit = procfs_getenv("LD_AUDIT");
+                if procfs_ld_audit.is_some() &&
+                   convert::osstr_split_at_byte(&procfs_ld_audit.expect("WhiteBeam: Unexpected null reference"), b':').0 == rtld_audit_lib_path {
+                    // The dynamic linker deleted LD_AUDIT (secure binary) but we're still loaded
+                    std::env::set_var("LD_AUDIT", rtld_audit_lib_path);
+                    OsString::new()
+                } else {
                 update_ld_audit = true;
                 let mut new_ld_audit_osstring = OsString::from("LD_AUDIT=");
                 new_ld_audit_osstring.push(rtld_audit_lib_path.as_os_str());
                 new_ld_audit_osstring
+            }
             }
         };
         let new_ld_bind_not_var: OsString = match env::var_os("LD_BIND_NOT") {
@@ -356,7 +366,7 @@ pub fn get_rtld_audit_lib_path() -> PathBuf {
     #[cfg(feature = "whitelist_test")]
     let rtld_audit_lib_path = PathBuf::from(format!("{}/target/release/libwhitebeam.so", env!("PWD")));
     #[cfg(not(feature = "whitelist_test"))]
-    let rtld_audit_lib_path = PathBuf::from(String::from("/lib/libwhitebeam.so"));
+    let rtld_audit_lib_path = PathBuf::from(String::from("libwhitebeam.so"));
     rtld_audit_lib_path
 }
 
@@ -420,6 +430,25 @@ pub fn search_path(program: &OsStr) -> Option<PathBuf> {
         }
     }
     None
+}
+
+pub fn procfs_getenv(env_var: &str) -> Option<OsString> {
+    for env_osstring_tuple in procfs_environ() {
+        if env_osstring_tuple.0 == OsString::from(env_var) {
+            return Some(env_osstring_tuple.1);
+        }
+    }
+    None
+}
+
+pub fn procfs_environ() -> Vec<(OsString, OsString)> {
+    // TODO: Test for environment without =
+    let mut environ = std::fs::File::open("/proc/self/environ").expect("WhiteBeam: Lost track of environment");
+    let mut environ_contents: Vec<u8> = vec![];
+    environ.read_to_end(&mut environ_contents).expect("WhiteBeam: Unexpected null reference");
+    let env_osstring_vec: Vec<OsString> = environ_contents.split(|&byte| byte == b'\0').map(|slice| OsStringExt::from_vec(slice.to_vec())).collect();
+    env_osstring_vec.iter().map(|env_osstring| convert::osstr_split_at_byte(env_osstring, b'=')).collect::<Vec<(&OsStr, &OsStr)>>()
+                    .iter().map(|env_osstr_tuple| (env_osstr_tuple.0.to_owned(), env_osstr_tuple.1.to_owned())).collect()
 }
 
 pub unsafe fn environ() -> *const *const c_char {
