@@ -3,6 +3,7 @@ use std::{env,
           ffi::OsStr,
           ffi::OsString,
           os::unix::ffi::OsStrExt,
+          path::Path,
           path::PathBuf,
           process::Command};
 
@@ -62,13 +63,17 @@ pub fn check_build_environment() {
             } else if missing_requirement == "rustup" {
                 eprintln!("WhiteBeam: rustup not found in PATH, consider running: wget -q --https-only --secure-protocol=TLSv1_2 https://sh.rustup.rs -O - | sh /dev/stdin -y && source $$HOME/.cargo/env");
             } else if missing_requirement == "pkg-config" {
-                eprintln!("WhiteBeam: pkg-config not found in PATH, consider running: apt update && apt install -y pkg-config libssl-dev");
+                eprintln!("WhiteBeam: pkg-config not found in PATH, consider running: apt update && apt install -y pkg-config");
             } else {
                 // Reserved for future dependencies
                 eprintln!("WhiteBeam: {} not found in PATH", missing_requirement);
             }
             std::process::exit(1);
         }
+    }
+    if !(Path::new("/usr/include/openssl/").exists()) {
+        eprintln!("WhiteBeam: OpenSSL development libraries not detected on this system, consider running: apt update && apt install -y libssl-dev");
+        std::process::exit(1);
     }
     // Toolchains can be more than just "stable" and "nightly" (Docker containers use the Rust version number)
     /*
