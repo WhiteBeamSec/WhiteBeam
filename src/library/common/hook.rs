@@ -32,7 +32,7 @@ pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     // Hook
     let stack_hook: (i64, usize) = { FN_STACK.lock().expect("WhiteBeam: Failed to lock mutex").pop().expect("WhiteBeam: Lost track of environment") };
     let stack_hook_id = stack_hook.0;
-    let stack_hook_addr = stack_hook.1;
+    let stack_hook_addr = stack_hook.1 as *const u8;
     let mut hook: db::HookRow = {
         let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         let hook_option = hook_cache_lock.iter().find(|hook| hook.id == stack_hook_id);
@@ -105,14 +105,8 @@ pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
         }
     };
     // Dispatch
-    // FIXME: Bug in some *64 functions like open64 => openat and fopen64 => fdopen
-    // TODO: Generic symbol resolution
-    let fn_addr = match hook_orig.symbol.as_ref() {
-        "open64" => libc::openat as *const u8,
-        _ => crate::platforms::linux::dlsym_next_relative(&hook.symbol, stack_hook_addr)
-    };
-    let hooked_fn_zargs: unsafe extern "C" fn() -> isize = std::mem::transmute(fn_addr);
-    let hooked_fn_margs: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(fn_addr);
+    let hooked_fn_zargs: unsafe extern "C" fn() -> isize = std::mem::transmute(stack_hook_addr);
+    let hooked_fn_margs: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(stack_hook_addr);
     let par_args: Vec<&db::ArgumentRow> = arg_vec.iter().filter(|arg| arg.parent.is_none()).collect(); // Parent arguments
     argc = par_args.len();
     let ret: isize = match argc {

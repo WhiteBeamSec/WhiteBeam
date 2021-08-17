@@ -2,7 +2,7 @@
 
 use crate::common::{convert,
                     db};
-use libc::{c_char, c_int, c_void};
+use libc::{c_char, c_int};
 use std::{collections::BTreeMap,
           env,
           ffi::CStr,
@@ -176,7 +176,7 @@ unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
 
 // la_objsearch
 #[no_mangle]
-unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: libc::uintptr_t, _flag: libc::c_uint) -> *const libc::c_char {
+unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: *const libc::uintptr_t, _flag: libc::c_uint) -> *const libc::c_char {
     let src_prog: String = { crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     let any = String::from("ANY");
     let class = String::from("Filesystem/Path/Library");
@@ -196,6 +196,7 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: libc::uint
     let target_library = String::from(CStr::from_ptr(name).to_str().expect("WhiteBeam: Unexpected null reference"));
     // Permit whitelisted libraries
     if all_allowed_library_names.iter().any(|library| library == &target_library) {
+        // TODO: Check this only if la_objsearch is LA_SER_ORIG?
         return name;
     }
     if all_allowed_library_paths.iter().any(|library| library == &target_library) {
@@ -217,13 +218,13 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: libc::uint
 
 // la_objopen
 #[no_mangle]
-unsafe extern "C" fn la_objopen(map: *const LinkMap, _lmid: libc::c_long, cookie: libc::uintptr_t) -> libc::c_uint {
+unsafe extern "C" fn la_objopen(map: *const LinkMap, _lmid: libc::c_long, cookie: *const libc::uintptr_t) -> libc::c_uint {
     //libc::printf("WhiteBeam objopen: %s\n\0".as_ptr() as *const libc::c_char, (*map).l_name);
     let library_string = CStr::from_ptr((*map).l_name).to_str().expect("WhiteBeam: Unexpected null reference");
     {
         match LIB_MAP.write() {
                 Ok(mut m) => {
-                        m.insert(cookie, library_string);
+                        m.insert(*cookie, library_string);
                 }
                 Err(_e) => { panic!("WhiteBeam: Failed to acquire write lock in la_objopen"); }
         }
@@ -250,30 +251,38 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
                                       _flags: *const libc::c_uint, symname: *const libc::c_char) -> libc::uintptr_t {
     // Warning: The Rust standard library is not guaranteed to be available during this function
     //libc::printf("WhiteBeam symbind64: %s\n\0".as_ptr() as *const libc::c_char, symname);
-    let symbol_str = CStr::from_ptr(symname).to_str().expect("WhiteBeam: Unexpected null reference");
+    // TODO: Option instead of empty str?
     let empty: &str = "";
     let calling_library_str: &str = match LIB_MAP.read() {
-        Ok(lib_map_lock) => { match lib_map_lock.get(&(refcook as libc::uintptr_t)) { Some(cook) => cook, None => empty } }
+        Ok(lib_map_lock) => { match lib_map_lock.get(&(*refcook)) { Some(cook) => cook, None => empty } }
         Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in la_symbind64"); /* empty */ }
     };
-    let library_str: &str = match LIB_MAP.read() {
-        Ok(lib_map_lock) => { match lib_map_lock.get(&(defcook as libc::uintptr_t)) { Some(cook) => cook, None => empty } }
+    let library_path_str: &str = match LIB_MAP.read() {
+        Ok(lib_map_lock) => { match lib_map_lock.get(&(*defcook)) { Some(cook) => cook, None => empty } }
         Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in la_symbind64"); /* empty */ }
     };
-    // FIXME: Hack around libpam issue
-    if (calling_library_str == "/lib/x86_64-linux-gnu/libpam.so.0") && (symbol_str == "dlopen") {
+    let calling_library_basename_str: &str = calling_library_str.rsplit('/').next().unwrap_or(calling_library_str);
+    let symbol_str = CStr::from_ptr(symname).to_str().expect("WhiteBeam: Unexpected null reference");
+    if (*refcook) == 0 {
+        return (*(sym)).st_value as usize;
+    }
+    // FIXME: Hack around libpam/libcrypto issue: pattern of custom implementations of libc functions? (python dlopen/_pam_dlopen/openssl_fopen used by python/sshd/curl)
+    if ((calling_library_basename_str == "libpam.so.0") && (symbol_str == "dlopen")) ||
+       ((calling_library_basename_str == "libcrypto.so.1.1") && (symbol_str == "fopen64")) {
         return (*(sym)).st_value as usize;
     }
     {
         let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         let hook_cache_iter = hook_cache_lock.iter();
         for hook in hook_cache_iter {
-            // TODO: Library match
-            if (hook.symbol == symbol_str) && (hook.library == library_str) {
+            if (hook.symbol == symbol_str) && (hook.library == library_path_str) {
                 //libc::printf("WhiteBeam hook: %s\n\0".as_ptr() as *const libc::c_char, symname);
                 {
-                    let addr = (*(sym)).st_value as usize;
-                    crate::common::hook::FN_STACK.lock().unwrap().push((hook.id, addr));
+                    // TODO: Move symbol resolution to the generic hook
+                    // Get some information ahead of time of what the redirected symbol/library will be
+                    let redirected_function = crate::common::action::actions::redirect_function::get_redirected_function(&hook.library, &hook.symbol);
+                    let addr = resolve_symbol(&redirected_function.0, &redirected_function.1);
+                    crate::common::hook::FN_STACK.lock().unwrap().push((hook.id, addr as usize));
                 };
                 return crate::common::hook::generic_hook as usize
             }
@@ -282,71 +291,18 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
 	(*(sym)).st_value as usize
 }
 
-pub unsafe fn dlsym_next(symbol: &str) -> *const u8 {
+pub unsafe fn resolve_symbol(library: &str, symbol: &str) -> *const u8 {
+    let library_cstring: CString = CString::new(library).expect("WhiteBeam: Unexpected null reference");
     let symbol_cstring: CString = CString::new(symbol).expect("WhiteBeam: Unexpected null reference");
-    let ptr = libc::dlsym(libc::RTLD_NEXT, symbol_cstring.as_ptr() as *const c_char);
-    if ptr.is_null() {
+    let handle: *mut libc::c_void = libc::dlmopen(libc::LM_ID_BASE, library_cstring.as_ptr() as *const c_char, libc::RTLD_LAZY);
+    if handle.is_null() {
+        panic!("WhiteBeam: Unable to open handle for {}", library);
+    }
+    let fptr: *mut libc::c_void = libc::dlsym(handle, symbol_cstring.as_ptr() as *const c_char);
+    if fptr.is_null() {
         panic!("WhiteBeam: Unable to find underlying function for {}", symbol);
     }
-    ptr as *const u8
-}
-
-#[allow(non_snake_case)]
-pub unsafe fn dlsym_next_relative(symbol: &str, real_addr: usize) -> *const u8 {
-    // real_addr.base+dlsym_addr.st_addr
-    // TODO: dlopen(NULL)?
-    let RTLD_DL_SYMENT: libc::c_int = 1;
-    let symbol_cstring: CString = CString::new(symbol).expect("WhiteBeam: Unexpected null reference");
-    let mut dl_info_dlsym = libc::Dl_info {
-        dli_fname: core::ptr::null(),
-        dli_fbase: core::ptr::null_mut(),
-        dli_sname: core::ptr::null(),
-        dli_saddr: core::ptr::null_mut(),
-    };
-    let mut dl_info_real = libc::Dl_info {
-        dli_fname: core::ptr::null(),
-        dli_fbase: core::ptr::null_mut(),
-        dli_sname: core::ptr::null(),
-        dli_saddr: core::ptr::null_mut(),
-    };
-    let mut dl_info_verify = libc::Dl_info {
-        dli_fname: core::ptr::null(),
-        dli_fbase: core::ptr::null_mut(),
-        dli_sname: core::ptr::null(),
-        dli_saddr: core::ptr::null_mut(),
-    };
-    let mut extra_info_dlsym = std::mem::MaybeUninit::<*mut libc::Elf64_Sym>::uninit();
-    let dlsym_addr = libc::dlsym(libc::RTLD_NEXT, symbol_cstring.as_ptr() as *const c_char);
-    if dlsym_addr.is_null() {
-        panic!("WhiteBeam: Unable to find underlying function for {}", symbol);
-    }
-    let real_addr_base: usize = match libc::dladdr(real_addr as *const c_void, &mut dl_info_real as *mut libc::Dl_info) {
-        0 => panic!("WhiteBeam: dladdr failed"),
-        _ => dl_info_real.dli_fbase as usize
-    };
-    let dlsym_addr_st_addr: usize = match libc::dladdr1(dlsym_addr as *const c_void, &mut dl_info_dlsym as *mut libc::Dl_info, extra_info_dlsym.as_mut_ptr() as *mut *mut libc::c_void, RTLD_DL_SYMENT) {
-        0 => panic!("WhiteBeam: dladdr1 failed"),
-        _ => {
-            let extra_info_dlsym_init = extra_info_dlsym.assume_init();
-            (*extra_info_dlsym_init).st_value as usize
-        }
-    };
-    let calculated_addr = (real_addr_base+dlsym_addr_st_addr) as *const u8;
-    match libc::dladdr(calculated_addr as *const c_void, &mut dl_info_verify as *mut libc::Dl_info) {
-        0 => panic!("WhiteBeam: dladdr failed"),
-        _ => {
-            if !(dl_info_verify.dli_sname.is_null()) {
-                let sname = String::from(CStr::from_ptr(dl_info_verify.dli_sname).to_str().expect("WhiteBeam: Unexpected null reference"));
-                // TODO: Sometimes ftruncate64 resolves to ftruncate
-                assert!((symbol == &sname) || (symbol == "ftruncate64" && &sname == "ftruncate"))
-            } else {
-                // Fallback on RTLD_NEXT
-                // TODO: Determine why this gets called
-                return dlsym_next(symbol);
-            }
-        }
-    };
-    calculated_addr
+    fptr as *const u8
 }
 
 pub fn get_data_file_path_string(data_file: &str) -> String {
@@ -363,6 +319,7 @@ pub fn get_data_file_path(data_file: &str) -> PathBuf {
 }
 
 pub fn get_rtld_audit_lib_path() -> PathBuf {
+    // TODO: Could this be discovered with dlopen self?
     #[cfg(feature = "whitelist_test")]
     let rtld_audit_lib_path = PathBuf::from(format!("{}/target/release/libwhitebeam.so", env!("PWD")));
     #[cfg(not(feature = "whitelist_test"))]

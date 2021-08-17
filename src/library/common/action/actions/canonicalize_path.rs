@@ -1,6 +1,5 @@
 #[macro_use]
 build_action! { CanonicalizePath (_src_prog, hook, arg_id, args, do_return, return_value) {
-        // TODO: Don't fatal if the Path cannot be canonicalized (return -1/0). NULL handling for dlopen?
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
@@ -17,8 +16,14 @@ build_action! { CanonicalizePath (_src_prog, hook, arg_id, args, do_return, retu
                     return_value = 0;
                     return (hook, args, do_return, return_value);
                 }
-                let canonical_path = platform::canonicalize_fd(fd as i32).expect("WhiteBeam: Lost track of environment");
-                canonical_path.into_os_string()
+                match platform::canonicalize_fd(fd as i32) {
+                    Some(canonical_path) => canonical_path.into_os_string(),
+                    None => {
+                        do_return = true;
+                        return_value = 0;
+                        return (hook, args, do_return, return_value);
+                    }
+                }
             },
             _ => {
                 let file_osstring = unsafe { crate::common::convert::c_char_to_osstring(file_value) };

@@ -32,7 +32,7 @@ macro_rules! build_action {
 }
 
 // Load action modules
-mod actions {
+pub mod actions {
     automod::dir!(pub "common/action/actions");
 }
 
