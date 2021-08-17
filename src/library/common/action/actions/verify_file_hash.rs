@@ -11,7 +11,6 @@ fn fail(library_basename: &str, symbol: &str, argument_path: &str) {
     }
 }
 
-#[macro_use]
 build_action! { VerifyFileHash (src_prog, hook, arg_id, args, do_return, return_value) {
         // TODO: Depending on LogVerbosity, log all use of this action
         // NB: For Execution hooks, system executables that aren't read world may be whitelisted as ANY

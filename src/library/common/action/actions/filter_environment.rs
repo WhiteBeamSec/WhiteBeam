@@ -6,7 +6,6 @@ fn get_restricted() -> Vec<std::ffi::OsString> {
     )
 }
 
-#[macro_use]
 build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, do_return, return_value) {
         // Enforce LD_AUDIT, LD_BIND_NOT, WB_PROG
         // TODO: Avoid leaking memory (NB: this action is often called before execve on Linux)

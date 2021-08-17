@@ -1,4 +1,3 @@
-#[macro_use]
 build_action! { VerifyCanTerminate (src_prog, hook, arg_id, args, do_return, return_value) {
         #[cfg(feature = "whitelist_test")]
         return (hook, args, do_return, return_value);

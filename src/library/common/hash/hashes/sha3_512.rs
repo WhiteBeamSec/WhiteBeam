@@ -1,5 +1,5 @@
 use sha3::Digest;
-#[macro_use]
+
 build_hash! { SHA3_512 (reader, _salt_opt) {
         let digestbytes = 64;
         let buf_size = 32768;

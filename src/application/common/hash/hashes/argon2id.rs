@@ -1,6 +1,6 @@
 use argon2::PasswordHasher;
 use rand::RngCore;
-#[macro_use]
+
 build_hash! { ARGON2ID (reader, salt_opt) {
     let mut password: String = String::new();
     reader.read_to_string(&mut password).expect("WhiteBeam: Could not read password buffer");

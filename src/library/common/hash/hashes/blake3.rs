@@ -1,4 +1,3 @@
-#[macro_use]
 build_hash! { BLAKE3 (reader, _salt_opt) {
         let digestbytes = 32;
         let buf_size = 32768;

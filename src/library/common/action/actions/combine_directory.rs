@@ -25,7 +25,6 @@ pub fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
     ret
 }
 
-#[macro_use]
 build_action! { CombineDirectory (_src_prog, hook, arg_id, args, do_return, return_value) {
         let dirfd_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
         let dirfd_argument: crate::common::db::ArgumentRow = args[dirfd_index].clone();

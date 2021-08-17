@@ -1,4 +1,3 @@
-#[macro_use]
 build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, return_value) {
         // TODO: Depending on LogVerbosity, log all use of this action
         // TODO: Use OsString?

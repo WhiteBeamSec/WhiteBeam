@@ -1,4 +1,3 @@
-#[macro_use]
 build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, do_return, return_value) {
         let directory_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
         let directory_argument: crate::common::db::ArgumentRow = args[directory_index].clone();
