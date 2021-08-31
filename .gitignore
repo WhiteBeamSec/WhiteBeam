@@ -1,3 +1,5 @@
 # Cargo compiled files and executables
 /target/
 Cargo.lock
+# Editor files
+/.vscode/
