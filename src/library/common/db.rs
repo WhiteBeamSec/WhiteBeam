@@ -18,6 +18,7 @@ use rusqlite::{params, Connection, OpenFlags};
 pub static HOOK_CACHE: SyncLazy<Mutex<Vec<HookRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
 pub static ARG_CACHE: SyncLazy<Mutex<Vec<ArgumentRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
 pub static WL_CACHE: SyncLazy<Mutex<Vec<WhitelistRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
+pub static ACT_ARG_CACHE: SyncLazy<Mutex<Vec<ActionArgumentRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
 pub static RULE_CACHE: SyncLazy<Mutex<Vec<RuleRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
 // TODO: BTreemap for Settings?
 pub static SET_CACHE: SyncLazy<Mutex<Vec<SettingRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
@@ -53,9 +54,17 @@ pub struct WhitelistRow {
 }
 
 #[derive(Clone)]
+pub struct ActionArgumentRow {
+    pub id: i64,
+    pub value: String,
+    pub next: Option<i64>
+}
+
+#[derive(Clone)]
 pub struct RuleRow {
     pub arg: i64,
-    pub action: String
+    pub action: String,
+    pub actionarg: Option<i64>
 }
 
 #[derive(Clone)]
@@ -141,14 +150,32 @@ pub fn get_whitelist_view(conn: &Connection) -> Result<Vec<WhitelistRow>, Box<dy
     Ok(result_vec)
 }
 
+pub fn get_action_argument_table(conn: &Connection) -> Result<Vec<ActionArgumentRow>, Box<dyn Error>> {
+    // TODO: Log errors
+    let mut result_vec: Vec<ActionArgumentRow> = Vec::new();
+    let mut stmt = conn.prepare("SELECT id, value, next FROM ActionArgument")?;
+    let result_iter = stmt.query_map(params![], |row| {
+        Ok(ActionArgumentRow {
+            id: row.get(0)?,
+            value: row.get(1)?,
+            next: row.get(2)?
+        })
+    })?;
+    for result in result_iter {
+        result_vec.push(result?);
+    }
+    Ok(result_vec)
+}
+
 pub fn get_rule_view(conn: &Connection) -> Result<Vec<RuleRow>, Box<dyn Error>> {
     // TODO: Log errors
     let mut result_vec: Vec<RuleRow> = Vec::new();
-    let mut stmt = conn.prepare("SELECT arg, action FROM RuleView")?;
+    let mut stmt = conn.prepare("SELECT arg, action, actionarg FROM RuleView")?;
     let result_iter = stmt.query_map(params![], |row| {
         Ok(RuleRow {
             arg: row.get(0)?,
-            action: row.get(1)?
+            action: row.get(1)?,
+            actionarg: row.get(2)?
         })
     })?;
     for result in result_iter {
@@ -199,6 +226,14 @@ pub fn populate_cache() -> Result<(), Box<dyn Error>> {
             wl_cache_lock.push(row);
         }
     };
+    // Action argument cache
+    {
+        let mut act_arg_cache_lock = ACT_ARG_CACHE.lock()?;
+        act_arg_cache_lock.clear();
+        for row in get_action_argument_table(&conn)? {
+            act_arg_cache_lock.push(row);
+        }
+    };
     // Rule cache
     {
         let mut rule_cache_lock = RULE_CACHE.lock()?;
@@ -219,11 +254,51 @@ pub fn populate_cache() -> Result<(), Box<dyn Error>> {
 }
 
 pub fn get_setting(param: String) -> String {
+    // TODO: Improve performance
     // TODO: Log errors
     let set_cache_lock = SET_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
     let setting_option: Option<&SettingRow> = set_cache_lock.iter().find(|setting| setting.param == param);
     let setting_row_cloned: SettingRow = setting_option.expect("WhiteBeam: Lost track of environment").clone();
     (&setting_row_cloned.value).to_owned()
+}
+
+pub fn get_action_arguments(initial_id: i64) -> Vec<String> {
+    // TODO: Improve performance
+    // TODO: Log errors
+    let act_arg_cache_lock = ACT_ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
+    let mut current_id: i64 = initial_id;
+    let mut result_vec: Vec<String> = Vec::new();
+    loop {
+        match act_arg_cache_lock.iter().find(|actarg| actarg.id == current_id) {
+            Some(act_arg) => {
+                result_vec.push(act_arg.value.clone());
+                match act_arg.next {
+                    Some(next_arg) => { current_id = next_arg; }
+                    None => break
+                }
+            },
+            None => break
+        }
+    }
+    result_vec
+}
+
+pub fn get_redirect(hook_id: i64) -> Option<(String, String)> {
+    let arg_id: i64 = {
+        let arg_cache_lock = ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
+        // TODO: Zero argument case
+        arg_cache_lock.iter().find(|arg| (arg.hook == hook_id) && (arg.parent == None) && (arg.position == 0)).expect("WhiteBeam: Lost track of environment").id
+    };
+    let act_arg_id = {
+        let rule_cache_lock = RULE_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
+        match rule_cache_lock.iter().find(|rule| (rule.arg == arg_id) && (rule.action == "RedirectFunction") && (rule.actionarg.is_some())) {
+            Some(rule) => rule.actionarg.expect("WhiteBeam: Lost track of environment"),
+            None => { return None }
+        }
+    };
+    let redirected_function = get_action_arguments(act_arg_id);
+    assert!(redirected_function.len() == 2);
+    Some((redirected_function[0].clone(), redirected_function[1].clone()))
 }
 
 pub fn get_prevention() -> bool {

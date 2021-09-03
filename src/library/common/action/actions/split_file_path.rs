@@ -1,4 +1,4 @@
-build_action! { SplitFilePath (_src_prog, hook, arg_id, args, do_return, return_value) {
+build_action! { SplitFilePath (_src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
         let path_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
         let path_argument: crate::common::db::ArgumentRow = args[path_index].clone();
         let path_value = path_argument.real as *const libc::c_char;

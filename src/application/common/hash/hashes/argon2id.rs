@@ -16,5 +16,5 @@ build_hash! { ARGON2ID (reader, salt_opt) {
     // Argon2 with default params (Argon2id v19)
     let argon2 = argon2::Argon2::default();
     // Hash password to PHC string ($argon2id$v=19$...)
-    argon2.hash_password_simple::<String>(password.as_bytes(), &salt).unwrap().to_string()
+    argon2.hash_password::<String>(password.as_bytes(), &salt).unwrap().to_string()
 }}

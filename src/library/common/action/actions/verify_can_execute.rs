@@ -1,4 +1,4 @@
-build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, do_return, return_value) {
+build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
         // TODO: Depending on LogVerbosity, log all use of this action
         // TODO: Use OsString?
         let library: &str = &hook.library;

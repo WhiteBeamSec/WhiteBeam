@@ -6,7 +6,7 @@ fn fail(library_basename: &str, symbol: &str) -> isize {
     }
 }
 
-build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, do_return, return_value) {
+build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
         // TODO: Refactor
         // TODO: No O_CLOEXEC leads to inherited fd's in children
         let library: &str = &hook.library;

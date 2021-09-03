@@ -1,4 +1,4 @@
-build_action! { AddEnvironment (_src_prog, hook, _arg_id, args, do_return, return_value) {
+build_action! { AddEnvironment (_src_prog, hook, _arg_id, args, _act_args, do_return, return_value) {
         if !((&hook.symbol).contains("exec") && (&hook.library).contains("libc.so")) {
             unimplemented!("WhiteBeam: AddEnvironment action is unsupported outside of Execution hooks");
         }

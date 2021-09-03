@@ -273,15 +273,17 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
     }
     {
         let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
+        // TODO: Use .find() instead
         let hook_cache_iter = hook_cache_lock.iter();
         for hook in hook_cache_iter {
             if (hook.symbol == symbol_str) && (hook.library == library_path_str) {
                 //libc::printf("WhiteBeam hook: %s\n\0".as_ptr() as *const libc::c_char, symname);
                 {
-                    // TODO: Move symbol resolution to the generic hook
                     // Get some information ahead of time of what the redirected symbol/library will be
-                    let redirected_function = crate::common::action::actions::redirect_function::get_redirected_function(&hook.library, &hook.symbol);
-                    let addr = resolve_symbol(&redirected_function.0, &redirected_function.1);
+                    let addr = match db::get_redirect(hook.id) {
+                        Some(redirected_function) => { resolve_symbol(&redirected_function.0, &redirected_function.1) },
+                        None => resolve_symbol(&hook.library, &hook.symbol)
+                    };
                     crate::common::hook::FN_STACK.lock().unwrap().push((hook.id, addr as usize));
                 };
                 return crate::common::hook::generic_hook as usize
