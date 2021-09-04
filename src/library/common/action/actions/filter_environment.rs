@@ -35,7 +35,7 @@ build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, _act_args, do_
                 while !(*envp_iter).is_null() {
                     let input = std::ffi::CStr::from_ptr(*envp_iter).to_bytes();
                     if !input.is_empty() {
-                    		match input[1..].iter().position(|&x| x == b'=').map(|p| p + 1) {
+                            match input[1..].iter().position(|&x| x == b'=').map(|p| p + 1) {
                                 Some(p) => {
                                     env.push((crate::common::convert::u8_slice_as_os_str(&input[..p]),
                                               crate::common::convert::u8_slice_as_os_str(&input[p + 1..])));

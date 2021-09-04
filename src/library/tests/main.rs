@@ -7,5 +7,5 @@ use platforms::linux as platform;
 use platforms::macos as platform;
 
 fn main() {
-	platform::run_tests();
+    platform::run_tests();
 }

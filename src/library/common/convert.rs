@@ -14,7 +14,7 @@ pub unsafe fn c_char_to_osstring(char_ptr: *const c_char) -> OsString {
         true => OsString::new(),
         false => {
             let program_c_str: &CStr = CStr::from_ptr(char_ptr);
-    		OsStr::from_bytes(program_c_str.to_bytes()).to_owned()
+            OsStr::from_bytes(program_c_str.to_bytes()).to_owned()
         }
     }
 }
@@ -36,16 +36,16 @@ pub fn osstr_split_at_byte(osstr_input: &OsStr, byte: u8) -> (&OsStr, &OsStr) {
 pub fn parse_env_single(input: &[u8]) -> Option<(OsString, OsString)> {
     // TODO: Windows support
     // TODO: Test for environment without =
-	if input.is_empty() {
-		return None;
-	}
-	let pos = input[1..].iter().position(|&x| x == b'=').map(|p| p + 1);
-	pos.map(|p| {
-		(
-			OsStringExt::from_vec(input[..p].to_vec()),
-			OsStringExt::from_vec(input[p + 1..].to_vec()),
-		)
-	})
+    if input.is_empty() {
+        return None;
+    }
+    let pos = input[1..].iter().position(|&x| x == b'=').map(|p| p + 1);
+    pos.map(|p| {
+        (
+            OsStringExt::from_vec(input[..p].to_vec()),
+            OsStringExt::from_vec(input[p + 1..].to_vec()),
+        )
+    })
 }
 
 pub unsafe fn parse_arg_collection_lossy(args_c: *const *const c_char) -> Vec<String> {

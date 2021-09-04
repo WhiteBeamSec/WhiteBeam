@@ -171,7 +171,7 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
 // la_version
 #[no_mangle]
 unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
-	version
+    version
 }
 
 // la_objsearch
@@ -213,7 +213,7 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: *const lib
     }
     // Deny by default
     crate::common::event::send_log_event(crate::common::event::LogClass::Warn as i64, format!("Prevention: Blocked {} from executing {} (la_objsearch)", &src_prog, &target_library));
-	0 as *const libc::c_char
+    0 as *const libc::c_char
 }
 
 // la_objopen
@@ -241,7 +241,7 @@ unsafe extern "C" fn la_symbind32(sym: *const libc::Elf32_Sym, _ndx: libc::c_uin
                                       _refcook: *const libc::uintptr_t, _defcook: *const libc::uintptr_t,
                                       _flags: *const libc::c_uint, symname: *const libc::c_char) -> libc::uintptr_t {
     //libc::printf("WhiteBeam symbind32: %s\n\0".as_ptr() as *const libc::c_char, symname);
-	(*(sym)).st_value as usize
+    (*(sym)).st_value as usize
 }
 
 // la_symbind64
@@ -290,7 +290,7 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
             }
         }
     };
-	(*(sym)).st_value as usize
+    (*(sym)).st_value as usize
 }
 
 pub unsafe fn resolve_symbol(library: &str, symbol: &str) -> *const u8 {
