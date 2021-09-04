@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- whitebeam --add whitelists correct libraries on multiarch systems
+
 ## [0.2.4] - 2021-09-03
 
 ### Added

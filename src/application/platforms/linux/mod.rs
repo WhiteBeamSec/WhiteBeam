@@ -85,16 +85,23 @@ pub fn library_scan(elf_path_str: &str, search_paths: Vec<String>) -> Result<Vec
     let elf_path = std::path::Path::new(&elf_path_str);
     let elf_buffer = std::fs::read(elf_path)?;
     let elf_parsed = elf::Elf::parse(&elf_buffer)?;
+    let elf_is_64 = elf_parsed.is_64;
     let mut collected_library_paths: Vec<String> = vec![];
     let collected_libraries: Vec<String> = elf_parsed.libraries.iter().map(|s| s.to_string()).collect();
     for lib in collected_libraries.iter() {
         for search_path in search_paths.iter() {
             let search_path_string = format!("{}/{}", &search_path, &lib);
             let search_path_expanded = std::path::Path::new(&search_path_string);
-            if search_path_expanded.exists() {
-                collected_library_paths.push(search_path_string);
-                break
+            if !(search_path_expanded.exists()) {
+                continue
             }
+            let elf_next_buffer = std::fs::read(search_path_expanded)?;
+            let elf_next_parsed = elf::Elf::parse(&elf_next_buffer)?;
+            if elf_next_parsed.is_64 != elf_is_64 {
+                continue
+            }
+            collected_library_paths.push(search_path_string);
+            break
         }
     }
     Ok(collected_library_paths)

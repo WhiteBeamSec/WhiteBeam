@@ -30,6 +30,7 @@ mod hashes {
 #[linkme::distributed_slice]
 pub static HASH_INDEX: [HashObject] = [..];
 
+// TODO: Return Option
 pub fn process_hash(reader: &mut dyn Read, algorithm: &str, salt_opt: Option<String>) -> String {
     // TODO: Consider removing reference here
     match HASH_INDEX.iter().find(|a| format!("Hash/{}", a.alias.replace("_", "-")) == algorithm) {
