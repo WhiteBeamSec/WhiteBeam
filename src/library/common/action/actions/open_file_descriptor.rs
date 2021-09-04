@@ -26,7 +26,7 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, _act_args, do_
                 let mut glibc_extensions = 0;
                 if mode_no_ccs.contains("e") { glibc_extensions |= libc::O_CLOEXEC };
                 if mode_no_ccs.contains("x") { glibc_extensions |= libc::O_EXCL };
-                let mode_clean = mode_no_ccs.replace(&['b', 'c', 'e', 'm', 'x'][..], "");
+                let mode_clean = mode_no_ccs.replace(&['b', 'c', 'e', 'm', 't', 'x'][..], "");
                 // fopen() mode => open() flags
                 let regular_flags: i32 = match mode_clean.as_ref() {
                     "r"  => libc::O_RDONLY,

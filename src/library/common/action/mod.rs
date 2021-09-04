@@ -58,7 +58,7 @@ pub fn process_action(src_prog: String, rule: db::RuleRow, hook: db::HookRow, ar
 pub fn process_post_action(_src_prog: String, hook_orig: db::HookRow, hook: db::HookRow, args: Vec<db::ArgumentRow>) -> (bool, isize) {
     let do_return = false;
     let return_value = 0 as isize;
-    // TODO: Replace below with post action framework (0.2.5)
+    // TODO: Replace below with post action framework
     // TODO: May need fopen/fopen64 => fdopen
     match (hook_orig.symbol.as_ref(), hook.symbol.as_ref()) {
         ("symlink", "symlinkat") => {

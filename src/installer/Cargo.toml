@@ -1,7 +1,7 @@
 # General info
 [package]
 name = "whitebeam-installer"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["WhiteBeam Security, Inc."]
 edition = "2018"
 
