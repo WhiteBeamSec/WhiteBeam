@@ -59,7 +59,7 @@ https://github.com/WhiteBeamSec/WhiteBeam/releases
 2. Set a recovery secret. You'll be able to use this with `whitebeam --auth` to make changes to the system: `whitebeam --setting RecoverySecret mask`
 
 ### How to Detect Attacks with WhiteBeam
-Multiple guides are provided depending on your preference. [Contact us](info@whitebeamsec.com) so we can help you integrate WhiteBeam with your environment.
+Multiple guides are provided depending on your preference. [Contact us](mailto:info@whitebeamsec.com) so we can help you integrate WhiteBeam with your environment.
 1. [Serverless guide](TODO), for passive review
 2. [osquery Fleet setup guide](TODO), for passive review
 3. [WhiteBeam Server setup guide](TODO), for active response
