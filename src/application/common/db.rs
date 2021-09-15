@@ -10,14 +10,6 @@ use std::{env,
           error::Error,
           path::Path};
 use rusqlite::{params, Connection};
-use serde::{Serialize, Deserialize};
-
-#[derive(Deserialize, Serialize)]
-pub struct LogObject {
-    pub class: i64,
-    pub log: String,
-    pub ts: u32
-}
 
 pub struct HookRow {
     pub id: i64,
@@ -44,10 +36,12 @@ pub struct RuleRow {
     pub actions: String
 }
 
+/*
 pub struct BaselineResult {
     pub log: String,
     pub total: u32
 }
+*/
 
 pub fn get_setting(conn: &Connection, param: String) -> Result<String, Box<dyn Error>> {
     // TODO: Log errors
@@ -126,33 +120,6 @@ pub fn get_rules_pretty(conn: &Connection) -> Result<Vec<RuleRow>, Box<dyn Error
     Ok(result_vec)
 }
 
-pub fn get_baseline(conn: &Connection) -> Result<Vec<BaselineResult>, Box<dyn Error>> {
-    let mut result_vec: Vec<BaselineResult> = Vec::new();
-    let mut stmt = conn.prepare("SELECT log, count(log) AS total
-                                 FROM Log
-                                 WHERE log LIKE 'Prevention: %' OR log LIKE 'Detection: %'
-                                 GROUP BY log
-                                 ORDER BY total DESC")?;
-    let result_iter = stmt.query_map(params![], |row| {
-        Ok(BaselineResult {
-            log: row.get(0)?,
-            total: row.get(1)?
-        })
-    })?;
-    for result in result_iter {
-        result_vec.push(result?);
-    }
-    Ok(result_vec)
-}
-
-pub fn get_log_level(conn: &Connection) -> Result<i64, Box<dyn Error>> {
-    match get_setting(&conn, String::from("LogVerbosity")) {
-        Ok(level) => Ok(level.parse().unwrap_or(1)),
-        // TODO: Log errors
-        Err(_) => Ok(1)
-    }
-}
-
 pub fn get_prevention(conn: &Connection) -> Result<bool, Box<dyn Error>> {
     Ok(get_setting(conn, String::from("Prevention"))? == String::from("true"))
 }
@@ -214,10 +181,6 @@ pub fn insert_setting(conn: &Connection, param: &str, value: &str) -> Result<usi
 
 pub fn insert_whitelist(conn: &Connection, class: &str, path: &str, value: &str) -> Result<usize, rusqlite::Error> {
     conn.execute("INSERT OR REPLACE INTO Whitelist (path, value, class) VALUES (?1, ?2, (SELECT id from WhitelistClass WHERE class=?3))", params![path, value, class])
-}
-
-pub fn insert_log(conn: &Connection, log: LogObject) -> Result<usize, rusqlite::Error> {
-    conn.execute("INSERT INTO Log (class, log, ts) VALUES (?1, ?2, ?3)", params![log.class, log.log, log.ts])
 }
 
 pub fn update_setting(conn: &Connection, param: &str, value: &str) -> Result<usize, rusqlite::Error> {

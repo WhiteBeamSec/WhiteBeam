@@ -73,11 +73,15 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                     std::env::set_var("LD_AUDIT", rtld_audit_lib_path);
                     OsString::new()
                 } else {
-                update_ld_audit = true;
-                let mut new_ld_audit_osstring = OsString::from("LD_AUDIT=");
-                new_ld_audit_osstring.push(rtld_audit_lib_path.as_os_str());
-                new_ld_audit_osstring
-            }
+                    // Init
+                    if libc::getpid() == 1 {
+                        return
+                    }
+                    update_ld_audit = true;
+                    let mut new_ld_audit_osstring = OsString::from("LD_AUDIT=");
+                    new_ld_audit_osstring.push(rtld_audit_lib_path.as_os_str());
+                    new_ld_audit_osstring
+                }
             }
         };
         let new_ld_bind_not_var: OsString = match env::var_os("LD_BIND_NOT") {
@@ -204,7 +208,7 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: *const lib
     }
     if !(crate::common::db::get_prevention()) {
         // TODO: Check if file exists?
-        crate::common::event::send_log_event(crate::common::event::LogClass::Info as i64, format!("Detection: {} executed {} (la_objsearch)", &src_prog, &target_library));
+        crate::common::event::send_log_event(syslog::Severity::LOG_NOTICE as i64, format!("Detection: {} executed {} (la_objsearch)", &src_prog, &target_library));
         return name;
     }
     // Permit authorized execution
@@ -212,7 +216,7 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: *const lib
         return name;
     }
     // Deny by default
-    crate::common::event::send_log_event(crate::common::event::LogClass::Warn as i64, format!("Prevention: Blocked {} from executing {} (la_objsearch)", &src_prog, &target_library));
+    crate::common::event::send_log_event(syslog::Severity::LOG_WARNING as i64, format!("Prevention: Blocked {} from executing {} (la_objsearch)", &src_prog, &target_library));
     0 as *const libc::c_char
 }
 

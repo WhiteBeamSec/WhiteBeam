@@ -107,7 +107,7 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, _act_args, do_retu
             return (hook, args, do_return, return_value);
         }
         if !(crate::common::db::get_prevention()) {
-            event::send_log_event(event::LogClass::Info as i64, format!("Detection: {} wrote to {} (VerifyCanWrite)", &src_prog, &target_directory));
+            event::send_log_event(syslog::Severity::LOG_NOTICE as i64, format!("Detection: {} wrote to {} (VerifyCanWrite)", &src_prog, &target_directory));
             return (hook, args, do_return, return_value);
         }
         // Permit authorized writes
@@ -115,7 +115,7 @@ build_action! { VerifyCanWrite (src_prog, hook, arg_id, args, _act_args, do_retu
             return (hook, args, do_return, return_value);
         }
         // Deny by default
-        event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} from writing to {} (VerifyCanWrite)", &src_prog, &target_directory));
+        event::send_log_event(syslog::Severity::LOG_WARNING as i64, format!("Prevention: Blocked {} from writing to {} (VerifyCanWrite)", &src_prog, &target_directory));
         eprintln!("WhiteBeam: {}: Permission denied", &full_path);
         do_return = true;
         match (library_basename, symbol) {

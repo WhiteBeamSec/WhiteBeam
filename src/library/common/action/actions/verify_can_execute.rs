@@ -1,5 +1,5 @@
 build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
-        // TODO: Depending on LogVerbosity, log all use of this action
+        // TODO: Depending on LogSeverity, log all use of this action
         // TODO: Use OsString?
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
@@ -41,7 +41,7 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, _act_args, do_re
         }
         // Permit execution if not running in prevention mode
         if !(crate::common::db::get_prevention()) {
-            event::send_log_event(event::LogClass::Info as i64, format!("Detection: {} executed {} (VerifyCanExecute)", &src_prog, &target_executable));
+            event::send_log_event(syslog::Severity::LOG_NOTICE as i64, format!("Detection: {} executed {} (VerifyCanExecute)", &src_prog, &target_executable));
             return (hook, args, do_return, return_value);
         }
         // Permit authorized execution
@@ -49,7 +49,7 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, _act_args, do_re
             return (hook, args, do_return, return_value);
         }
         // Deny by default
-        event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} from executing {} (VerifyCanExecute)", &src_prog, &target_executable));
+        event::send_log_event(syslog::Severity::LOG_WARNING as i64, format!("Prevention: Blocked {} from executing {} (VerifyCanExecute)", &src_prog, &target_executable));
         eprintln!("WhiteBeam: {}: Permission denied", &target_executable);
         if symbol.contains("exec") && (library_basename == "libc.so.6") {
             // Terminate the child process

@@ -2,11 +2,15 @@
 // TODO: Update SettingsModified
 use clap::{Arg, App, AppSettings};
 use cli_table::{format::{Justify, Separator}, print_stdout, CellStruct, Cell, Style, Table, TableStruct, Color};
-use std::{env,
+use std::{collections::BTreeMap,
+          env,
           error::Error,
           ffi::OsStr,
           fmt::{self, Debug, Display},
-          io::{self, Read},
+          fs::File,
+          io::{self, Read, BufRead},
+          iter::FromIterator,
+          path::Path,
           process::Command};
 
 pub mod platforms;
@@ -20,6 +24,12 @@ use platforms::macos as platform;
 pub mod common;
 
 // Support functions
+fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+where P: AsRef<Path>, {
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file).lines())
+}
+
 fn valid_auth() -> Result<bool, Box<dyn Error>> {
     // TODO: Log
     let conn: rusqlite::Connection = common::db::db_open(false)?;
@@ -112,12 +122,33 @@ fn run_auth() -> Result<(), Box<dyn Error>> {
 
 fn run_baseline() -> Result<(), Box<dyn Error>> {
     // TODO: Filter terminal escape sequences
-    let conn: rusqlite::Connection = common::db::db_open(false)?;
+    let mut whitebeam_logs: Vec<String> = vec![];
+    if let Ok(lines) = read_lines(platform::get_syslog_path()) {
+        for line in lines {
+            if let Ok(log) = line {
+                if !(log.contains("WhiteBeam") && (log.contains("Detection: ") || log.contains("Prevention: "))) {
+                    continue
+                }
+                let log_content_option = log.splitn(2, ": ").last();
+                if let Some(log_content) = log_content_option {
+                    whitebeam_logs.push(log_content.to_string())
+                }
+            }
+        }
+    } else {
+        return Err("WhiteBeam: Could not access log file".into());
+    }
+    let mut log_map = BTreeMap::new();
+    for item in whitebeam_logs {
+        *log_map.entry(item).or_insert(0) += 1;
+    }
+    let mut sorted_log_vec = Vec::from_iter(log_map);
+    sorted_log_vec.sort_by(|&(_, a), &(_, b)| b.cmp(&a));
     let table_struct: TableStruct = {
-        let table: Vec<Vec<CellStruct>> = common::db::get_baseline(&conn).unwrap_or(Vec::new()).iter()
+        let table: Vec<Vec<CellStruct>> = sorted_log_vec.iter()
                                                 .map(|entry| vec![
-                                                    entry.log.clone().cell(),
-                                                    entry.total.clone().cell(),
+                                                    entry.0.clone().cell(),
+                                                    entry.1.clone().cell(),
                                                 ])
                                                 .collect();
         table.table()

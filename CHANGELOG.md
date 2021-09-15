@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Logging system moved to syslog
+
 ### Fixed
 
 - whitebeam --add whitelists correct libraries on multiarch systems

@@ -12,5 +12,3 @@ pub mod hash;
 pub mod time;
 // Event data
 pub mod event;
-// Service communication
-pub mod http;

@@ -11,14 +11,14 @@ build_action! { VerifyCanTerminate (src_prog, hook, arg_id, args, _act_args, do_
            ((pid == -1) && (platform::get_current_uid() == 0)) {
             // Permit termination if not running in prevention mode
             if !(crate::common::db::get_prevention()) {
-                event::send_log_event(event::LogClass::Info as i64, format!("Detection: {} killed the WhiteBeam service (VerifyCanTerminate)", &src_prog));
+                event::send_log_event(syslog::Severity::LOG_NOTICE as i64, format!("Detection: {} killed the WhiteBeam service (VerifyCanTerminate)", &src_prog));
                 return (hook, args, do_return, return_value);
             }
             // Permit authorized termination
             if crate::common::db::get_valid_auth_env() {
                 return (hook, args, do_return, return_value);
             }
-            event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} from killing WhiteBeam service (VerifyCanTerminate)", &src_prog));
+            event::send_log_event(syslog::Severity::LOG_WARNING as i64, format!("Prevention: Blocked {} from killing WhiteBeam service (VerifyCanTerminate)", &src_prog));
             eprintln!("WhiteBeam: kill ({}): Operation not permitted", pid);
             do_return = true;
             return_value = -1;

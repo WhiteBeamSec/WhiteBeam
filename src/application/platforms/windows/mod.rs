@@ -22,6 +22,10 @@ pub fn get_data_file_path(data_file: &str) -> PathBuf {
     PathBuf::from(data_file_path)
 }
 
+pub fn get_syslog_path() -> PathBuf {
+    unimplemented!("WhiteBeam: Syslog is not currently supported on Windows");
+}
+
 pub fn path_open_secure(file_path: &Path) {
     unimplemented!("WhiteBeam: Secure file opening is not currently supported on Windows");
 }

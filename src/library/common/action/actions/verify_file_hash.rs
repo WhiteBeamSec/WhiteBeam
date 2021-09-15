@@ -12,7 +12,7 @@ fn fail(library_basename: &str, symbol: &str, argument_path: &str) {
 }
 
 build_action! { VerifyFileHash (src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
-        // TODO: Depending on LogVerbosity, log all use of this action
+        // TODO: Depending on LogSeverity, log all use of this action
         // NB: For Execution hooks, system executables that aren't read world may be whitelisted as ANY
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
@@ -52,7 +52,7 @@ build_action! { VerifyFileHash (src_prog, hook, arg_id, args, _act_args, do_retu
             return (hook, args, do_return, return_value);
         }
         if !(crate::common::db::get_prevention()) {
-            crate::common::event::send_log_event(crate::common::event::LogClass::Info as i64, format!("Detection: {} accessed file with invalid file hash {} (VerifyFileHash)", &src_prog, &argument_path));
+            crate::common::event::send_log_event(syslog::Severity::LOG_NOTICE as i64, format!("Detection: {} accessed file with invalid file hash {} (VerifyFileHash)", &src_prog, &argument_path));
             return (hook, args, do_return, return_value);
         }
         // Permit authorized execution
@@ -60,6 +60,6 @@ build_action! { VerifyFileHash (src_prog, hook, arg_id, args, _act_args, do_retu
             return (hook, args, do_return, return_value);
         }
         // Deny by default
-        event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} due to incorrect hash of {} (VerifyFileHash)", &src_prog, &argument_path));
+        event::send_log_event(syslog::Severity::LOG_WARNING as i64, format!("Prevention: Blocked {} due to incorrect hash of {} (VerifyFileHash)", &src_prog, &argument_path));
         fail(library_basename, symbol, &argument_path);
 }}

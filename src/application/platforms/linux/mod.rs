@@ -42,6 +42,10 @@ pub fn get_data_file_path(data_file: &str) -> PathBuf {
     PathBuf::from(data_file_path)
 }
 
+pub fn get_syslog_path() -> PathBuf {
+    PathBuf::from("/var/log/syslog")
+}
+
 pub fn path_open_secure(file_path: &Path) -> Result<File, std::io::Error> {
     Ok(std::fs::OpenOptions::new()
         .create(true)

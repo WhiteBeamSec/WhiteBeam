@@ -158,7 +158,7 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, _act_args, do_
         // Permit authorized writes
         if (!(crate::common::db::get_prevention())) || crate::common::db::get_valid_auth_env() {
             if !(crate::common::db::get_prevention()) {
-                event::send_log_event(event::LogClass::Info as i64, format!("Detection: {} wrote to {} (OpenFileDescriptor)", &src_prog, &target_directory));
+                event::send_log_event(syslog::Severity::LOG_NOTICE as i64, format!("Detection: {} wrote to {} (OpenFileDescriptor)", &src_prog, &target_directory));
             }
             let fd: libc::c_int = match need_permissions {
                 true => unsafe { libc::open(file_value, flags, default_permissions) },
@@ -174,7 +174,7 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, _act_args, do_
             return (hook, args, do_return, return_value);
         }
         // Deny by default
-        event::send_log_event(event::LogClass::Warn as i64, format!("Prevention: Blocked {} from writing to {} (OpenFileDescriptor)", &src_prog, &target_directory));
+        event::send_log_event(syslog::Severity::LOG_WARNING as i64, format!("Prevention: Blocked {} from writing to {} (OpenFileDescriptor)", &src_prog, &target_directory));
         eprintln!("WhiteBeam: {}: Permission denied", &full_path);
         do_return = true;
         return_value = fail(library_basename, symbol);
