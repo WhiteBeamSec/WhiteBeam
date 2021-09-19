@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Linux LD_PRELOAD/LD_AUDIT library: Stability enhancements cont.
 - whitebeam --add whitelists correct libraries on multiarch systems
 
 ## [0.2.4] - 2021-09-03
