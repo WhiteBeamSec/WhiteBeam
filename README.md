@@ -33,17 +33,18 @@ Transparent endpoint security
 
 ## Installation
 
-### From Repositories
-
-TODO: Repositories
-
 ### From Packages (Linux)
 
-TODO: Using your package manager of choice (on Ubuntu/Debian (apt/snap classic)/Gentoo (emerge)/Arch (pacman AUR)/RHEL/Amazon Linux/Rocky Linux (yum)/OpenSUSE/etc.), details on installing `whitebeam` package.
+Distro-specific packages have not been released yet for WhiteBeam, check again soon!
 
-**Important**: Always ensure the downloaded file hash matches official hashes ([How-to](https://github.com/WhiteBeamSec/WhiteBeam/wiki/Verifying-file-hashes)).
+<!--- TODO: Using your package manager of choice (on Ubuntu/Debian (apt/snap classic)/Gentoo (emerge)/Arch (pacman AUR)/RHEL/Amazon Linux/Rocky Linux (yum)/OpenSUSE/etc.), details on installing `whitebeam` package. --->
 
-https://github.com/WhiteBeamSec/WhiteBeam/releases
+### From Releases (Linux)
+
+1. Download the [latest release](https://github.com/WhiteBeamSec/WhiteBeam/releases)
+2. Ensure the release file hash matches the official hashes ([How-to](https://github.com/WhiteBeamSec/WhiteBeam/wiki/Verifying-file-hashes))
+3. Install:
+    * `./whitebeam-installer install`
 
 ### From Source (Linux)
 

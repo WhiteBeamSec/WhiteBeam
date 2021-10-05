@@ -94,6 +94,7 @@ pub fn check_build_environment() {
 }
 
 pub fn run_install() {
+    // TODO: Eliminate service.sh
     if get_current_uid() != 0 {
         let sudo_path = match search_path(OsStr::new("sudo")) {
             Some(path) => path,
@@ -109,26 +110,61 @@ pub fn run_install() {
             .status().expect("WhiteBeam: Child process failed to start.");
         return;
     }
-    println!("Installing");
-    // TODO: Use Rust instead of coreutils
+    let mut installation_cmd: String = String::from("mkdir -p /opt/WhiteBeam/data/;");
+    if PathBuf::from("./service.sh").exists() {
+        // Release
+        installation_cmd.push_str(concat!("cp ./service.sh /etc/init.d/whitebeam;",
+                                          "cp ./libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so;",
+                                          "cp ./whitebeam /opt/WhiteBeam/whitebeam;"));
+    } else if PathBuf::from("./src/installer/platforms/linux/resources/service.sh").exists() {
+        // Source
+        installation_cmd.push_str(concat!("cp ./src/installer/platforms/linux/resources/service.sh /etc/init.d/whitebeam;",
+                                          "cp ./target/release/libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so;",
+                                          "cp ./target/release/whitebeam /opt/WhiteBeam/whitebeam;"));
+    } else {
+        eprintln!("WhiteBeam: Cannot locate installation files");
+        std::process::exit(1);
+    }
+    installation_cmd.push_str(concat!("ln -s /etc/init.d/whitebeam /etc/rc3.d/S01whitebeam;",
+                                      "ln -s /opt/WhiteBeam/libwhitebeam.so /lib/libwhitebeam.so;",
+                                      "ln -s /opt/WhiteBeam/whitebeam /usr/local/bin/whitebeam;",
+                                      "chmod 775 /etc/init.d/whitebeam;",
+                                      "chmod 4555 /opt/WhiteBeam/libwhitebeam.so;",
+                                      "whitebeam --load Schema;",
+                                      "whitebeam --load Default;",
+                                      "whitebeam --setting SystemArchitecture `arch`;",
+                                      "whitebeam --load Essential;",
+                                      "/etc/init.d/whitebeam start;",
+                                      "echo '/lib/libwhitebeam.so' | tee -a /etc/ld.so.preload;"));
+    println!("WhiteBeam: Installing");
     Command::new(search_path(OsStr::new("bash")).unwrap())
             .arg("-c")
-            .arg("mkdir -p /opt/WhiteBeam/data/;
-                  cp ./src/installer/platforms/linux/resources/service.sh /etc/init.d/whitebeam;
-                  cp ./target/release/libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so;
-                  cp ./target/release/whitebeam /opt/WhiteBeam/whitebeam;
-                  ln -s /etc/init.d/whitebeam /etc/rc3.d/S01whitebeam;
-                  ln -s /opt/WhiteBeam/libwhitebeam.so /lib/libwhitebeam.so;
-                  ln -s /opt/WhiteBeam/whitebeam /usr/local/bin/whitebeam;
-                  chmod 775 /etc/init.d/whitebeam;
-                  chmod 4555 /opt/WhiteBeam/libwhitebeam.so;
-                  whitebeam --load Schema;
-                  whitebeam --load Default;
-                  whitebeam --setting SystemArchitecture `arch`;
-                  whitebeam --load Essential;
-                  /etc/init.d/whitebeam start;
-                  echo '/lib/libwhitebeam.so' | tee -a /etc/ld.so.preload")
+            .arg(installation_cmd)
             .status()
             .expect("WhiteBeam: Installation failed");
-    println!("Installation complete");
+}
+
+pub fn run_package() {
+    // TODO: Eliminate service.sh
+    if !(PathBuf::from("./src/installer/platforms/linux/resources/service.sh").exists()) {
+        eprintln!("WhiteBeam: Must be run from source directory");
+        std::process::exit(1);
+    }
+    if !(PathBuf::from("./target/debug/whitebeam-installer").exists() &&
+         PathBuf::from("./target/release/libwhitebeam.so").exists() &&
+         PathBuf::from("./target/release/whitebeam").exists()) {
+        eprintln!("WhiteBeam: Missing files necessary for packaging, consider running: cargo run build");
+        std::process::exit(1);
+    }
+    let package_name: String = format!("WhiteBeam_{}_{}", env!("CARGO_PKG_VERSION"), std::env::consts::ARCH);
+    let package_cmd: String = format!(concat!("tar --transform='s%.*/%%' --transform 'flags=r;s|^|WhiteBeam/|' --numeric-owner --owner 0 --group 0 -cvzf ./target/release/{}.tar.gz ",
+                                                   "./target/debug/whitebeam-installer ./target/release/libwhitebeam.so ./src/installer/platforms/linux/resources/service.sh ./target/release/whitebeam;",
+                                              "sha256sum ",
+                                                   "./target/release/{}.tar.gz > ./target/release/{}.SHA256;"), package_name, package_name, package_name);
+    println!("WhiteBeam: Packaging");
+    Command::new(search_path(OsStr::new("bash")).unwrap())
+            .arg("-c")
+            .arg(package_cmd)
+            .status()
+            .expect("WhiteBeam: Packaging failed");
 }

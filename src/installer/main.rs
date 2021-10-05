@@ -84,7 +84,7 @@ fn test(args: Vec<String>) {
     // TODO: More error handling
     build(vec![String::from("whitebeam-installer"), String::from("build"), String::from("library-test")]);
     build(vec![String::from("whitebeam-installer"), String::from("build"), String::from("binary-test")]);
-    println!("Testing:");
+    println!("WhiteBeam: Testing:");
     // Initialize test database
     common::db::db_optionally_init(&args[1].to_lowercase()).expect("WhiteBeam: Failed to initialize test database");
     // Load platform-specific Essential hooks through whitebeam command
@@ -134,8 +134,22 @@ fn install(_args: Vec<String>) {
     platform::run_install();
 }
 
+fn package(_args: Vec<String>) {
+    // TODO: Verify we're in the right directory
+    platform::run_package();
+    let package_name: String = format!("WhiteBeam_{}_{}", env!("CARGO_PKG_VERSION"), std::env::consts::ARCH);
+    #[cfg(target_os = "windows")]
+    let package_path = format!(".\\target\\release\\{}.zip", package_name);
+    #[cfg(not(target_os = "windows"))]
+    let package_path = format!("./target/release/{}.tar.gz", package_name);
+    match fs::metadata(&package_path) {
+        Ok(meta) => println!("WhiteBeam: Completed ({}). Size: {}", package_path, pretty_bytes(meta.len() as f64)),
+        Err(_e) => eprintln!("WhiteBeam: Failed to stat {}", package_path)
+    }
+}
+
 fn clean(_args: Vec<String>) {
-    println!("Cleaning up");
+    println!("WhiteBeam: Cleaning up");
     let _clean_result = Command::new(platform::search_path(OsStr::new("cargo")).unwrap())
             .arg("clean")
             .output()
@@ -153,6 +167,8 @@ fn main() {
             test(args)
         } else if command == "install" {
             install(args)
+        } else if command == "package" {
+            package(args)
         } else if command == "clean" {
             clean(args)
         } else {

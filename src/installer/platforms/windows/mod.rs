@@ -22,3 +22,7 @@ pub fn check_build_environment() {
 pub fn run_install() {
     unimplemented!("WhiteBeam: Installation on non-Linux platforms is not currently supported")
 }
+
+pub fn run_package() {
+    unimplemented!("WhiteBeam: Packaging on non-Linux platforms is not currently supported")
+}
