@@ -136,6 +136,15 @@ pub fn run_install() {
                                       "whitebeam --load Essential;",
                                       "/etc/init.d/whitebeam start;",
                                       "echo '/lib/libwhitebeam.so' | tee -a /etc/ld.so.preload;"));
+    if std::env::consts::ARCH == "aarch64" {
+        Command::new(search_path(OsStr::new("bash")).unwrap())
+        .arg("-c")
+        .arg(concat!("wget https://raw.githubusercontent.com/WhiteBeamSec/LinkerPatches/master/aarch64.sh;",
+                     "chmod +x aarch64.sh;",
+                     "./aarch64.sh"))
+        .status()
+        .expect("WhiteBeam: Installation failed");
+    }
     println!("WhiteBeam: Installing");
     Command::new(search_path(OsStr::new("bash")).unwrap())
             .arg("-c")
