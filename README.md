@@ -28,7 +28,8 @@ Transparent endpoint security
 
 ## In Action
 
-* [Video demonstration of detection and prevention capabilities](TODO)
+* [Video demonstration of detection and prevention capabilities](https://whitebeamsec.com/)
+* [Testing WhiteBeam against zeroday exploits](https://vs.whitebeamsec.com/)
 * [Recorded attacks against the WhiteBeam honeypot](https://asciinema.org/~wbhoneypot)
 
 ## Installation
@@ -61,16 +62,20 @@ Distro-specific packages have not been released yet for WhiteBeam, check again s
 
 ### How to Detect Attacks with WhiteBeam
 Multiple guides are provided depending on your preference. [Contact us](mailto:info@whitebeamsec.com) so we can help you integrate WhiteBeam with your environment.
-1. [Serverless guide](TODO), for passive review
-2. [osquery Fleet setup guide](TODO), for passive review
-3. [WhiteBeam Server setup guide](TODO), for active response
+1. [Serverless guide](https://github.com/WhiteBeamSec/WhiteBeam/wiki), for passive review
+2. [osquery Fleet setup guide](https://github.com/WhiteBeamSec/WhiteBeam/wiki), for passive review
+3. [WhiteBeam Server setup guide](https://github.com/WhiteBeamSec/WhiteBeam/wiki), for active response
 
 ### How to Prevent Attacks with WhiteBeam
+
+:information_source: WhiteBeam is <u>experimental</u> software.
+[Contact us](mailto:info@whitebeamsec.com) for assistance safely implementing it.
+
 1. Become root (`sudo -s`/`su root`)
 2. Download default whitelists for your platform:
     * `whitebeam --load Base`
 3. Review the baseline after a minimum of 24 hours:
     * `whitebeam --baseline`
-4. Add trusted behavior to the whitelist, following the [whitelisting guide](TODO)
+4. Add trusted behavior to the whitelist, following the [whitelisting guide](https://github.com/WhiteBeamSec/WhiteBeam/wiki)
 5. Enable WhiteBeam prevention:
     * `whitebeam --setting Prevention true`

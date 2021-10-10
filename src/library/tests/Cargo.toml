@@ -1,7 +1,7 @@
 # General info
 [package]
 name = "libwhitebeam-tests"
-version = "0.2.4"
+version = "0.2.5"
 authors = ["WhiteBeam Security, Inc."]
 edition = "2018"
 
