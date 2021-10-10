@@ -270,14 +270,23 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
     if (*refcook) == 0 {
         return (*(sym)).st_value as usize;
     }
-    // FIXME: Hacks around Python/rsyslog/libcrypto issue: (python dlopen/dlopen/openssl_fopen used by python/rsyslog/curl respectively)
+    // FIXME: Hacks various Python/rsyslog/dpkg/libcrypto issue(s): (python dlopen/dlopen/dlopen/openssl_fopen used by python/rsyslog/curl respectively)
     if (calling_library_basename_str == "libcrypto.so.1.1") && (symbol_str == "fopen64") {
         return (*(sym)).st_value as usize;
     }
     if symbol_str == "dlopen" {
         if let Ok(exe) = std::env::current_exe() {
             if let Ok(exe_string) = exe.into_os_string().into_string() {
-                if exe_string.starts_with("/usr/bin/python") || exe_string == String::from("/usr/sbin/rsyslogd") { return (*(sym)).st_value as usize; }
+                if exe_string.starts_with("/usr/bin/python") ||
+                   exe_string == String::from("/usr/sbin/rsyslogd") ||
+                   exe_string == String::from("/usr/bin/perl") { return (*(sym)).st_value as usize; }
+            }
+        }
+    }
+    if symbol_str == "execvp" {
+        if let Ok(exe) = std::env::current_exe() {
+            if let Ok(exe_string) = exe.into_os_string().into_string() {
+                if exe_string.starts_with("/usr/bin/apt") { return (*(sym)).st_value as usize; }
             }
         }
     }
