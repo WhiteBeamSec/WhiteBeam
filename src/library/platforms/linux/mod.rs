@@ -270,10 +270,16 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
     if (*refcook) == 0 {
         return (*(sym)).st_value as usize;
     }
-    // FIXME: Hack around libpam/libcrypto issue: pattern of custom implementations of libc functions? (python dlopen/_pam_dlopen/openssl_fopen used by python/sshd/curl)
-    if ((calling_library_basename_str == "libpam.so.0") && (symbol_str == "dlopen")) ||
-       ((calling_library_basename_str == "libcrypto.so.1.1") && (symbol_str == "fopen64")) {
+    // FIXME: Hacks around Python/libcrypto issue: (python dlopen/openssl_fopen used by python/curl)
+    if (calling_library_basename_str == "libcrypto.so.1.1") && (symbol_str == "fopen64") {
         return (*(sym)).st_value as usize;
+    }
+    if symbol_str == "dlopen" {
+        if let Ok(exe) = std::env::current_exe() {
+            if let Ok(exe_string) = exe.into_os_string().into_string() {
+                if exe_string.starts_with("/usr/bin/python") { return (*(sym)).st_value as usize; }
+            }
+        }
     }
     {
         let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");

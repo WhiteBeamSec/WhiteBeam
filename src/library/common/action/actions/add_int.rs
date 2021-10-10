@@ -18,6 +18,8 @@ build_action! { AddInt (_src_prog, hook, _arg_id, args, _act_args, do_return, re
             _ => 0
         } as usize;
         let position = match (library_basename, symbol) {
+            // Execution
+            ("libdl.so.2", "dlopen") => 0,
             // Filesystem
             ("libc.so.6", "creat") |
             ("libc.so.6", "creat64") => {
