@@ -271,7 +271,8 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
         return (*(sym)).st_value as usize;
     }
     // FIXME: Hacks various Python/rsyslog/dpkg/libcrypto issue(s): (python dlopen/dlopen/dlopen/openssl_fopen used by python/rsyslog/curl respectively)
-    if (calling_library_basename_str == "libcrypto.so.1.1") && (symbol_str == "fopen64") {
+    if ((calling_library_basename_str == "libpam.so.0") && (symbol_str == "dlopen")) ||
+       ((calling_library_basename_str == "libcrypto.so.1.1") && (symbol_str == "fopen64")) {
         return (*(sym)).st_value as usize;
     }
     if symbol_str == "dlopen" {
