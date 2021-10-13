@@ -270,27 +270,34 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
     if (*refcook) == 0 {
         return (*(sym)).st_value as usize;
     }
-    // FIXME: Hacks various Python/rsyslog/dpkg/libcrypto issue(s): (python dlopen/dlopen/dlopen/openssl_fopen used by python/rsyslog/curl respectively)
-    if ((calling_library_basename_str == "libpam.so.0") && (symbol_str == "dlopen")) ||
-       ((calling_library_basename_str == "libcrypto.so.1.1") && (symbol_str == "fopen64")) {
-        return (*(sym)).st_value as usize;
-    }
-    if symbol_str == "dlopen" {
-        if let Ok(exe) = std::env::current_exe() {
-            if let Ok(exe_string) = exe.into_os_string().into_string() {
-                if exe_string.starts_with("/usr/bin/python") ||
-                   exe_string == String::from("/usr/sbin/rsyslogd") ||
-                   exe_string == String::from("/usr/bin/perl") { return (*(sym)).st_value as usize; }
+    // FIXME: Stability exceptions
+    match symbol_str {
+        "dlopen" => {
+            if let Ok(exe) = std::env::current_exe() {
+                if let Ok(exe_string) = exe.into_os_string().into_string() {
+                    if exe_string.starts_with("/usr/bin/python") ||
+                       exe_string == String::from("/usr/sbin/rsyslogd") ||
+                       exe_string == String::from("/usr/bin/perl") { return (*(sym)).st_value as usize; }
+                }
+            }
+            if calling_library_basename_str == "libpam.so.0" {
+                return (*(sym)).st_value as usize;
+            }
+        },
+        "execvp" => {
+            if let Ok(exe) = std::env::current_exe() {
+                if let Ok(exe_string) = exe.into_os_string().into_string() {
+                    if exe_string.starts_with("/usr/bin/apt") { return (*(sym)).st_value as usize; }
+                }
+            }
+        },
+        "fopen64" => {
+            if calling_library_basename_str == "libcrypto.so.1.1" {
+                return (*(sym)).st_value as usize;
             }
         }
-    }
-    if symbol_str == "execvp" {
-        if let Ok(exe) = std::env::current_exe() {
-            if let Ok(exe_string) = exe.into_os_string().into_string() {
-                if exe_string.starts_with("/usr/bin/apt") { return (*(sym)).st_value as usize; }
-            }
-        }
-    }
+        _ => ()
+    };
     {
         let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         // TODO: Use .find() instead
@@ -302,7 +309,7 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
                     // Get some information ahead of time of what the redirected symbol/library will be
                     let addr = match db::get_redirect(hook.id) {
                         Some(redirected_function) => { resolve_symbol(&redirected_function.0, &redirected_function.1) },
-                        None => resolve_symbol(&hook.library, &hook.symbol)
+                        None => (*(sym)).st_value as *const u8
                     };
                     crate::common::hook::FN_STACK.lock().unwrap().push((hook.id, addr as usize));
                 };
@@ -314,6 +321,10 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
 }
 
 pub unsafe fn resolve_symbol(library: &str, symbol: &str) -> *const u8 {
+    // FIXME: dlmopen() issue with sshd on x86_64
+    if symbol == "execve" {
+        return libc::execve as *const u8
+    }
     let library_cstring: CString = CString::new(library).expect("WhiteBeam: Unexpected null reference");
     let symbol_cstring: CString = CString::new(symbol).expect("WhiteBeam: Unexpected null reference");
     let handle: *mut libc::c_void = libc::dlmopen(libc::LM_ID_BASE, library_cstring.as_ptr() as *const c_char, libc::RTLD_LAZY);
