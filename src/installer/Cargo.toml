@@ -3,7 +3,7 @@
 name = "whitebeam-installer"
 version = "0.2.6"
 authors = ["WhiteBeam Security, Inc."]
-edition = "2018"
+edition = "2021"
 
 # Build targets
 [[bin]]
