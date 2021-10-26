@@ -76,7 +76,6 @@ fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box
                                                                       ||lib.contains("libdl.so.2")
                                                                       ||lib.contains("libpthread.so.0")
                                                                       ||lib.contains("libgcc_s.so.1")
-                                                                      ||lib.contains("librt.so.1")
                                                                       ||lib.contains("libm.so.6")
                                                                       ||lib.contains("libwhitebeam")
                                                                       ||lib.contains("ld-linux")))
@@ -328,10 +327,12 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
     };
     let mut url_common: String = format!("{}/sql/common/{}.sql", repository, path_str);
     let mut url_platform: String = format!("{}/sql/platforms/{}/{}.sql", repository, std::env::consts::OS, path_str);
-    let mut url_base: String = format!("{}/sql/platforms/{}/base/{}.sql", repository, std::env::consts::OS, base_version);
+    let mut url_app: String = format!("{}/sql/platforms/{}/app/{}.sql", repository, std::env::consts::OS, path_str);
+    let mut url_base: String = format!("{}/sql/platforms/{}/base/{}.sql", repository, std::env::consts::OS, &base_version);
     if repository.starts_with("https://github.com/") {
         url_common.push_str("?raw=true");
         url_platform.push_str("?raw=true");
+        url_app.push_str("?raw=true");
         url_base.push_str("?raw=true");
     }
     // TODO: Identify ourselves with a user agent
@@ -342,12 +343,12 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
         // Base whitelist
         let response_base = client.get(&url_base).send()?;
         if response_base.status().is_success() {
-            println!("WhiteBeam: Loading '{}' ({}) from repository", path_str, base_version);
+            println!("WhiteBeam: Loading '{}' ({}) from repository", path_str, &base_version);
             let buffer = response_base.text()?;
             conn.execute_batch(&buffer)?;
             return Ok(());
         }
-        return Err("WhiteBeam: Failed to load SQL from all available sources".into());
+        return Err(format!("WhiteBeam: Base whitelist unavailable for {}", platform::pretty_os_version()?).into());
     }
     let response_common = client.get(&url_common).send()?;
     if response_common.status().is_success() {
@@ -360,6 +361,13 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
     if response_platform.status().is_success() {
         println!("WhiteBeam: Loading '{}' from repository", path_str);
         let buffer = response_platform.text()?;
+        conn.execute_batch(&buffer)?;
+        return Ok(())
+    }
+    let response_app = client.get(&url_app).send()?;
+    if response_app.status().is_success() {
+        println!("WhiteBeam: Loading '{}' from repository", path_str);
+        let buffer = response_app.text()?;
         conn.execute_batch(&buffer)?;
         return Ok(())
     } else {

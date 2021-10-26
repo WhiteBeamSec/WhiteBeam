@@ -133,6 +133,7 @@ pub fn run_install() {
                                       "whitebeam --load Default;",
                                       "whitebeam --setting SystemArchitecture `arch`;",
                                       "whitebeam --load Essential;",
+                                      "whitebeam --load Base;",
                                       "/etc/init.d/whitebeam start;",
                                       "echo '/lib/libwhitebeam.so' | tee -a /etc/ld.so.preload;"));
     if std::env::consts::ARCH == "aarch64" {

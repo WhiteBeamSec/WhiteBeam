@@ -156,6 +156,17 @@ pub fn parse_os_version() -> Result<String, Box<dyn Error>> {
     Ok(format!("{}_{}", distro, version))
 }
 
+pub fn pretty_os_version() -> Result<String, Box<dyn Error>> {
+    let file = std::fs::read_to_string("/etc/os-release")?;
+    let mut pretty_distro = String::from("Unknown");
+    for line in file.lines() {
+        if line.starts_with("PRETTY_NAME=") {
+            pretty_distro = os_version_value(line)?;
+        }
+    }
+    Ok(pretty_distro)
+}
+
 fn os_version_value(line: &str) -> Result<String, Box<dyn Error>> {
     let idx = line.find('=').unwrap();
     let mut value = &line[idx+1..];

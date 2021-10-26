@@ -94,6 +94,7 @@ fn test(args: Vec<String>) {
     // Load platform-specific test data through whitebeam command
     common::db::db_load("Test").expect("WhiteBeam: Failed to load test data");
     // Compile tests
+    // https://github.com/rust-lang/rust/issues/90263
     let _exit_status_tests = Command::new("cargo")
         .arg("+nightly-2021-10-09").arg("build").arg("--package").arg("libwhitebeam-tests").arg("--release")
         // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
