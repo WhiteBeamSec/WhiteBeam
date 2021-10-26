@@ -76,21 +76,20 @@ pub fn check_build_environment() {
         std::process::exit(1);
     }
     // Toolchains can be more than just "stable" and "nightly" (Docker containers use the Rust version number)
-    /*
     let rustup_toolchains = Command::new(search_path(OsStr::new("rustup")).unwrap())
             .arg("toolchain")
             .arg("list")
             .output()
             .expect("WhiteBeam: Failed to execute rustup command");
     let rustup_toolchains_string = String::from_utf8_lossy(&rustup_toolchains.stdout);
+    /*
     if !rustup_toolchains_string.contains("stable") {
         eprintln!("WhiteBeam: No stable Rust found in toolchain, consider running: rustup toolchain install stable");
         std::process::exit(1);
-    } else if !rustup_toolchains_string.contains("nightly") {
-        eprintln!("WhiteBeam: No nightly Rust found in toolchain, consider running: rustup toolchain install nightly");
+    } else */ if !rustup_toolchains_string.contains("nightly-2021-10-09") {
+        eprintln!("WhiteBeam: No pinned nightly Rust found in toolchain, consider running: rustup toolchain install nightly-2021-10-09");
         std::process::exit(1);
     }
-    */
 }
 
 pub fn run_install() {

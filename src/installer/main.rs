@@ -48,23 +48,25 @@ fn build(args: Vec<String>) {
     let current_target_path = match subcommand {
         "binary" => {
             println!("Building binary");
-            cargo_command.args(&["build", "--package", "whitebeam", "--bin", "whitebeam", "--release"]);
+            cargo_command.args(&["+stable", "build", "--package", "whitebeam", "--bin", "whitebeam", "--release"]);
             bin_target_path
         },
         "library" => {
             println!("Building library");
-            cargo_command.args(&["+nightly", "build", "--package", "libwhitebeam", "--lib", "--release"]);
+            // https://github.com/rust-lang/rust/issues/90263
+            cargo_command.args(&["+nightly-2021-10-09", "build", "--package", "libwhitebeam", "--lib", "--release"]);
             lib_target_path
         },
         "binary-test" => {
             println!("Building test binary");
-            cargo_command.args(&["build", "--package", "whitebeam", "--bin", "whitebeam", "--release",
+            cargo_command.args(&["+stable", "build", "--package", "whitebeam", "--bin", "whitebeam", "--release",
                                  "--manifest-path", "./src/application/Cargo.toml", "--features", "whitelist_test"]);
             bin_target_path
         },
         "library-test" => {
             println!("Building test library");
-            cargo_command.args(&["+nightly", "build", "--package", "libwhitebeam", "--lib", "--release",
+            // https://github.com/rust-lang/rust/issues/90263
+            cargo_command.args(&["+nightly-2021-10-09", "build", "--package", "libwhitebeam", "--lib", "--release",
                                  "--manifest-path", "./src/library/Cargo.toml", "--features", "whitelist_test"]);
             lib_target_path
         },
@@ -93,7 +95,7 @@ fn test(args: Vec<String>) {
     common::db::db_load("Test").expect("WhiteBeam: Failed to load test data");
     // Compile tests
     let _exit_status_tests = Command::new("cargo")
-        .arg("build").arg("--package").arg("libwhitebeam-tests").arg("--release")
+        .arg("+nightly-2021-10-09").arg("build").arg("--package").arg("libwhitebeam-tests").arg("--release")
         // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
         .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
         .status()
