@@ -20,7 +20,7 @@ automod = { version = "1.0" }
 glob = { version = "0.3" }
 syslog = { version = "5.0" }
 # Cryptographic dependencies
-sha3 = { version = "0.9" }
+sha3 = { version = "0.10" }
 blake3 = { version = "1.0" }
 argon2 = { version = "0.3" }
 
