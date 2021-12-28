@@ -61,7 +61,7 @@ pub fn send_log_event(class: i64, log: String) {
         facility: log_facility,
         hostname: None,
         process: "WhiteBeam".into(),
-        pid: unsafe { libc::getpid() },
+        pid: unsafe { libc::getpid() } as u32,
     };
     // TODO: https://github.com/Geal/rust-syslog/issues/21
     // TODO: Does unix_connect need a timeout?

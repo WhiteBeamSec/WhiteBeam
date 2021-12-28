@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Pinned Nightly Rust toolchain to nightly-10-09
+- Updated to latest dependencies
 - Updated to Rust 2021 edition
 
 ## [0.2.6] - 2021-10-13
