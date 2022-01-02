@@ -33,7 +33,7 @@ macro_rules! build_action {
 
 // Load action modules
 mod actions {
-    automod::dir!(pub "common/action/actions");
+    automod::dir!(pub "src/common/action/actions");
 }
 
 // Collect actions in distributed slice

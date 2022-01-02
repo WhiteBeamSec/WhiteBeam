@@ -8,7 +8,6 @@ edition = "2021"
 # Build targets
 [lib]
 name = "whitebeam"
-path = "lib.rs"
 crate-type = ["cdylib"]
 
 # Cross-platform dependencies

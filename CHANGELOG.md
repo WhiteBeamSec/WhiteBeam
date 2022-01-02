@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Pinned Nightly Rust toolchain to nightly-10-09
+- Pinned Nightly Rust toolchain to nightly-2022-01-01
+- Restructured project source directories
 - Updated to latest dependencies
 - Updated to Rust 2021 edition
 

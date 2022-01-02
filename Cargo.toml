@@ -1,10 +1,9 @@
 [workspace]
 default-members = [
-    "src/installer"
+    "installer"
 ]
 members = [
-    "src/installer",
-    "src/application",
-    "src/library",
-    "src/library/tests"
+    "installer",
+    "application",
+    "library"
 ]

@@ -86,8 +86,8 @@ pub fn check_build_environment() {
     if !rustup_toolchains_string.contains("stable") {
         eprintln!("WhiteBeam: No stable Rust found in toolchain, consider running: rustup toolchain install stable");
         std::process::exit(1);
-    } else */ if !rustup_toolchains_string.contains("nightly-2021-10-09") {
-        eprintln!("WhiteBeam: No pinned nightly Rust found in toolchain, consider running: rustup toolchain install nightly-2021-10-09");
+    } else */ if !rustup_toolchains_string.contains("nightly-2022-01-01") {
+        eprintln!("WhiteBeam: No pinned nightly Rust found in toolchain, consider running: rustup toolchain install nightly-2022-01-01");
         std::process::exit(1);
     }
 }
@@ -115,9 +115,9 @@ pub fn run_install() {
         installation_cmd.push_str(concat!("cp ./service.sh /etc/init.d/whitebeam;",
                                           "cp ./libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so;",
                                           "cp ./whitebeam /opt/WhiteBeam/whitebeam;"));
-    } else if PathBuf::from("./src/installer/platforms/linux/resources/service.sh").exists() {
+    } else if PathBuf::from("./installer/src/platforms/linux/resources/service.sh").exists() {
         // Source
-        installation_cmd.push_str(concat!("cp ./src/installer/platforms/linux/resources/service.sh /etc/init.d/whitebeam;",
+        installation_cmd.push_str(concat!("cp ./installer/src/platforms/linux/resources/service.sh /etc/init.d/whitebeam;",
                                           "cp ./target/release/libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so;",
                                           "cp ./target/release/whitebeam /opt/WhiteBeam/whitebeam;"));
     } else {
@@ -155,7 +155,7 @@ pub fn run_install() {
 
 pub fn run_package() {
     // TODO: Eliminate service.sh
-    if !(PathBuf::from("./src/installer/platforms/linux/resources/service.sh").exists()) {
+    if !(PathBuf::from("./installer/src/platforms/linux/resources/service.sh").exists()) {
         eprintln!("WhiteBeam: Must be run from source directory");
         std::process::exit(1);
     }
@@ -167,7 +167,7 @@ pub fn run_package() {
     }
     let package_name: String = format!("WhiteBeam_{}_{}", env!("CARGO_PKG_VERSION"), std::env::consts::ARCH);
     let package_cmd: String = format!(concat!("tar --transform='s%.*/%%' --transform 'flags=r;s|^|WhiteBeam/|' --numeric-owner --owner 0 --group 0 -cvzf ./target/release/{}.tar.gz ",
-                                                   "./target/debug/whitebeam-installer ./target/release/libwhitebeam.so ./src/installer/platforms/linux/resources/service.sh ./target/release/whitebeam;",
+                                                   "./target/debug/whitebeam-installer ./target/release/libwhitebeam.so ./installer/src/platforms/linux/resources/service.sh ./target/release/whitebeam;",
                                               "sha256sum ",
                                                    "./target/release/{}.tar.gz > ./target/release/{}.SHA256;"), package_name, package_name, package_name);
     println!("WhiteBeam: Packaging");
