@@ -53,7 +53,6 @@ fn build(args: Vec<String>) {
         },
         "library" => {
             println!("Building library");
-            // https://github.com/rust-lang/rust/issues/90263
             cargo_command.args(&["+nightly-2022-01-01", "build", "--package", "libwhitebeam", "--lib", "--release"]);
             lib_target_path
         },
@@ -65,7 +64,6 @@ fn build(args: Vec<String>) {
         },
         "library-test" => {
             println!("Building test library");
-            // https://github.com/rust-lang/rust/issues/90263
             cargo_command.args(&["+nightly-2022-01-01", "build", "--package", "libwhitebeam", "--lib", "--release",
                                  "--features", "whitelist_test"]);
             lib_target_path
@@ -83,6 +81,7 @@ fn build(args: Vec<String>) {
 }
 
 fn test(args: Vec<String>) {
+    // TODO: Use build.rs for test setup steps?
     // TODO: More error handling
     build(vec![String::from("whitebeam-installer"), String::from("build"), String::from("library-test")]);
     build(vec![String::from("whitebeam-installer"), String::from("build"), String::from("binary-test")]);
@@ -93,16 +92,6 @@ fn test(args: Vec<String>) {
     common::db::db_load("Essential").expect("WhiteBeam: Failed to load Essential hooks");
     // Load platform-specific test data through whitebeam command
     common::db::db_load("Test").expect("WhiteBeam: Failed to load test data");
-    // Compile tests
-    /*
-    //Temporarily commented while tests are refactored
-    // https://github.com/rust-lang/rust/issues/90263
-    let _exit_status_tests = Command::new("cargo")
-        .arg("+nightly-2022-01-01").arg("build").arg("--package").arg("libwhitebeam-tests").arg("--release")
-        // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
-        .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
-        .status()
-        .expect("WhiteBeam: Failed to execute cargo command");
     // Set a test recovery secret
     let _exit_status_secret = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
         .args(&["--setting", "RecoverySecret", "test"])
@@ -114,10 +103,13 @@ fn test(args: Vec<String>) {
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
     // Run tests
-    let _exit_status_tests = Command::new(&format!("{}/target/release/libwhitebeam-tests", env!("PWD")))
-        .env("LD_PRELOAD", &format!("{}/target/release/libwhitebeam.so", env!("PWD")))
+    let _exit_status_tests = Command::new("cargo")
+        .arg("+nightly-2022-01-01").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test")
+        .arg("--test").arg("test_*").arg("--").arg("--show-output")
+        // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
+        .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
         .status()
-        .expect("WhiteBeam: Failed to execute libwhitebeam-tests command");
+        .expect("WhiteBeam: Failed to execute cargo command");
     // Disable prevention
     let _exit_status_disable = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
         .args(&["--setting", "Prevention", "false"])
@@ -129,10 +121,10 @@ fn test(args: Vec<String>) {
         .args(&["--setting", "RecoverySecret", "undefined"])
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
-    */
     // TODO: Test actions
     // TODO: Make sure SQL schema/defaults exist
     // TODO: Test binary (e.g. ./target/release/whitebeam || true)
+    // TODO: Benches
 }
 
 fn install(_args: Vec<String>) {
