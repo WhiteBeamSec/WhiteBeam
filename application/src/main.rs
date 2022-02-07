@@ -203,6 +203,7 @@ fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
                                                 .map(|entry| vec![
                                                     entry.id.clone().cell(),
                                                     entry.class.clone().cell(),
+                                                    entry.parent.clone().cell(),
                                                     entry.path.clone().cell(),
                                                     entry.value.clone().cell()
                                                 ])
@@ -211,6 +212,7 @@ fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
                     .title(vec![
                         "ID".cell().bold(true),
                         "Class".cell().bold(true),
+                        "Parent".cell().bold(true),
                         "Path".cell().bold(true),
                         "Value".cell().bold(true)
                     ])
