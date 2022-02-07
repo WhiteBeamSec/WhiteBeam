@@ -106,7 +106,7 @@ pub fn run_install() {
         Command::new(sudo_path)
             .arg(program)
             .arg("install")
-            .status().expect("WhiteBeam: Child process failed to start.");
+            .status().expect("WhiteBeam: Child process failed to start");
         return;
     }
     // TODO: Update by the time glibc 2.36 is released (~Aug 2022)
@@ -118,7 +118,7 @@ pub fn run_install() {
             Err(_) => String::from("")
         };
         if !(ld_reported_version.contains("version 2.35")) && !(Path::new("/usr/lib/aarch64-linux-gnu/ld-2.35.so").exists()) {
-            eprintln!("WhiteBeam: glibc 2.35 required on aarch64 platforms, consider running: wget 'https://launchpad.net/ubuntu/+archive/primary/+files/libc6_2.35-0ubuntu1_arm64.deb' && dpkg --force-all -i libc6_2.35-0ubuntu1_arm64.deb && rm libc6_2.35-0ubuntu1_arm64.deb");
+            eprintln!("WhiteBeam: glibc 2.35 required on aarch64 platforms");
             std::process::exit(1);
         }
     }
