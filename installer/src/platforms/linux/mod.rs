@@ -86,7 +86,7 @@ pub fn check_build_environment() {
     if !rustup_toolchains_string.contains("stable") {
         eprintln!("WhiteBeam: No stable Rust found in toolchain, consider running: rustup toolchain install stable");
         std::process::exit(1);
-    } else */ if !rustup_toolchains_string.contains("nightly-2022-01-01") {
+    } else */ if !(rustup_toolchains_string.contains("nightly-2022-01-01")) {
         eprintln!("WhiteBeam: No pinned nightly Rust found in toolchain, consider running: rustup toolchain install nightly-2022-01-01");
         std::process::exit(1);
     }
@@ -108,6 +108,19 @@ pub fn run_install() {
             .arg("install")
             .status().expect("WhiteBeam: Child process failed to start.");
         return;
+    }
+    // TODO: Update by the time glibc 2.36 is released (~Aug 2022)
+    if std::env::consts::ARCH == "aarch64" {
+        let ld_reported_version = match Command::new("/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1")
+            .arg("--version")
+            .output() {
+            Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
+            Err(_) => String::from("")
+        };
+        if !(ld_reported_version.contains("version 2.35")) && !(Path::new("/usr/lib/aarch64-linux-gnu/ld-2.35.so").exists()) {
+            eprintln!("WhiteBeam: glibc 2.35 required on aarch64 platforms, consider running: wget 'https://launchpad.net/ubuntu/+archive/primary/+files/libc6_2.35-0ubuntu1_arm64.deb' && dpkg --force-all -i libc6_2.35-0ubuntu1_arm64.deb && rm libc6_2.35-0ubuntu1_arm64.deb");
+            std::process::exit(1);
+        }
     }
     let mut installation_cmd: String = String::from("mkdir -p /opt/WhiteBeam/data/;");
     if PathBuf::from("./service.sh").exists() {
@@ -136,15 +149,6 @@ pub fn run_install() {
                                       "whitebeam --load Base;",
                                       "/etc/init.d/whitebeam start;",
                                       "echo '/lib/libwhitebeam.so' | tee -a /etc/ld.so.preload;"));
-    if std::env::consts::ARCH == "aarch64" {
-        Command::new(search_path(OsStr::new("bash")).unwrap())
-        .arg("-c")
-        .arg(concat!("wget https://raw.githubusercontent.com/WhiteBeamSec/LinkerPatches/master/aarch64.sh;",
-                     "chmod +x aarch64.sh;",
-                     "./aarch64.sh"))
-        .status()
-        .expect("WhiteBeam: Installation failed");
-    }
     println!("WhiteBeam: Installing");
     Command::new(search_path(OsStr::new("bash")).unwrap())
             .arg("-c")

@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated to latest dependencies
 - Updated to Rust 2021 edition
 
+### Removed
+
+- Installer: Patched ARM glibc linker (in favor of glibc 2.35)
+
 ## [0.2.6] - 2021-10-13
 
 ### Fixed
