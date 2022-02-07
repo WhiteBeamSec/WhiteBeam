@@ -6,7 +6,7 @@ fn fail(library_basename: &str, symbol: &str) -> isize {
     }
 }
 
-build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+build_action! { OpenFileDescriptor (par_prog, src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
         // TODO: Refactor
         // TODO: No O_CLOEXEC leads to inherited fd's in children
         let library: &str = &hook.library;
@@ -94,7 +94,7 @@ build_action! { OpenFileDescriptor (src_prog, hook, arg_id, args, _act_args, do_
         let class = String::from("Filesystem/Directory/Writable");
         let all_allowed_directories: Vec<String> = {
             let whitelist_cache_lock = crate::common::db::WL_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-            whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class == class) && ((whitelist.path == src_prog) || (whitelist.path == any))).map(|whitelist| whitelist.value.clone()).collect()
+            whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class == class) && ((whitelist.parent == par_prog) || (whitelist.parent == any)) && ((whitelist.path == src_prog) || (whitelist.path == any))).map(|whitelist| whitelist.value.clone()).collect()
         };
         // Permit ANY
         if all_allowed_directories.iter().any(|directory| directory == &any) {

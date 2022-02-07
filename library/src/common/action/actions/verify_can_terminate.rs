@@ -1,4 +1,4 @@
-build_action! { VerifyCanTerminate (src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+build_action! { VerifyCanTerminate (_par_prog, src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
         #[cfg(feature = "whitelist_test")]
         return (hook, args, do_return, return_value);
         let pid_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");

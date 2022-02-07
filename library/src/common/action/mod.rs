@@ -2,12 +2,12 @@ use crate::common::db;
 
 pub struct ActionObject {
     pub alias: &'static str,
-    pub function: fn(String, db::HookRow, i64, Vec<db::ArgumentRow>, Vec<String>, bool, isize) -> (db::HookRow, Vec<crate::common::db::ArgumentRow>, bool, isize)
+    pub function: fn(String, String, db::HookRow, i64, Vec<db::ArgumentRow>, Vec<String>, bool, isize) -> (db::HookRow, Vec<crate::common::db::ArgumentRow>, bool, isize)
 }
 
 // Action template
 macro_rules! build_action {
-    ($alias:ident ($src_prog:ident, $hook:ident, $arg_id:ident, $args:ident, $act_args:ident, $do_return:ident, $return_value:ident) $body:block) => {
+    ($alias:ident ($par_prog:ident, $src_prog:ident, $hook:ident, $arg_id:ident, $args:ident, $act_args:ident, $do_return:ident, $return_value:ident) $body:block) => {
         #[allow(unused_imports)]
         use crate::common::event;
         #[cfg(target_os = "windows")]
@@ -22,7 +22,7 @@ macro_rules! build_action {
         #[allow(non_snake_case)]
         #[allow(unused_assignments)]
         #[allow(unused_mut)]
-        pub fn $alias ($src_prog: String, mut $hook: crate::common::db::HookRow, $arg_id: i64, mut $args: Vec<crate::common::db::ArgumentRow>, $act_args: Vec<String>, mut $do_return: bool, mut $return_value: isize) -> (crate::common::db::HookRow, Vec<crate::common::db::ArgumentRow>, bool, isize) {
+        pub fn $alias ($par_prog: String, $src_prog: String, mut $hook: crate::common::db::HookRow, $arg_id: i64, mut $args: Vec<crate::common::db::ArgumentRow>, $act_args: Vec<String>, mut $do_return: bool, mut $return_value: isize) -> (crate::common::db::HookRow, Vec<crate::common::db::ArgumentRow>, bool, isize) {
             $body
             ($hook, $args, $do_return, $return_value)
         }
@@ -40,7 +40,7 @@ mod actions {
 #[linkme::distributed_slice]
 pub static ACTION_INDEX: [ActionObject] = [..];
 
-pub fn process_action(src_prog: String, rule: db::RuleRow, hook: db::HookRow, args: Vec<db::ArgumentRow>) -> (db::HookRow, Vec<db::ArgumentRow>, bool, isize) {
+pub fn process_action(par_prog: String, src_prog: String, rule: db::RuleRow, hook: db::HookRow, args: Vec<db::ArgumentRow>) -> (db::HookRow, Vec<db::ArgumentRow>, bool, isize) {
     let action: &str = &rule.action;
     let arg_id: i64 = rule.arg;
     let do_return = false;
@@ -50,12 +50,12 @@ pub fn process_action(src_prog: String, rule: db::RuleRow, hook: db::HookRow, ar
         None => vec![]
     };
     match ACTION_INDEX.iter().find(|a| a.alias == action) {
-        Some(action) => {(action.function)(src_prog, hook, arg_id, args, act_args, do_return, return_value)}
+        Some(action) => {(action.function)(par_prog, src_prog, hook, arg_id, args, act_args, do_return, return_value)}
         None => panic!("WhiteBeam: Invalid action: {}", action)
     }
 }
 
-pub fn process_post_action(_src_prog: String, hook_orig: db::HookRow, hook: db::HookRow, args: Vec<db::ArgumentRow>) -> (bool, isize) {
+pub fn process_post_action(_par_prog: String, _src_prog: String, hook_orig: db::HookRow, hook: db::HookRow, args: Vec<db::ArgumentRow>) -> (bool, isize) {
     let do_return = false;
     let return_value = 0 as isize;
     // TODO: Replace below with post action framework

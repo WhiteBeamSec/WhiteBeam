@@ -4,6 +4,7 @@ use std::{ffi::OsString,
           lazy::SyncLazy,
           sync::Mutex};
 
+pub static PAR_PROG: SyncLazy<Mutex<OsString>> = SyncLazy::new(|| Mutex::new(OsString::new()));
 pub static CUR_PROG: SyncLazy<Mutex<OsString>> = SyncLazy::new(|| Mutex::new(OsString::new()));
 pub static FN_STACK: SyncLazy<Mutex<Vec<(i64, usize)>>> = SyncLazy::new(|| Mutex::new(vec![]));
 
@@ -27,6 +28,8 @@ pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     Untested
     */
     // TODO: Test zero argument case
+    // Parent program
+    let par_prog: String = { PAR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     // Program
     let src_prog: String = { CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     // Hook
@@ -96,8 +99,8 @@ pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     // Actions
     for rule in rules {
         // TODO: Eliminate redundancy
-        // TODO: Is clone of src_prog needed?
-        let (hook_new, arg_vec_new, do_return, return_value) = action::process_action(src_prog.clone(), rule, hook, arg_vec);
+        // TODO: Is clone of par_prog and src_prog needed?
+        let (hook_new, arg_vec_new, do_return, return_value) = action::process_action(par_prog.clone(), src_prog.clone(), rule, hook, arg_vec);
         hook = hook_new;
         arg_vec = arg_vec_new;
         if do_return {
@@ -121,7 +124,7 @@ pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
         _ => panic!("WhiteBeam: Unsupported operation"),
     };
     // TODO: Post actions
-    let (do_return, return_value) = action::process_post_action(src_prog.clone(), hook_orig, hook, arg_vec);
+    let (do_return, return_value) = action::process_post_action(par_prog.clone(), src_prog.clone(), hook_orig, hook, arg_vec);
     if do_return {
         return return_value;
     }

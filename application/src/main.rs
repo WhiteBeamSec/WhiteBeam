@@ -42,7 +42,7 @@ fn valid_auth() -> Result<bool, Box<dyn Error>> {
 }
 
 // Methods
-fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error>> {
+fn run_add(class: &OsStr, parent: Option<&OsStr>, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error>> {
     // TODO: Single argument shortcut whitelist creation
     // TODO: Warn when static is being whitelisted
     // TODO: Warn when an executable is in a writable directory
@@ -52,24 +52,28 @@ fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box
     let class_string = String::from(class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?);
     let path_string = String::from(path.to_str().ok_or(String::from("Invalid UTF-8 provided"))?);
     let algorithm = format!("Hash/{}", common::db::get_setting(&conn, String::from("HashAlgorithm"))?);
-    let mut added_whitelist_entries: Vec<(String, String, String)> = vec![];
-    // Convenience shortcuts occur when value is none
+    let mut added_whitelist_entries: Vec<(String, String, String, String)> = vec![];
+    // Convenience shortcuts occur when parent or value is none
     match value {
         Some(v) => {
             let v_str: &str = v.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
-            added_whitelist_entries.push((class_string.clone(), path_string.clone(), String::from(v_str)));
+            let p_str: &str = match parent {
+                Some(p) => { p.to_str().ok_or(String::from("Invalid UTF-8 provided"))? },
+                None => "ANY"
+            };
+            added_whitelist_entries.push((class_string.clone(), String::from(p_str), path_string.clone(), String::from(v_str)));
             println!("WhiteBeam: Allowing new {} ({}) for {}", &class_string, v_str, &path_string);
         },
         None => {
             let class_str: &str = &class_string;
             match class_str {
                 "Filesystem/Path/Executable" => {
-                    added_whitelist_entries.push((class_string.clone(), String::from("ANY"), path_string.clone()));
+                    added_whitelist_entries.push((class_string.clone(), String::from("ANY"), String::from("ANY"), path_string.clone()));
                     let hash: String = common::hash::process_hash(&mut std::fs::File::open(&path_string)?, &algorithm, None);
                     if common::hash::hash_is_null(&hash) {
                         return Err("WhiteBeam: No such file or directory".into());
                     }
-                    added_whitelist_entries.push((algorithm.clone(), path_string.clone(), hash.clone()));
+                    added_whitelist_entries.push((algorithm.clone(), String::from("ANY"), path_string.clone(), hash.clone()));
                     let all_library_paths: Vec<String> = platform::recursive_library_scan(&path_string, None, None).unwrap_or(vec![]).iter()
                                                         // Always allowed in Essential, no need to whitelist these
                                                         .filter(|lib| !(lib.contains("libc.so.6")
@@ -82,7 +86,7 @@ fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box
                                                         .map(|lib| String::from(lib))
                                                         .collect();
                     for lib_path in all_library_paths.iter() {
-                        added_whitelist_entries.push((String::from("Filesystem/Path/Library"), path_string.clone(), String::from(lib_path)));
+                        added_whitelist_entries.push((String::from("Filesystem/Path/Library"), String::from("ANY"), path_string.clone(), String::from(lib_path)));
                     }
                     println!("WhiteBeam: Adding {} ({}: {}) to whitelist", &path_string, &algorithm[5..], &hash);
                 },
@@ -91,7 +95,7 @@ fn run_add(class: &OsStr, path: &OsStr, value: Option<&OsStr>) -> Result<(), Box
         }
     };
     for entry in added_whitelist_entries.iter() {
-        let _res = common::db::insert_whitelist(&conn, &(entry.0), &(entry.1), &(entry.2));
+        let _res = common::db::insert_whitelist(&conn, &(entry.0), &(entry.1), &(entry.2), &(entry.3));
     }
     Ok(())
 }
@@ -538,16 +542,23 @@ fn main() -> Result<(), MainError> {
             Some(vals) => {
                 let mut vals_iter = vals.clone();
                 // TODO: Refactor
-                if vals_iter.len() == 3 {
+                if vals_iter.len() == 4 {
+                    // TODO: Error handling
+                    let class: &OsStr = vals_iter.next().ok_or(String::from("Missing class for 'add' argument"))?;
+                    let parent: &OsStr = vals_iter.next().ok_or(String::from("Missing parent for 'add' argument"))?;
+                    let path: &OsStr = vals_iter.next().ok_or(String::from("Missing path for 'add' argument"))?;
+                    let value: &OsStr = vals_iter.next().ok_or(String::from("Missing value for 'add' argument"))?;
+                    run_add(class, Some(parent), path, Some(value))?
+                } else if vals_iter.len() == 3 {
                     // TODO: Error handling
                     let class: &OsStr = vals_iter.next().ok_or(String::from("Missing class for 'add' argument"))?;
                     let path: &OsStr = vals_iter.next().ok_or(String::from("Missing path for 'add' argument"))?;
                     let value: &OsStr = vals_iter.next().ok_or(String::from("Missing value for 'add' argument"))?;
-                    run_add(class, path, Some(value))?
+                    run_add(class, None, path, Some(value))?
                 } else if vals_iter.len() == 2 {
                     let class: &OsStr = vals_iter.next().ok_or(String::from("Missing class for 'add' argument"))?;
                     let path: &OsStr = vals_iter.next().ok_or(String::from("Missing path for 'add' argument"))?;
-                    run_add(class, path, None)?
+                    run_add(class, None, path, None)?
                 } else {
                     return Err("WhiteBeam: Insufficient parameters for 'add' argument".into());
                 }

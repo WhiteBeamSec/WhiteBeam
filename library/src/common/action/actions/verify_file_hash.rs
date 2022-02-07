@@ -11,7 +11,7 @@ fn fail(library_basename: &str, symbol: &str, argument_path: &str) {
     }
 }
 
-build_action! { VerifyFileHash (src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+build_action! { VerifyFileHash (par_prog, src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
         // TODO: Depending on LogSeverity, log all use of this action
         // NB: For Execution hooks, system executables that aren't read world may be whitelisted as ANY
         let library: &str = &hook.library;
@@ -29,7 +29,7 @@ build_action! { VerifyFileHash (src_prog, hook, arg_id, args, _act_args, do_retu
         };
         let all_allowed_hashes: Vec<(String, String)> = {
             let whitelist_cache_lock = crate::common::db::WL_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-            whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class.starts_with(&class)) && ((whitelist.path == argument_path) || (whitelist.path == any))).map(|whitelist| (whitelist.class.clone(), whitelist.value.clone())).collect()
+            whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class.starts_with(&class)) && ((whitelist.parent == par_prog) || (whitelist.parent == any)) && ((whitelist.path == argument_path) || (whitelist.path == any))).map(|whitelist| (whitelist.class.clone(), whitelist.value.clone())).collect()
         };
         // Permit ANY
         if all_allowed_hashes.iter().any(|hash_tuple| hash_tuple.1 == any) {

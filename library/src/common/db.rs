@@ -49,6 +49,7 @@ pub struct ArgumentRow {
 #[derive(Clone)]
 pub struct WhitelistRow {
     pub class: String,
+    pub parent: String,
     pub path: String,
     pub value: String
 }
@@ -136,12 +137,13 @@ pub fn get_argument_view(conn: &Connection) -> Result<Vec<ArgumentRow>, Box<dyn 
 pub fn get_whitelist_view(conn: &Connection) -> Result<Vec<WhitelistRow>, Box<dyn Error>> {
     // TODO: Log errors
     let mut result_vec: Vec<WhitelistRow> = Vec::new();
-    let mut stmt = conn.prepare("SELECT class, path, value FROM WhitelistView")?;
+    let mut stmt = conn.prepare("SELECT class, parent, path, value FROM WhitelistView")?;
     let result_iter = stmt.query_map(params![], |row| {
         Ok(WhitelistRow {
             class: row.get(0)?,
-            path: row.get(1)?,
-            value: row.get(2)?
+            parent: row.get(1)?,
+            path: row.get(2)?,
+            value: row.get(3)?
         })
     })?;
     for result in result_iter {

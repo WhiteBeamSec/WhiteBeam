@@ -24,6 +24,7 @@ pub struct HookRow {
 pub struct WhitelistRow {
     pub class: String,
     pub id: i64,
+    pub parent: String,
     pub path: String,
     pub value: String
 }
@@ -51,15 +52,16 @@ pub fn get_setting(conn: &Connection, param: String) -> Result<String, Box<dyn E
 pub fn get_whitelist(conn: &Connection) -> Result<Vec<WhitelistRow>, Box<dyn Error>> {
     // TODO: Log errors
     let mut result_vec: Vec<WhitelistRow> = Vec::new();
-    let mut stmt = conn.prepare("SELECT WhitelistClass.class, Whitelist.id, Whitelist.path, Whitelist.value
+    let mut stmt = conn.prepare("SELECT WhitelistClass.class, Whitelist.id, Whitelist.parent, Whitelist.path, Whitelist.value
                                  FROM Whitelist
                                  INNER JOIN WhitelistClass ON Whitelist.class = WhitelistClass.id")?;
     let result_iter = stmt.query_map(params![], |row| {
         Ok(WhitelistRow {
             class: row.get(0)?,
             id: row.get(1)?,
-            path: row.get(2)?,
-            value: row.get(3)?
+            parent: row.get(2)?,
+            path: row.get(3)?,
+            value: row.get(4)?
         })
     })?;
     for result in result_iter {
@@ -179,8 +181,8 @@ pub fn insert_setting(conn: &Connection, param: &str, value: &str) -> Result<usi
     conn.execute("INSERT INTO Setting (param, value) VALUES (?1, ?2)", params![param, value])
 }
 
-pub fn insert_whitelist(conn: &Connection, class: &str, path: &str, value: &str) -> Result<usize, rusqlite::Error> {
-    conn.execute("INSERT OR REPLACE INTO Whitelist (path, value, class) VALUES (?1, ?2, (SELECT id from WhitelistClass WHERE class=?3))", params![path, value, class])
+pub fn insert_whitelist(conn: &Connection, class: &str, parent: &str, path: &str, value: &str) -> Result<usize, rusqlite::Error> {
+    conn.execute("INSERT OR REPLACE INTO Whitelist (parent, path, value, class) VALUES (?1, ?2, ?3, (SELECT id from WhitelistClass WHERE class=?4))", params![parent, path, value, class])
 }
 
 pub fn update_setting(conn: &Connection, param: &str, value: &str) -> Result<usize, rusqlite::Error> {

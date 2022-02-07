@@ -1,4 +1,4 @@
-build_action! { AddInt (_src_prog, hook, _arg_id, args, _act_args, do_return, return_value) {
+build_action! { AddInt (_par_prog, _src_prog, hook, _arg_id, args, _act_args, do_return, return_value) {
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;

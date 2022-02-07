@@ -1,4 +1,4 @@
-build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+build_action! { VerifyCanExecute (par_prog, src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
         // TODO: Depending on LogSeverity, log all use of this action
         // TODO: Use OsString?
         let library: &str = &hook.library;
@@ -14,7 +14,7 @@ build_action! { VerifyCanExecute (src_prog, hook, arg_id, args, _act_args, do_re
         };
         let all_allowed_executables: Vec<String> = {
             let whitelist_cache_lock = crate::common::db::WL_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-            whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class == class) && ((whitelist.path == src_prog) || (whitelist.path == any))).map(|whitelist| whitelist.value.clone()).collect()
+            whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class == class) && ((whitelist.parent == par_prog) || (whitelist.parent == any)) && ((whitelist.path == src_prog) || (whitelist.path == any))).map(|whitelist| whitelist.value.clone()).collect()
         };
         // Permit ANY
         if all_allowed_executables.iter().any(|executable| executable == &any) {

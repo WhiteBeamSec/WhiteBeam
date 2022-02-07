@@ -6,8 +6,9 @@ fn get_restricted() -> Vec<std::ffi::OsString> {
     )
 }
 
-build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
-        // Enforce LD_AUDIT, LD_BIND_NOT, WB_PROG
+build_action! { FilterEnvironment (_par_prog, src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+        // TODO: Refactor for efficiency
+        // Enforce LD_AUDIT, LD_BIND_NOT, WB_PARENT, WB_PROG
         // TODO: Avoid leaking memory (NB: this action is often called before execve on Linux)
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
@@ -104,6 +105,10 @@ build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, _act_args, do_
             let new_ld_bind_not_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(&new_ld_bind_not_var).expect("WhiteBeam: Unexpected null reference"));
             env_vec.push(Box::leak(new_ld_bind_not_cstring).as_ptr());
         }
+        let mut parent_path_env: std::ffi::OsString = std::ffi::OsString::from("WB_PARENT=");
+        parent_path_env.push(&src_prog);
+        let parent_path_env_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(&parent_path_env).expect("WhiteBeam: Unexpected null reference"));
+        env_vec.push(Box::leak(parent_path_env_cstring).as_ptr());
         let mut program_path_env: std::ffi::OsString = std::ffi::OsString::from("WB_PROG=");
         program_path_env.push(&program_path);
         let program_path_env_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(&program_path_env).expect("WhiteBeam: Unexpected null reference"));
@@ -118,7 +123,10 @@ build_action! { FilterEnvironment (_src_prog, hook, arg_id, args, _act_args, do_
                     }
                     if  (!(update_ld_audit) && (key_value.0 == std::ffi::OsString::from("LD_AUDIT")))
                      || (!(update_ld_bind_not) && (key_value.0 == std::ffi::OsString::from("LD_BIND_NOT")))
-                     || ((key_value.0 != std::ffi::OsString::from("LD_AUDIT")) && (key_value.0 != std::ffi::OsString::from("LD_BIND_NOT")) && (key_value.0 != std::ffi::OsString::from("WB_PROG"))) {
+                     || ((key_value.0 != std::ffi::OsString::from("LD_AUDIT")) &&
+                         (key_value.0 != std::ffi::OsString::from("LD_BIND_NOT")) &&
+                         (key_value.0 != std::ffi::OsString::from("WB_PARENT")) &&
+                         (key_value.0 != std::ffi::OsString::from("WB_PROG"))) {
                         env_vec.push(*envp_iter);
                     }
                 }

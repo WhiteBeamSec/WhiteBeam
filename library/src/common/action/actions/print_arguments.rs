@@ -1,4 +1,4 @@
-build_action! { PrintArguments (_src_prog, hook, _arg_id, args, _act_args, do_return, return_value) {
+build_action! { PrintArguments (_par_prog, _src_prog, hook, _arg_id, args, _act_args, do_return, return_value) {
         // strace/l(a)trace-like functionality
         // TODO: Refactor to use Display
         let library: &str = &hook.library;

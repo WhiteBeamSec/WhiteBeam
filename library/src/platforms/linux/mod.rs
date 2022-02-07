@@ -44,6 +44,7 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
     unsafe extern "C" fn init_rtld_audit_interface(argc: libc::c_int, argv: *const *const libc::c_char, envp: *const *const libc::c_char) {
         let mut update_ld_audit: bool = false;
         let mut update_ld_bind_not: bool = false;
+        let mut wb_parent_present: bool = false;
         let mut wb_prog_present: bool = false;
         let rtld_audit_lib_path = get_rtld_audit_lib_path();
         // la_symbind*() doesn't get called when LD_BIND_NOW is set
@@ -99,6 +100,17 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
             }
         };
         // This variable is protected by WhiteBeam's Essential hooks/rules
+        // NB: There are cases where WB_PARENT is undefined, such as pid 1
+        let parent_path: OsString = if let Some(val) = env::var_os("WB_PARENT") {
+            wb_parent_present = true;
+            let mut par_prog_lock = crate::common::hook::PAR_PROG.lock().expect("WhiteBeam: Failed to lock mutex");
+            par_prog_lock.clear();
+            par_prog_lock.push(&val);
+            val
+        } else {
+            OsString::new()
+        };
+        // This variable is protected by WhiteBeam's Essential hooks/rules
         let program_path: OsString = match env::var_os("WB_PROG") {
             Some(val) => {
                 wb_prog_present = true;
@@ -123,6 +135,9 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
         db::populate_cache().expect("WhiteBeam: Could not access database");
         if !(update_ld_audit) && !(update_ld_bind_not) {
             // Nothing to do, continue execution
+            if wb_parent_present {
+                env::remove_var("WB_PARENT");
+            }
             if wb_prog_present {
                 env::remove_var("WB_PROG");
             }
@@ -142,6 +157,10 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
             new_ld_bind_not_cstring = convert::osstr_to_cstring(&new_ld_bind_not_var).expect("WhiteBeam: Unexpected null reference");
             env_vec.push(new_ld_bind_not_cstring.as_ptr());
         }
+        let mut parent_path_env: OsString = OsString::from("WB_PARENT=");
+        parent_path_env.push(&parent_path);
+        let parent_path_env_cstring = convert::osstr_to_cstring(&parent_path_env).expect("WhiteBeam: Unexpected null reference");
+        env_vec.push(parent_path_env_cstring.as_ptr());
         let mut program_path_env: OsString = OsString::from("WB_PROG=");
         program_path_env.push(&program_path);
         let program_path_env_cstring = convert::osstr_to_cstring(&program_path_env).expect("WhiteBeam: Unexpected null reference");
@@ -153,7 +172,7 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                 if let Some(key_value) = convert::parse_env_single(CStr::from_ptr(*envp_iter).to_bytes()) {
                     if  (!(update_ld_audit) && (key_value.0 == "LD_AUDIT"))
                      || (!(update_ld_bind_not) && (key_value.0 == "LD_BIND_NOT"))
-                     || ((key_value.0 != "LD_AUDIT") && (key_value.0 != "LD_BIND_NOT") && (key_value.0 != "WB_PROG")) {
+                     || ((key_value.0 != "LD_AUDIT") && (key_value.0 != "LD_BIND_NOT") && (key_value.0 != "WB_PARENT") && (key_value.0 != "WB_PROG")) {
                         env_vec.push(*envp_iter);
                     }
                 }
@@ -181,12 +200,13 @@ unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
 // la_objsearch
 #[no_mangle]
 unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: *const libc::uintptr_t, _flag: libc::c_uint) -> *const libc::c_char {
+    let par_prog: String = { crate::common::hook::PAR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     let src_prog: String = { crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     let any = String::from("ANY");
     let class = String::from("Filesystem/Path/Library");
     let all_allowed_library_paths: Vec<String> = {
         let whitelist_cache_lock = crate::common::db::WL_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-        whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class == class) && ((whitelist.path == src_prog) || (whitelist.path == any))).map(|whitelist| whitelist.value.clone()).collect()
+        whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class == class) && ((whitelist.parent == par_prog) || (whitelist.parent == any)) && ((whitelist.path == src_prog) || (whitelist.path == any))).map(|whitelist| whitelist.value.clone()).collect()
     };
     let all_allowed_library_names: Vec<String> = all_allowed_library_paths.iter()
                                                                           .filter_map(|lib| std::path::Path::new(lib).file_name())
