@@ -340,18 +340,13 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
     (*(sym)).st_value as usize
 }
 
-pub unsafe fn resolve_symbol(library: &str, symbol: &str) -> *const u8 {
-    // FIXME: dlmopen() issue with sshd on x86_64
-    if symbol == "execve" {
-        return libc::execve as *const u8
-    }
-    let library_cstring: CString = CString::new(library).expect("WhiteBeam: Unexpected null reference");
+pub unsafe fn resolve_symbol(_library: &str, symbol: &str) -> *const u8 {
+    // The original approach: libc::dlmopen(libc::LM_ID_BASE, library_cstring.as_ptr() as *const c_char, libc::RTLD_LAZY)
+    // caused deadlocks on glibc 2.35. Use dlsym for now until a hybrid approach is created (for glibc<2.35). This may work fine
+    // for the current series of hooks, even though the library parameter is ignored. If it doesn't, we'll get a test case out of it.
+    //let library_cstring: CString = CString::new(library).expect("WhiteBeam: Unexpected null reference");
     let symbol_cstring: CString = CString::new(symbol).expect("WhiteBeam: Unexpected null reference");
-    let handle: *mut libc::c_void = libc::dlmopen(libc::LM_ID_BASE, library_cstring.as_ptr() as *const c_char, libc::RTLD_LAZY);
-    if handle.is_null() {
-        panic!("WhiteBeam: Unable to open handle for {}", library);
-    }
-    let fptr: *mut libc::c_void = libc::dlsym(handle, symbol_cstring.as_ptr() as *const c_char);
+    let fptr: *mut libc::c_void = libc::dlsym(libc::RTLD_NEXT, symbol_cstring.as_ptr() as *const c_char);
     if fptr.is_null() {
         panic!("WhiteBeam: Unable to find underlying function for {}", symbol);
     }
