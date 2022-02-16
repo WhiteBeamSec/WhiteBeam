@@ -41,7 +41,7 @@ build_action! { VerifyCanExecute (par_prog, src_prog, hook, arg_id, args, _act_a
         }
         // Permit execution if not running in prevention mode
         if !(crate::common::db::get_prevention()) {
-            event::send_log_event(syslog::Severity::LOG_NOTICE as i64, format!("Detection: {} executed {} (VerifyCanExecute)", &src_prog, &target_executable));
+            event::send_log_event(libc::LOG_NOTICE, format!("Detection: {} -> {} executed {} (VerifyCanExecute)", &par_prog, &src_prog, &target_executable));
             return (hook, args, do_return, return_value);
         }
         // Permit authorized execution
@@ -49,7 +49,7 @@ build_action! { VerifyCanExecute (par_prog, src_prog, hook, arg_id, args, _act_a
             return (hook, args, do_return, return_value);
         }
         // Deny by default
-        event::send_log_event(syslog::Severity::LOG_WARNING as i64, format!("Prevention: Blocked {} from executing {} (VerifyCanExecute)", &src_prog, &target_executable));
+        event::send_log_event(libc::LOG_WARNING, format!("Prevention: Blocked {} -> {} from executing {} (VerifyCanExecute)", &par_prog, &src_prog, &target_executable));
         eprintln!("WhiteBeam: {}: Permission denied", &target_executable);
         if symbol.contains("exec") && (library_basename == "libc.so.6") {
             // Terminate the child process

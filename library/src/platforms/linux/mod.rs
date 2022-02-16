@@ -228,7 +228,7 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: *const lib
     }
     if !(crate::common::db::get_prevention()) {
         // TODO: Check if file exists?
-        crate::common::event::send_log_event(syslog::Severity::LOG_NOTICE as i64, format!("Detection: {} executed {} (la_objsearch)", &src_prog, &target_library));
+        crate::common::event::send_log_event(libc::LOG_NOTICE, format!("Detection: {} -> {} executed {} (la_objsearch)", &par_prog, &src_prog, &target_library));
         return name;
     }
     // Permit authorized execution
@@ -236,7 +236,7 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: *const lib
         return name;
     }
     // Deny by default
-    crate::common::event::send_log_event(syslog::Severity::LOG_WARNING as i64, format!("Prevention: Blocked {} from executing {} (la_objsearch)", &src_prog, &target_library));
+    crate::common::event::send_log_event(libc::LOG_WARNING, format!("Prevention: Blocked {} -> {} from executing {} (la_objsearch)", &par_prog, &src_prog, &target_library));
     0 as *const libc::c_char
 }
 

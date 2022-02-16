@@ -52,7 +52,7 @@ build_action! { VerifyFileHash (par_prog, src_prog, hook, arg_id, args, _act_arg
             return (hook, args, do_return, return_value);
         }
         if !(crate::common::db::get_prevention()) {
-            crate::common::event::send_log_event(syslog::Severity::LOG_NOTICE as i64, format!("Detection: {} accessed file with invalid file hash {} (VerifyFileHash)", &src_prog, &argument_path));
+            crate::common::event::send_log_event(libc::LOG_NOTICE, format!("Detection: {} -> {} accessed file with invalid file hash {} (VerifyFileHash)", &par_prog, &src_prog, &argument_path));
             return (hook, args, do_return, return_value);
         }
         // Permit authorized execution
@@ -60,6 +60,6 @@ build_action! { VerifyFileHash (par_prog, src_prog, hook, arg_id, args, _act_arg
             return (hook, args, do_return, return_value);
         }
         // Deny by default
-        event::send_log_event(syslog::Severity::LOG_WARNING as i64, format!("Prevention: Blocked {} due to incorrect hash of {} (VerifyFileHash)", &src_prog, &argument_path));
+        event::send_log_event(libc::LOG_WARNING, format!("Prevention: Blocked {} -> {} due to incorrect hash of {} (VerifyFileHash)", &par_prog, &src_prog, &argument_path));
         fail(library_basename, symbol, &argument_path);
 }}
