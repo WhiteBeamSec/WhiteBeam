@@ -97,15 +97,17 @@ fn test(args: Vec<String>) {
         .args(&["--setting", "RecoverySecret", "test"])
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
-    // Enable prevention
+    // Enable prevention (TODO: Make configurable by tests?)
+    /*
     let _exit_status_prevention = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
         .args(&["--setting", "Prevention", "true"])
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
+    */
     // Run tests
     let _exit_status_tests = Command::new("cargo")
         .arg("+nightly-2022-01-01").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test")
-        .arg("--test").arg("test_*").arg("--").arg("--show-output")
+        .arg("--no-fail-fast").arg("--test").arg("test_*")//.arg("--").arg("--show-output")
         // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
         .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
         .status()
