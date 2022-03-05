@@ -1,5 +1,4 @@
 whitebeam_test!("linux", interposition_execve {
-    // TODO: This fails currently
     unsafe {
         let execve_symbol = libc::dlsym(libc::RTLD_DEFAULT, "execve\0".as_ptr() as *const libc::c_char);
         assert_ne!(execve_symbol, libc::execve as *mut libc::c_void);
