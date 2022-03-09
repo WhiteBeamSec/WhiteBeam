@@ -44,8 +44,6 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
     unsafe extern "C" fn init_rtld_audit_interface(argc: libc::c_int, argv: *const *const libc::c_char, envp: *const *const libc::c_char) {
         let mut update_ld_audit: bool = false;
         let mut update_ld_bind_not: bool = false;
-        let mut wb_parent_present: bool = false;
-        let mut wb_prog_present: bool = false;
         let rtld_audit_lib_path = get_rtld_audit_lib_path();
         // la_symbind*() doesn't get called when LD_BIND_NOW is set
         // More info: https://sourceware.org/bugzilla/show_bug.cgi?id=23734
@@ -99,21 +97,27 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                 OsString::from("LD_BIND_NOT=1")
             }
         };
-        // This variable is protected by WhiteBeam's Essential hooks/rules
-        // NB: There are cases where WB_PARENT is undefined, such as pid 1
-        let parent_path: OsString = if let Some(val) = env::var_os("WB_PARENT") {
-            wb_parent_present = true;
-            let mut par_prog_lock = crate::common::hook::PAR_PROG.lock().expect("WhiteBeam: Failed to lock mutex");
-            par_prog_lock.clear();
-            par_prog_lock.push(&val);
-            val
-        } else {
-            OsString::new()
-        };
+        if !(update_ld_audit) && !(update_ld_bind_not) {
+            // Nothing to do, continue execution
+            return;
+        }
+        // TODO: Log null reference, process errors
+        let mut env_vec: Vec<*const libc::c_char> = Vec::new();
+        let mut new_ld_audit_cstring: CString = CString::new("").expect("WhiteBeam: Unexpected null reference");
+        let mut new_ld_bind_not_cstring: CString = CString::new("").expect("WhiteBeam: Unexpected null reference");
+        if update_ld_audit {
+            // TODO: Log null reference, process errors
+            new_ld_audit_cstring = convert::osstr_to_cstring(&new_ld_audit_var).expect("WhiteBeam: Unexpected null reference");
+            env_vec.push(new_ld_audit_cstring.as_ptr());
+        }
+        if update_ld_bind_not {
+            // TODO: Log null reference, process errors
+            new_ld_bind_not_cstring = convert::osstr_to_cstring(&new_ld_bind_not_var).expect("WhiteBeam: Unexpected null reference");
+            env_vec.push(new_ld_bind_not_cstring.as_ptr());
+        }
         // This variable is protected by WhiteBeam's Essential hooks/rules
         let program_path: OsString = match env::var_os("WB_PROG") {
             Some(val) => {
-                wb_prog_present = true;
                 let mut cur_prog_lock = crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex");
                 cur_prog_lock.clear();
                 cur_prog_lock.push(&val);
@@ -131,40 +135,6 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                 }
             }
         };
-        // Populate cache
-        db::populate_cache().expect("WhiteBeam: Could not access database");
-        if !(update_ld_audit) && !(update_ld_bind_not) {
-            // Nothing to do, continue execution
-            if wb_parent_present {
-                env::remove_var("WB_PARENT");
-            }
-            if wb_prog_present {
-                env::remove_var("WB_PROG");
-            }
-            return;
-        }
-        // TODO: Log null reference, process errors
-        let mut env_vec: Vec<*const libc::c_char> = Vec::new();
-        let mut new_ld_audit_cstring: CString = CString::new("").expect("WhiteBeam: Unexpected null reference");
-        let mut new_ld_bind_not_cstring: CString = CString::new("").expect("WhiteBeam: Unexpected null reference");
-        if update_ld_audit {
-            // TODO: Log null reference, process errors
-            new_ld_audit_cstring = convert::osstr_to_cstring(&new_ld_audit_var).expect("WhiteBeam: Unexpected null reference");
-            env_vec.push(new_ld_audit_cstring.as_ptr());
-        }
-        if update_ld_bind_not {
-            // TODO: Log null reference, process errors
-            new_ld_bind_not_cstring = convert::osstr_to_cstring(&new_ld_bind_not_var).expect("WhiteBeam: Unexpected null reference");
-            env_vec.push(new_ld_bind_not_cstring.as_ptr());
-        }
-        let mut parent_path_env: OsString = OsString::from("WB_PARENT=");
-        parent_path_env.push(&parent_path);
-        let parent_path_env_cstring = convert::osstr_to_cstring(&parent_path_env).expect("WhiteBeam: Unexpected null reference");
-        env_vec.push(parent_path_env_cstring.as_ptr());
-        let mut program_path_env: OsString = OsString::from("WB_PROG=");
-        program_path_env.push(&program_path);
-        let program_path_env_cstring = convert::osstr_to_cstring(&program_path_env).expect("WhiteBeam: Unexpected null reference");
-        env_vec.push(program_path_env_cstring.as_ptr());
         let program_path_cstring = convert::osstr_to_cstring(&program_path).expect("WhiteBeam: Unexpected null reference");
         if !(envp.is_null()) {
             let mut envp_iter = envp;
@@ -172,7 +142,7 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                 if let Some(key_value) = convert::parse_env_single(CStr::from_ptr(*envp_iter).to_bytes()) {
                     if  (!(update_ld_audit) && (key_value.0 == "LD_AUDIT"))
                      || (!(update_ld_bind_not) && (key_value.0 == "LD_BIND_NOT"))
-                     || ((key_value.0 != "LD_AUDIT") && (key_value.0 != "LD_BIND_NOT") && (key_value.0 != "WB_PARENT") && (key_value.0 != "WB_PROG")) {
+                     || ((key_value.0 != "LD_AUDIT") && (key_value.0 != "LD_BIND_NOT")) {
                         env_vec.push(*envp_iter);
                     }
                 }
@@ -194,6 +164,20 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
 // la_version
 #[no_mangle]
 unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
+    // This variable is protected by WhiteBeam's Essential hooks/rules
+    // NB: There are cases where WB_PARENT is undefined, such as pid 1
+    if let Some(val) = env::var_os("WB_PARENT") {
+        let mut par_prog_lock = crate::common::hook::PAR_PROG.lock().expect("WhiteBeam: Failed to lock mutex");
+        par_prog_lock.clear();
+        par_prog_lock.push(&val);
+        env::remove_var("WB_PARENT");
+    }
+    // This variable is protected by WhiteBeam's Essential hooks/rules
+    if env::var_os("WB_PROG").is_some() {
+        env::remove_var("WB_PROG");
+    }
+    // Populate cache
+    db::populate_cache().expect("WhiteBeam: Could not access database");
     version
 }
 

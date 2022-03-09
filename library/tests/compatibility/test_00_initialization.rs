@@ -29,12 +29,16 @@ whitebeam_test!("linux", initialization_02_env_sanity {
     assert!(shell_value.stdout.iter().eq(b"/bin/bash\n"));
 });
 
+/*
 whitebeam_test!("linux", initialization_03_wb_parent {
+    // TODO: This won't work because WhiteBeam removes the WB_PARENT environment variable upon initialization
     let wb_parent_value = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/printenv WB_PARENT").output().expect("printenv command failed to start");
     assert!(wb_parent_value.stdout.iter().eq(b"/bin/bash\n"));
 });
 
 whitebeam_test!("linux", initialization_04_wb_prog {
+    // TODO: This won't work because WhiteBeam removes the WB_PROG environment variable upon initialization
     let wb_prog_value = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/printenv WB_PROG").output().expect("printenv command failed to start");
     assert!(wb_prog_value.stdout.iter().eq(b"/usr/bin/printenv\n"));
 });
+*/
