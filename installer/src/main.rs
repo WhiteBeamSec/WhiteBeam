@@ -53,7 +53,7 @@ fn build(args: Vec<String>) {
         },
         "library" => {
             println!("Building library");
-            cargo_command.args(&["+nightly-2022-01-01", "build", "--package", "libwhitebeam", "--lib", "--release"]);
+            cargo_command.args(&["+nightly-2022-03-01", "build", "--package", "libwhitebeam", "--lib", "--release"]);
             lib_target_path
         },
         "binary-test" => {
@@ -64,7 +64,7 @@ fn build(args: Vec<String>) {
         },
         "library-test" => {
             println!("Building test library");
-            cargo_command.args(&["+nightly-2022-01-01", "build", "--package", "libwhitebeam", "--lib", "--release",
+            cargo_command.args(&["+nightly-2022-03-01", "build", "--package", "libwhitebeam", "--lib", "--release",
                                  "--features", "whitelist_test"]);
             lib_target_path
         },
@@ -106,7 +106,7 @@ fn test(args: Vec<String>) {
     */
     // Run tests
     let _exit_status_tests = Command::new("cargo")
-        .arg("+nightly-2022-01-01").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test")
+        .arg("+nightly-2022-03-01").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test")
         .arg("--no-fail-fast").arg("--test").arg("test_*").arg("--").arg("--test-threads").arg("1")//.arg("--show-output")
         // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
         .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
