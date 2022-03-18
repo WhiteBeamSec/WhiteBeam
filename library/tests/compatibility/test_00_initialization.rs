@@ -25,20 +25,18 @@ whitebeam_test!("linux", initialization_01_ld_bind_not {
 });
 
 whitebeam_test!("linux", initialization_02_env_sanity {
-    let shell_value = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/printenv SHELL").output().expect("printenv command failed to start");
+    let shell_value = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/printenv SHELL").output().expect("bash command failed to start");
     assert!(shell_value.stdout.iter().eq(b"/bin/bash\n"));
 });
 
-/*
 whitebeam_test!("linux", initialization_03_wb_parent {
-    // TODO: This won't work because WhiteBeam removes the WB_PARENT environment variable upon initialization
-    let wb_parent_value = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/printenv WB_PARENT").output().expect("printenv command failed to start");
-    assert!(wb_parent_value.stdout.iter().eq(b"/bin/bash\n"));
+    // /proc/self/environ preserves environment variables after they are unset at runtime
+    let status = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/grep -Pa 'WB_PARENT=/bin/bash\\0' /proc/self/environ").status().expect("bash command failed to start");
+    assert!(status.success());
 });
-*/
 
 whitebeam_test!("linux", initialization_04_wb_prog {
     // /proc/self/environ preserves environment variables after they are unset at runtime
-    let status = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/grep -Pa 'WB_PROG=/usr/bin/grep\\0' /proc/self/environ").status().expect("grep command failed to start");
+    let status = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/grep -Pa 'WB_PROG=/usr/bin/grep\\0' /proc/self/environ").status().expect("bash command failed to start");
     assert!(status.success());
 });

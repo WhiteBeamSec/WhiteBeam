@@ -15,6 +15,7 @@ build_action! { FilterEnvironment (_par_prog, src_prog, hook, arg_id, args, _act
         let symbol: &str = &hook.symbol;
         let envp_index: usize = {
             // Non-positional functions
+            // TODO: Pass in positional boolean into actions so a function list can be avoided here
             match (library_basename, symbol) {
                 ("libc.so.6", "execl") |
                 ("libc.so.6", "execlp") |
@@ -92,6 +93,10 @@ build_action! { FilterEnvironment (_par_prog, src_prog, hook, arg_id, args, _act
         let mut env_vec: Vec<*const libc::c_char> = Vec::new();
         let program_path: std::ffi::OsString = match (library_basename, symbol) {
             ("libc.so.6", "fexecve") => platform::canonicalize_fd(args[0].real as i32).expect("WhiteBeam: Lost track of environment").into_os_string(),
+            ("libc.so.6", "posix_spawn") |
+            ("libc.so.6", "posix_spawnp") => {
+                unsafe { crate::common::convert::c_char_to_osstring(args[1].real as *const libc::c_char) }
+            }
             _ => unsafe { crate::common::convert::c_char_to_osstring(args[0].real as *const libc::c_char) }
         };
         if update_ld_audit {

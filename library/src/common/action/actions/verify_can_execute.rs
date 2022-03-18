@@ -51,7 +51,7 @@ build_action! { VerifyCanExecute (par_prog, src_prog, hook, arg_id, args, _act_a
         // Deny by default
         event::send_log_event(libc::LOG_WARNING, format!("Prevention: Blocked {} -> {} from executing {} (VerifyCanExecute)", &par_prog, &src_prog, &target_executable));
         eprintln!("WhiteBeam: {}: Permission denied", &target_executable);
-        if symbol.contains("exec") && (library_basename == "libc.so.6") {
+        if (symbol.contains("exec") || symbol.contains("posix_spawn")) && (library_basename == "libc.so.6") {
             // Terminate the child process
             unsafe { libc::exit(126) };
         }

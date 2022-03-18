@@ -42,6 +42,7 @@ pub struct LinkMap {
 static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *const libc::c_char, *const *const libc::c_char) = {
     #[link_section = ".text.startup"]
     unsafe extern "C" fn init_rtld_audit_interface(argc: libc::c_int, argv: *const *const libc::c_char, envp: *const *const libc::c_char) {
+        // TODO: Is there a way to detect LD_AUDIT vs LD_PRELOAD initialization here?
         let mut update_ld_audit: bool = false;
         let mut update_ld_bind_not: bool = false;
         let rtld_audit_lib_path = get_rtld_audit_lib_path();
@@ -97,24 +98,6 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                 OsString::from("LD_BIND_NOT=1")
             }
         };
-        if !(update_ld_audit) && !(update_ld_bind_not) {
-            // Nothing to do, continue execution
-            return;
-        }
-        // TODO: Log null reference, process errors
-        let mut env_vec: Vec<*const libc::c_char> = Vec::new();
-        let mut new_ld_audit_cstring: CString = CString::new("").expect("WhiteBeam: Unexpected null reference");
-        let mut new_ld_bind_not_cstring: CString = CString::new("").expect("WhiteBeam: Unexpected null reference");
-        if update_ld_audit {
-            // TODO: Log null reference, process errors
-            new_ld_audit_cstring = convert::osstr_to_cstring(&new_ld_audit_var).expect("WhiteBeam: Unexpected null reference");
-            env_vec.push(new_ld_audit_cstring.as_ptr());
-        }
-        if update_ld_bind_not {
-            // TODO: Log null reference, process errors
-            new_ld_bind_not_cstring = convert::osstr_to_cstring(&new_ld_bind_not_var).expect("WhiteBeam: Unexpected null reference");
-            env_vec.push(new_ld_bind_not_cstring.as_ptr());
-        }
         // This variable is protected by WhiteBeam's Essential hooks/rules
         let program_path: OsString = match env::var_os("WB_PROG") {
             Some(val) => {
@@ -135,7 +118,25 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
                 }
             }
         };
+        if !(update_ld_audit) && !(update_ld_bind_not) {
+            // Nothing to do, continue execution
+            return;
+        }
+        // TODO: Log null reference, process errors
         let program_path_cstring = convert::osstr_to_cstring(&program_path).expect("WhiteBeam: Unexpected null reference");
+        let mut env_vec: Vec<*const libc::c_char> = Vec::new();
+        let mut new_ld_audit_cstring: CString = CString::new("").expect("WhiteBeam: Unexpected null reference");
+        let mut new_ld_bind_not_cstring: CString = CString::new("").expect("WhiteBeam: Unexpected null reference");
+        if update_ld_audit {
+            // TODO: Log null reference, process errors
+            new_ld_audit_cstring = convert::osstr_to_cstring(&new_ld_audit_var).expect("WhiteBeam: Unexpected null reference");
+            env_vec.push(new_ld_audit_cstring.as_ptr());
+        }
+        if update_ld_bind_not {
+            // TODO: Log null reference, process errors
+            new_ld_bind_not_cstring = convert::osstr_to_cstring(&new_ld_bind_not_var).expect("WhiteBeam: Unexpected null reference");
+            env_vec.push(new_ld_bind_not_cstring.as_ptr());
+        }
         if !(envp.is_null()) {
             let mut envp_iter = envp;
             while !(*envp_iter).is_null() {

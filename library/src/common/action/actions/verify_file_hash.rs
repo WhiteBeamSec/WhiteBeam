@@ -2,7 +2,7 @@ use std::io::prelude::*;
 
 fn fail(library_basename: &str, symbol: &str, argument_path: &str) {
     // TODO: Library path in error inconsistent with rest of application
-    if symbol.contains("exec") && (library_basename == "libc.so.6") {
+    if (symbol.contains("exec") || symbol.contains("posix_spawn")) && (library_basename == "libc.so.6") {
         // Terminate the child process
         eprintln!("WhiteBeam: {}: Permission denied", argument_path);
         unsafe { libc::exit(126) };
