@@ -19,6 +19,11 @@ use std::{collections::BTreeMap,
 const LA_FLG_BINDTO: libc::c_uint = 0x01;
 const LA_FLG_BINDFROM: libc::c_uint = 0x02;
 
+const DN_MODIFY: u32 = 0x00000002;
+const DN_MULTISHOT: u32 = 0x80000000;
+
+const F_SETSIG: libc::c_int = 10;
+
 static LIB_MAP: SyncLazy<RwLock<BTreeMap<usize, &str>>> = SyncLazy::new(|| RwLock::new(BTreeMap::new()));
 
 // LinkMap TODO: Review mut, assign libc datatypes? Upstream into Rust libc
@@ -162,6 +167,25 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
     init_rtld_audit_interface
 };
 
+fn realtime_cache_init() {
+    let mut act: libc::sigaction = unsafe { std::mem::zeroed() };
+    // Is this const? SIGRTMIN + 1?
+    let notify_signal: libc::c_int = libc::SIGRTMIN();
+
+    act.sa_sigaction = db::populate_cache as usize;
+    unsafe { libc::sigemptyset(&mut act.sa_mask) }; // Review &
+    act.sa_flags = libc::SA_SIGINFO;
+    unsafe { libc::sigaction(notify_signal, &act, std::ptr::null_mut()) }; // Can be -1 // null_mut?
+
+    let mut data_folder_path: String = get_data_file_path_string("");
+    data_folder_path.push('\0');
+    unsafe {
+        let fd: libc::c_int = libc::open(data_folder_path.as_ptr() as *const libc::c_char, libc::O_RDONLY); // Can be -1
+        libc::fcntl(fd, F_SETSIG, notify_signal); // Can be -1
+        libc::fcntl(fd, libc::F_NOTIFY, DN_MODIFY | DN_MULTISHOT); // Can be -1
+    }
+}
+
 // la_version
 #[no_mangle]
 unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
@@ -179,6 +203,8 @@ unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
     }
     // Populate cache
     db::populate_cache().expect("WhiteBeam: Could not access database");
+    // Refresh cache real-time
+    realtime_cache_init();
     version
 }
 

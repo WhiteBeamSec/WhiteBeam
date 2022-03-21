@@ -10,7 +10,8 @@ use std::{env,
           error::Error,
           path::Path,
           lazy::SyncLazy,
-          sync::Mutex};
+          sync::Mutex,
+          sync::RwLock};
 use rusqlite::{params, Connection, OpenFlags};
 
 // TODO: Hashmap/BTreemap to avoid race conditions, clean up of pthread_self() keys:
@@ -22,7 +23,7 @@ pub static ACT_ARG_CACHE: SyncLazy<Mutex<Vec<ActionArgumentRow>>> = SyncLazy::ne
 pub static RULE_CACHE: SyncLazy<Mutex<Vec<RuleRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
 // TODO: BTreemap for Settings?
 pub static SET_CACHE: SyncLazy<Mutex<Vec<SettingRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
-// TODO: Cache rotation
+pub static LAST_REFRESH: SyncLazy<RwLock<u32>> = SyncLazy::new(|| RwLock::new(0));
 
 #[derive(Clone)]
 pub struct HookRow {
@@ -202,7 +203,22 @@ pub fn get_setting_table(conn: &Connection) -> Result<Vec<SettingRow>, Box<dyn E
     Ok(result_vec)
 }
 
-pub fn populate_cache() -> Result<(), Box<dyn Error>> {
+pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
+    // Limit number of cache refreshes to 1 per second
+    let time_now: u32 = crate::common::time::get_timestamp();
+    let time_prev: u32 = match LAST_REFRESH.read() {
+        Ok(last_refresh_lock) => { *last_refresh_lock }
+        Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in populate_cache"); /* empty */ }
+    };
+    if time_now == time_prev {
+        return Err("WhiteBeam: Cache refresh rate limit exceeded".into());
+    }
+    match LAST_REFRESH.write() {
+        Ok(mut m) => {
+                *m = time_now;
+        }
+        Err(_e) => { panic!("WhiteBeam: Failed to acquire write lock in populate_cache"); }
+    }
     let conn = db_open()?;
     // Hook cache
     {
