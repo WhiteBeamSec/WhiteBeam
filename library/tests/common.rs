@@ -36,3 +36,37 @@ macro_rules! whitebeam_test {
         }
     };
 }
+
+pub fn toggle_hook(symbol: &str, enabled: bool) {
+    use std::io::Write;
+    assert!(symbol.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
+    // TODO: Cross platform
+    let bin_path: std::path::PathBuf = std::path::PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
+    assert!(bin_path.exists(), "WhiteBeam: whitebeam could not be found");
+    let sql = String::from(format!("UPDATE Hook SET enabled = {} WHERE symbol = '{}';", enabled, symbol));
+    let load_command = std::process::Command::new(bin_path)
+            .args(&["--load", "-"])
+            .env("WB_AUTH", "test")
+            .stdin(std::process::Stdio::piped())
+            .spawn().expect("Failed to execute process");
+    write!(load_command.stdin.expect("Failed to acquire handle to stdin"), "{}", sql).expect("Failed to write to stdin");
+}
+
+pub fn is_hooked(symbol: &str) -> bool {
+    let mut symbol_string = String::from(symbol);
+    symbol_string.push('\0');
+    let dlsym_symbol = unsafe { libc::dlsym(libc::RTLD_DEFAULT, symbol_string.as_ptr() as *const libc::c_char) };
+    let mut dl_info_symbol = libc::Dl_info {
+        dli_fname: core::ptr::null(),
+        dli_fbase: core::ptr::null_mut(),
+        dli_sname: core::ptr::null(),
+        dli_saddr: core::ptr::null_mut(),
+    };
+    let lib_name: *const libc::c_char = match unsafe { libc::dladdr(dlsym_symbol as *const libc::c_void, &mut dl_info_symbol as *mut libc::Dl_info) } {
+        0 => panic!("WhiteBeam: dladdr failed"),
+        _ => dl_info_symbol.dli_fname as *const libc::c_char
+    };
+    assert!(!(lib_name.is_null()));
+    let lib_name_string = String::from(unsafe { std::ffi::CStr::from_ptr(lib_name) }.to_str().expect("WhiteBeam: Unexpected null reference"));
+    return lib_name_string.contains("libwhitebeam.so");
+}
