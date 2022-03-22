@@ -44,12 +44,21 @@ pub fn toggle_hook(symbol: &str, enabled: bool) {
     let bin_path: std::path::PathBuf = std::path::PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
     assert!(bin_path.exists(), "WhiteBeam: whitebeam could not be found");
     let sql = String::from(format!("UPDATE Hook SET enabled = {} WHERE symbol = '{}';", enabled, symbol));
-    let load_command = std::process::Command::new(bin_path)
+    let mut load_command = std::process::Command::new(bin_path)
             .args(&["--load", "-"])
             .env("WB_AUTH", "test")
             .stdin(std::process::Stdio::piped())
             .spawn().expect("Failed to execute process");
-    write!(load_command.stdin.expect("Failed to acquire handle to stdin"), "{}", sql).expect("Failed to write to stdin");
+    let mut stdin = load_command.stdin.take().expect("Failed to capture stdin");
+    write!(stdin, "{}", sql).expect("Failed to write to stdin");
+    drop(stdin);
+    match load_command.try_wait() {
+        Ok(Some(_status)) => {},
+        Ok(None) => {
+            let _res = load_command.wait();
+        },
+        Err(_e) => {}
+    }
 }
 
 pub fn is_hooked(symbol: &str) -> bool {

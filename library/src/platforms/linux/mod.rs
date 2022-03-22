@@ -169,20 +169,28 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
 
 fn realtime_cache_init() {
     let mut act: libc::sigaction = unsafe { std::mem::zeroed() };
-    // Is this const? SIGRTMIN + 1?
     let notify_signal: libc::c_int = libc::SIGRTMIN();
 
     act.sa_sigaction = db::populate_cache as usize;
-    unsafe { libc::sigemptyset(&mut act.sa_mask) }; // Review &
+    unsafe { libc::sigemptyset(&mut act.sa_mask) };
     act.sa_flags = libc::SA_SIGINFO;
-    unsafe { libc::sigaction(notify_signal, &act, std::ptr::null_mut()) }; // Can be -1 // null_mut?
+    if unsafe { libc::sigaction(notify_signal, &act, std::ptr::null_mut()) } == -1 {
+        panic!("WhiteBeam: Lost track of environment");
+    };
 
     let mut data_folder_path: String = get_data_file_path_string("");
     data_folder_path.push('\0');
     unsafe {
-        let fd: libc::c_int = libc::open(data_folder_path.as_ptr() as *const libc::c_char, libc::O_RDONLY); // Can be -1
-        libc::fcntl(fd, F_SETSIG, notify_signal); // Can be -1
-        libc::fcntl(fd, libc::F_NOTIFY, DN_MODIFY | DN_MULTISHOT); // Can be -1
+        let fd: libc::c_int = libc::open(data_folder_path.as_ptr() as *const libc::c_char, libc::O_RDONLY);
+        if fd == -1 {
+            panic!("WhiteBeam: Cannot open database path");
+        };
+        if libc::fcntl(fd, F_SETSIG, notify_signal) == -1 {
+            panic!("WhiteBeam: Lost track of environment");
+        };
+        if libc::fcntl(fd, libc::F_NOTIFY, DN_MODIFY | DN_MULTISHOT) == -1 {
+            panic!("WhiteBeam: Lost track of environment");
+        };
     }
 }
 
