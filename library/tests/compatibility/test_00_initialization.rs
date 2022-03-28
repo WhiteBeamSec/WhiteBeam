@@ -31,12 +31,12 @@ whitebeam_test!("linux", initialization_02_env_sanity {
 
 whitebeam_test!("linux", initialization_03_wb_parent {
     // /proc/self/environ preserves environment variables after they are unset at runtime
-    let status = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/grep -Pa 'WB_PARENT=/bin/bash\\0' /proc/self/environ").status().expect("bash command failed to start");
+    let status = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/grep -qPa 'WB_PARENT=/bin/bash\\0' /proc/self/environ").status().expect("bash command failed to start");
     assert!(status.success());
 });
 
 whitebeam_test!("linux", initialization_04_wb_prog {
     // /proc/self/environ preserves environment variables after they are unset at runtime
-    let status = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/grep -Pa 'WB_PROG=/usr/bin/grep\\0' /proc/self/environ").status().expect("bash command failed to start");
+    let status = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/grep -qPa 'WB_PROG=/usr/bin/grep\\0' /proc/self/environ").status().expect("bash command failed to start");
     assert!(status.success());
 });
