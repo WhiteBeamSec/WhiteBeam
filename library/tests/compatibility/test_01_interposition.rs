@@ -15,16 +15,12 @@ whitebeam_test!("linux", interposition_02_toggle_hook_sanity {
 });
 
 whitebeam_test!("linux", interposition_03_enable_hook {
-    std::thread::sleep(std::time::Duration::from_millis(1000));
     crate::common::toggle_hook("execve", true);
-    std::thread::sleep(std::time::Duration::from_millis(500));
     assert!(crate::common::is_hooked("execve"));
 });
 
 whitebeam_test!("linux", interposition_04_disable_hook {
-    std::thread::sleep(std::time::Duration::from_millis(1000));
     crate::common::toggle_hook("execve", false);
-    std::thread::sleep(std::time::Duration::from_millis(500));
     let execve_hooked = crate::common::is_hooked("execve");
     crate::common::toggle_hook("execve", true);
     assert!(!(execve_hooked));

@@ -219,6 +219,18 @@ pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
         }
         Err(_e) => { panic!("WhiteBeam: Failed to acquire write lock in populate_cache"); }
     }
+    // Wait until database is ready
+    // TODO: Test exclusively locking all database transactions in application instead and using rusqlite's busy_handler
+    // TODO: What should happen if max_attempts is reached?
+    {
+        let mut attempts = 0;
+        let max_attempts = 10;
+        let journal_path: &Path = &platform::get_data_file_path("database.sqlite-journal");
+        while (journal_path.exists()) && (attempts < max_attempts) {
+            attempts += 1;
+            std::thread::sleep(std::time::Duration::from_millis(200));
+        }
+    }
     let conn = db_open()?;
     // Hook cache
     {

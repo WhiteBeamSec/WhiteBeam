@@ -40,6 +40,7 @@ macro_rules! whitebeam_test {
 pub fn toggle_hook(symbol: &str, enabled: bool) {
     use std::io::Write;
     assert!(symbol.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
+    std::thread::sleep(std::time::Duration::from_millis(1000)); // Avoid races
     // TODO: Cross platform
     let bin_path: std::path::PathBuf = std::path::PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
     assert!(bin_path.exists(), "WhiteBeam: whitebeam could not be found");
@@ -59,6 +60,7 @@ pub fn toggle_hook(symbol: &str, enabled: bool) {
         },
         Err(_e) => {}
     }
+    std::thread::sleep(std::time::Duration::from_millis(1000)); // Avoid races
 }
 
 pub fn is_hooked(symbol: &str) -> bool {
