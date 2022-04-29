@@ -57,7 +57,7 @@ Distro-specific packages have not been released yet for WhiteBeam, check again s
     * `cargo run install`
 
 ## Quick start
-1. Become root (`sudo -s`/`su root`)
+1. Become root (`sudo su`/`su root`)
 2. Set a recovery secret. You'll be able to use this with `whitebeam --auth` to make changes to the system: `whitebeam --setting RecoverySecret mask`
 
 ### How to Detect Attacks with WhiteBeam
@@ -71,11 +71,9 @@ Multiple guides are provided depending on your preference. [Contact us](mailto:i
 :information_source: WhiteBeam is <u>experimental</u> software.
 [Contact us](mailto:info@whitebeamsec.com) for assistance safely implementing it.
 
-1. Become root (`sudo -s`/`su root`)
-2. Download default whitelists for your platform:
-    * `whitebeam --load Base`
-3. Review the baseline after a minimum of 24 hours:
+1. Become root (`sudo su`/`su root`)
+2. Review the baseline at least 24 hours after installing WhiteBeam:
     * `whitebeam --baseline`
-4. Add trusted behavior to the whitelist, following the [whitelisting guide](https://github.com/WhiteBeamSec/WhiteBeam/wiki)
-5. Enable WhiteBeam prevention:
+3. Add trusted behavior to the whitelist, following the [whitelisting guide](https://github.com/WhiteBeamSec/WhiteBeam/wiki)
+4. Enable WhiteBeam prevention:
     * `whitebeam --setting Prevention true`

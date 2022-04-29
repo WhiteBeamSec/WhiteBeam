@@ -10,20 +10,13 @@ whitebeam_test!("linux", interposition_01_system {
 });
 
 // Tests live reloading of hooks
-whitebeam_test!("linux", interposition_02_toggle_hook_sanity {
-    crate::common::toggle_hook("execve", true);
-});
-
-whitebeam_test!("linux", interposition_03_enable_hook {
-    crate::common::toggle_hook("execve", true);
-    assert!(crate::common::is_hooked("execve"));
-});
-
-whitebeam_test!("linux", interposition_04_disable_hook {
-    crate::common::toggle_hook("execve", false);
-    let execve_hooked = crate::common::is_hooked("execve");
-    crate::common::toggle_hook("execve", true);
-    assert!(!(execve_hooked));
+whitebeam_test!("linux", interposition_02_toggle_hook {
+    crate::common::toggle_hook("fexecve", true);
+    assert!(crate::common::is_hooked("fexecve"));
+    crate::common::toggle_hook("fexecve", false);
+    let res = !(crate::common::is_hooked("fexecve"));
+    crate::common::toggle_hook("fexecve", true);
+    assert!(res);
 });
 
 // Tests generic hook

@@ -6,7 +6,8 @@ use crate::platforms::linux as platform;
 use crate::platforms::macos as platform;
 use crate::common::hash;
 use crate::common::time;
-use std::{env,
+use std::{collections::BTreeMap,
+          env,
           error::Error,
           path::Path,
           lazy::SyncLazy,
@@ -23,7 +24,7 @@ pub static ACT_ARG_CACHE: SyncLazy<Mutex<Vec<ActionArgumentRow>>> = SyncLazy::ne
 pub static RULE_CACHE: SyncLazy<Mutex<Vec<RuleRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
 // TODO: BTreemap for Settings?
 pub static SET_CACHE: SyncLazy<Mutex<Vec<SettingRow>>> = SyncLazy::new(|| Mutex::new(vec![]));
-pub static LAST_REFRESH: SyncLazy<RwLock<u32>> = SyncLazy::new(|| RwLock::new(0));
+pub static REFRESH_THREADS: SyncLazy<RwLock<BTreeMap<u64, u128>>> = SyncLazy::new(|| RwLock::new(BTreeMap::new()));
 
 #[derive(Clone)]
 pub struct HookRow {
@@ -204,31 +205,35 @@ pub fn get_setting_table(conn: &Connection) -> Result<Vec<SettingRow>, Box<dyn E
 }
 
 pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
-    // Limit number of cache refreshes to 1 per second
-    let time_now: u32 = crate::common::time::get_timestamp();
-    let time_prev: u32 = match LAST_REFRESH.read() {
-        Ok(last_refresh_lock) => { *last_refresh_lock }
-        Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in populate_cache"); /* empty */ }
-    };
-    if time_now == time_prev {
-        return Err("WhiteBeam: Cache refresh rate limit exceeded".into());
-    }
-    match LAST_REFRESH.write() {
-        Ok(mut m) => {
-                *m = time_now;
+    let thread_id: u64 = platform::gettid();
+    let current_time: u128 = time::get_timestamp_ns();
+    {
+        // TODO: Cleaning up stale entries may help memory usage
+        if let Ok(mut lock) = REFRESH_THREADS.write() {
+            lock.insert(thread_id, current_time);
+        } else {
+            return Err("WhiteBeam: Could not acquire thread lock".into());
         }
-        Err(_e) => { panic!("WhiteBeam: Failed to acquire write lock in populate_cache"); }
     }
     // Wait until database is ready
-    // TODO: Test exclusively locking all database transactions in application instead and using rusqlite's busy_handler
+    // TODO: Test exclusively locking all database transactions in application instead and use rusqlite's busy_handler
     // TODO: What should happen if max_attempts is reached?
     {
         let mut attempts = 0;
-        let max_attempts = 10;
+        let max_attempts = 50; // 2.5 seconds
         let journal_path: &Path = &platform::get_data_file_path("database.sqlite-journal");
         while (journal_path.exists()) && (attempts < max_attempts) {
             attempts += 1;
-            std::thread::sleep(std::time::Duration::from_millis(200));
+            // Check if a newer populate_cache routine is running
+            if let Ok(lock) = REFRESH_THREADS.read() {
+                if let Some(last_refresh) = lock.get(&thread_id) {
+                    if *last_refresh != current_time {
+                        // Another populate_cache routine is running
+                        return Ok(());
+                    }
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
         }
     }
     let conn = db_open()?;

@@ -212,7 +212,16 @@ unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
     // Populate cache
     db::populate_cache().expect("WhiteBeam: Could not access database");
     // Refresh cache real-time
-    realtime_cache_init();
+    let src_prog: String = { crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
+    #[cfg(feature = "whitelist_test")]
+    if !(src_prog.ends_with("whitebeam")) {
+        realtime_cache_init();
+    }
+    #[cfg(not(feature = "whitelist_test"))]
+    if (src_prog != "/opt/WhiteBeam/whitebeam") &&
+       (src_prog != "/usr/local/bin/whitebeam") {
+        realtime_cache_init();
+    }
     version
 }
 
@@ -425,6 +434,10 @@ pub fn get_env_path() -> OsString {
             OsString::from("/bin:/usr/bin")
         }
     }
+}
+
+pub fn gettid() -> u64 {
+    unsafe { libc::syscall(libc::SYS_gettid) as u64 }
 }
 
 pub fn search_path(program: &OsStr) -> Option<PathBuf> {

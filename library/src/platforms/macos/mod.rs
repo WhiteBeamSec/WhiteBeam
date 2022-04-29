@@ -11,3 +11,14 @@ pub fn get_data_file_path(data_file: &str) -> PathBuf {
     let data_file_path = data_path + data_file;
     PathBuf::from(data_file_path)
 }
+
+#[link(name = "pthread")]
+extern "C" {
+    fn pthread_threadid_np(thread: libc::pthread_t, thread_id: *mut libc::uint64_t) -> libc::c_int;
+}
+
+pub fn gettid() -> u64 {
+    let mut result = 0;
+    unsafe {let _ = pthread_threadid_np(0, &mut result); }
+    result
+}

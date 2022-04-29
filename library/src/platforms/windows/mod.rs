@@ -15,3 +15,9 @@ pub fn get_data_file_path(data_file: &str) -> PathBuf {
     let data_file_path = data_path + data_file;
     PathBuf::from(data_file_path)
 }
+
+pub fn gettid() -> u64 {
+    // Requires winapi crate
+    unimplemented!("WhiteBeam: Retrieving thread ID is not currently supported on Windows");
+    //unsafe { winapi::um::processthreadsapi::GetCurrentThreadId().into() }
+}
