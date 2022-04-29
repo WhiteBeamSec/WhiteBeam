@@ -239,7 +239,7 @@ pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
     let conn = db_open()?;
     // Hook cache
     {
-        let mut hook_cache_lock = HOOK_CACHE.lock()?;
+        let mut hook_cache_lock = HOOK_CACHE.try_lock()?;
         hook_cache_lock.clear();
         for row in get_hook_view(&conn)? {
             hook_cache_lock.push(row);
@@ -247,7 +247,7 @@ pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
     };
     // Argument cache
     {
-        let mut arg_cache_lock = ARG_CACHE.lock()?;
+        let mut arg_cache_lock = ARG_CACHE.try_lock()?;
         arg_cache_lock.clear();
         for row in get_argument_view(&conn)? {
             arg_cache_lock.push(row);
@@ -255,7 +255,7 @@ pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
     };
     // Whitelist cache
     {
-        let mut wl_cache_lock = WL_CACHE.lock()?;
+        let mut wl_cache_lock = WL_CACHE.try_lock()?;
         wl_cache_lock.clear();
         for row in get_whitelist_view(&conn)? {
             wl_cache_lock.push(row);
@@ -263,7 +263,7 @@ pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
     };
     // Action argument cache
     {
-        let mut act_arg_cache_lock = ACT_ARG_CACHE.lock()?;
+        let mut act_arg_cache_lock = ACT_ARG_CACHE.try_lock()?;
         act_arg_cache_lock.clear();
         for row in get_action_argument_table(&conn)? {
             act_arg_cache_lock.push(row);
@@ -271,7 +271,7 @@ pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
     };
     // Rule cache
     {
-        let mut rule_cache_lock = RULE_CACHE.lock()?;
+        let mut rule_cache_lock = RULE_CACHE.try_lock()?;
         rule_cache_lock.clear();
         for row in get_rule_view(&conn)? {
             rule_cache_lock.push(row);
@@ -279,7 +279,7 @@ pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
     };
     // Setting cache
     {
-        let mut set_cache_lock = SET_CACHE.lock()?;
+        let mut set_cache_lock = SET_CACHE.try_lock()?;
         set_cache_lock.clear();
         for row in get_setting_table(&conn)? {
             set_cache_lock.push(row);
