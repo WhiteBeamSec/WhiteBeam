@@ -9,11 +9,20 @@ use std::{env,
 
 pub fn get_data_file_path(data_file: &str, release: &str) -> PathBuf {
     let data_path: String = match release {
-        "test" => format!("{}/target/release/examples/", env!("PWD")),
+        "test" => format!("{}/target/release/examples/data/", env!("PWD")),
         _ => String::from("/opt/WhiteBeam/data/")
     };
     let data_file_path = data_path + data_file;
     PathBuf::from(data_file_path)
+}
+
+pub fn get_realtime_file_path(realtime_file: &str, release: &str) -> PathBuf {
+    let realtime_path: String = match release {
+        "test" => format!("{}/target/release/examples/realtime/", env!("PWD")),
+        _ => String::from("/opt/WhiteBeam/realtime/")
+    };
+    let realtime_file_path = realtime_path + realtime_file;
+    PathBuf::from(realtime_file_path)
 }
 
 pub fn get_current_uid() -> u32 {
@@ -122,7 +131,7 @@ pub fn run_install() {
             std::process::exit(1);
         }
     }
-    let mut installation_cmd: String = String::from("mkdir -p /opt/WhiteBeam/data/;");
+    let mut installation_cmd: String = String::from("mkdir -p /opt/WhiteBeam/data/ /opt/WhiteBeam/realtime/;");
     if PathBuf::from("./service.sh").exists() {
         // Release
         installation_cmd.push_str(concat!("cp ./service.sh /etc/init.d/whitebeam;",

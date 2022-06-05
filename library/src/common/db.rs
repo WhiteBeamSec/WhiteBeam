@@ -77,8 +77,8 @@ pub struct SettingRow {
 }
 
 pub fn db_open() -> Result<Connection, String> {
-    let db_path: &Path = &platform::get_data_file_path("database.sqlite");
-    // TODO: Fix segmentation fault
+    let db_path: &Path = &platform::get_realtime_file_path("database.sqlite");
+    // TODO: Rust project should have fixed this segmentation fault, test
     //let no_db: bool = !db_path.exists();
     //if no_db {
     //    return Err("No database file found".to_string());
@@ -213,27 +213,6 @@ pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
             lock.insert(thread_id, current_time);
         } else {
             return Err("WhiteBeam: Could not acquire thread lock".into());
-        }
-    }
-    // Wait until database is ready
-    // TODO: Test exclusively locking all database transactions in application instead and use rusqlite's busy_handler
-    // TODO: What should happen if max_attempts is reached?
-    {
-        let mut attempts = 0;
-        let max_attempts = 50; // 2.5 seconds
-        let journal_path: &Path = &platform::get_data_file_path("database.sqlite-journal");
-        while (journal_path.exists()) && (attempts < max_attempts) {
-            attempts += 1;
-            // Check if a newer populate_cache routine is running
-            if let Ok(lock) = REFRESH_THREADS.read() {
-                if let Some(last_refresh) = lock.get(&thread_id) {
-                    if *last_refresh != current_time {
-                        // Another populate_cache routine is running
-                        return Ok(());
-                    }
-                }
-            }
-            std::thread::sleep(std::time::Duration::from_millis(50));
         }
     }
     let conn = db_open()?;

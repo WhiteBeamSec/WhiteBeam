@@ -177,6 +177,7 @@ pub fn get_seen_nonce(conn: &Connection, nonce: &str) -> Result<bool, Box<dyn Er
     Ok(count > 0)
 }
 
+// TODO: Dead code?
 pub fn insert_setting(conn: &Connection, param: &str, value: &str) -> Result<usize, rusqlite::Error> {
     conn.execute("INSERT INTO Setting (param, value) VALUES (?1, ?2)", params![param, value])
 }
@@ -210,4 +211,17 @@ pub fn db_open(force: bool) -> Result<Connection, String> {
             return Err("Could not open database file".to_string());
         }
     }
+}
+
+pub fn db_update_realtime() -> Result<(), Box<dyn Error>> {
+    let db_path: &Path = &platform::get_data_file_path("database.sqlite");
+    let realtime_path: &Path = &platform::get_realtime_file_path("database.sqlite");
+    let no_db: bool = !db_path.exists();
+    if no_db {
+        return Err("No database file found".into());
+    }
+    let db_path_realtime_temp: &Path = &platform::get_data_file_path("database.sqlite.tmp");
+    std::fs::copy(db_path, db_path_realtime_temp)?;
+    std::fs::rename(db_path_realtime_temp, realtime_path)?;
+    Ok(())
 }

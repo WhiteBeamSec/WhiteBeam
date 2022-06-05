@@ -19,7 +19,7 @@ use std::{collections::BTreeMap,
 const LA_FLG_BINDTO: libc::c_uint = 0x01;
 const LA_FLG_BINDFROM: libc::c_uint = 0x02;
 
-const DN_MODIFY: u32 = 0x00000002;
+const DN_CREATE: u32 = 0x00000004;
 const DN_MULTISHOT: u32 = 0x80000000;
 
 const F_SETSIG: libc::c_int = 10;
@@ -178,17 +178,17 @@ fn realtime_cache_init() {
         panic!("WhiteBeam: Lost track of environment");
     };
 
-    let mut data_folder_path: String = get_data_file_path_string("");
-    data_folder_path.push('\0');
+    let mut realtime_folder_path: String = get_realtime_file_path_string("");
+    realtime_folder_path.push('\0');
     unsafe {
-        let fd: libc::c_int = libc::open(data_folder_path.as_ptr() as *const libc::c_char, libc::O_RDONLY);
+        let fd: libc::c_int = libc::open(realtime_folder_path.as_ptr() as *const libc::c_char, libc::O_RDONLY);
         if fd == -1 {
-            panic!("WhiteBeam: Cannot open database path");
+            panic!("WhiteBeam: Cannot open realtime database path");
         };
         if libc::fcntl(fd, F_SETSIG, notify_signal) == -1 {
             panic!("WhiteBeam: Lost track of environment");
         };
-        if libc::fcntl(fd, libc::F_NOTIFY, DN_MODIFY | DN_MULTISHOT) == -1 {
+        if libc::fcntl(fd, libc::F_NOTIFY, DN_CREATE | DN_MULTISHOT) == -1 {
             panic!("WhiteBeam: Lost track of environment");
         };
     }
@@ -383,7 +383,7 @@ pub unsafe fn resolve_symbol(_library: &str, symbol: &str) -> *const u8 {
 
 pub fn get_data_file_path_string(data_file: &str) -> String {
     #[cfg(feature = "whitelist_test")]
-    let data_path: String = format!("{}/target/release/examples/", env!("PWD"));
+    let data_path: String = format!("{}/target/release/examples/data/", env!("PWD"));
     #[cfg(not(feature = "whitelist_test"))]
     let data_path: String = String::from("/opt/WhiteBeam/data/");
     let data_file_path = data_path + data_file;
@@ -392,6 +392,19 @@ pub fn get_data_file_path_string(data_file: &str) -> String {
 
 pub fn get_data_file_path(data_file: &str) -> PathBuf {
     PathBuf::from(get_data_file_path_string(data_file))
+}
+
+pub fn get_realtime_file_path_string(realtime_file: &str) -> String {
+    #[cfg(feature = "whitelist_test")]
+    let realtime_path: String = format!("{}/target/release/examples/realtime/", env!("PWD"));
+    #[cfg(not(feature = "whitelist_test"))]
+    let realtime_path: String = String::from("/opt/WhiteBeam/realtime/");
+    let realtime_file_path = realtime_path + realtime_file;
+    realtime_file_path
+}
+
+pub fn get_realtime_file_path(realtime_file: &str) -> PathBuf {
+    PathBuf::from(get_realtime_file_path_string(realtime_file))
 }
 
 pub fn get_rtld_audit_lib_path() -> PathBuf {

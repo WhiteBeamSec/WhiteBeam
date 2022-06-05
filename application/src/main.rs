@@ -97,6 +97,7 @@ fn run_add(class: &OsStr, parent: Option<&OsStr>, path: &OsStr, value: Option<&O
     for entry in added_whitelist_entries.iter() {
         let _res = common::db::insert_whitelist(&conn, &(entry.0), &(entry.1), &(entry.2), &(entry.3));
     }
+    common::db::db_update_realtime()?;
     Ok(())
 }
 
@@ -177,6 +178,7 @@ fn run_disable(class: &OsStr) -> Result<(), Box<dyn Error>> {
     let class_str = class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
     println!("WhiteBeam: Disabling hooks in '{}' class", class_str);
     let _res = common::db::update_hook_class_enabled(&conn, class_str, false);
+    common::db::db_update_realtime()?;
     Ok(())
 }
 
@@ -187,6 +189,7 @@ fn run_enable(class: &OsStr) -> Result<(), Box<dyn Error>> {
     let class_str = class.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
     println!("WhiteBeam: Enabling hooks in '{}' class", class_str);
     let _res = common::db::update_hook_class_enabled(&conn, class_str, true);
+    common::db::db_update_realtime()?;
     Ok(())
 }
 
@@ -317,12 +320,14 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
         let mut buffer = String::new();
         std::io::stdin().read_to_string(&mut buffer)?;
         conn.execute_batch(&buffer)?;
+        common::db::db_update_realtime()?;
         return Ok(());
     }
     // Try reading a file
     if let Ok(buffer) = std::fs::read_to_string(&path) {
         println!("WhiteBeam: Loading SQL from local file '{}'", path_str);
         conn.execute_batch(&buffer)?;
+        common::db::db_update_realtime()?;
         return Ok(());
     }
     // Try loading from repository
@@ -352,6 +357,7 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
             println!("WhiteBeam: Loading '{}' ({}) from repository", path_str, &base_version);
             let buffer = response_base.text()?;
             conn.execute_batch(&buffer)?;
+            common::db::db_update_realtime()?;
             return Ok(());
         }
         return Err(format!("WhiteBeam: Base whitelist unavailable for {}", platform::pretty_os_version()?).into());
@@ -361,6 +367,7 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
         println!("WhiteBeam: Loading '{}' from repository", path_str);
         let buffer = response_common.text()?;
         conn.execute_batch(&buffer)?;
+        common::db::db_update_realtime()?;
         return Ok(());
     }
     let response_platform = client.get(&url_platform).send()?;
@@ -368,6 +375,7 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
         println!("WhiteBeam: Loading '{}' from repository", path_str);
         let buffer = response_platform.text()?;
         conn.execute_batch(&buffer)?;
+        common::db::db_update_realtime()?;
         return Ok(())
     }
     let response_app = client.get(&url_app).send()?;
@@ -375,6 +383,7 @@ fn run_load(path: &OsStr) -> Result<(), Box<dyn Error>> {
         println!("WhiteBeam: Loading '{}' from repository", path_str);
         let buffer = response_app.text()?;
         conn.execute_batch(&buffer)?;
+        common::db::db_update_realtime()?;
         return Ok(())
     } else {
         return Err("WhiteBeam: Failed to load SQL from all available sources".into());
@@ -386,6 +395,7 @@ fn run_remove(id: u32) -> Result<(), Box<dyn Error>> {
     if !valid_auth()? { return Err("WhiteBeam: Authorization failed".into()); }
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     let _res = common::db::delete_whitelist(&conn, id);
+    common::db::db_update_realtime()?;
     Ok(())
 }
 
@@ -426,6 +436,7 @@ fn run_setting(param: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error
         val = hash;
     }
     let _res = common::db::update_setting(&conn, param_str, &val);
+    common::db::db_update_realtime()?;
     Ok(())
 }
 

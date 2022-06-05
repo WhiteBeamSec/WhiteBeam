@@ -179,6 +179,7 @@ pub fn process_request(crypto_box_object: CryptoBox) -> Result<Message, Box<dyn 
     if db::get_seen_nonce(&conn, &crypto_box_object.nonce)? {
         return Err("Invalid message".into());
     }
+    // TODO: Add nonce to database?
     let plaintext: String = String::from(
         std::str::from_utf8(
             &decrypt_server_ciphertext(
