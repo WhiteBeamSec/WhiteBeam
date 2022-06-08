@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 pub fn get_data_file_path(data_file: &str, release: &str) -> PathBuf {
     let data_path: String = match release {
-        "test" => format!("{}/target/release/examples/data/", env!("PWD")),
+        "test" => format!("{}/target/aarch64-unknown-linux-gnu/debug/examples/data/", env!("PWD")),
         _ => String::from("/Applications/WhiteBeam/data/")
     };
     let data_file_path = data_path + data_file;
@@ -13,7 +13,7 @@ pub fn get_data_file_path(data_file: &str, release: &str) -> PathBuf {
 
 pub fn get_realtime_file_path(realtime_file: &str, release: &str) -> PathBuf {
     let realtime_path: String = match release {
-        "test" => format!("{}/target/release/examples/realtime/", env!("PWD")),
+        "test" => format!("{}/target/aarch64-unknown-linux-gnu/debug/examples/realtime/", env!("PWD")),
         _ => String::from("/Applications/WhiteBeam/realtime/")
     };
     let realtime_file_path = realtime_path + realtime_file;

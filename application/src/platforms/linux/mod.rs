@@ -35,7 +35,7 @@ pub fn stop_service() {
 
 pub fn get_data_file_path(data_file: &str) -> PathBuf {
     #[cfg(feature = "whitelist_test")]
-    let data_path: String = format!("{}/target/release/examples/data/", env!("PWD"));
+    let data_path: String = format!("{}/target/aarch64-unknown-linux-gnu/debug/examples/data/", env!("PWD"));
     #[cfg(not(feature = "whitelist_test"))]
     let data_path: String = String::from("/opt/WhiteBeam/data/");
     let data_file_path = data_path + data_file;
@@ -44,7 +44,7 @@ pub fn get_data_file_path(data_file: &str) -> PathBuf {
 
 pub fn get_realtime_file_path(realtime_file: &str) -> PathBuf {
     #[cfg(feature = "whitelist_test")]
-    let realtime_path: String = format!("{}/target/release/examples/realtime/", env!("PWD"));
+    let realtime_path: String = format!("{}/target/aarch64-unknown-linux-gnu/debug/examples/realtime/", env!("PWD"));
     #[cfg(not(feature = "whitelist_test"))]
     let realtime_path: String = String::from("/opt/WhiteBeam/realtime/");
     let realtime_file_path = realtime_path + realtime_file;

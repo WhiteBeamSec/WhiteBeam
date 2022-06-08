@@ -1,6 +1,6 @@
 pub fn load_whitebeam(test: &str) -> bool {
     // TODO: Cross platform
-    let lib_path: std::path::PathBuf = std::path::PathBuf::from(format!("{}/target/release/libwhitebeam.so", env!("PWD")));
+    let lib_path: std::path::PathBuf = std::path::PathBuf::from(format!("{}/target/aarch64-unknown-linux-gnu/debug/libwhitebeam.so", env!("PWD")));
     assert!(lib_path.exists(), "WhiteBeam: libwhitebeam.so could not be found");
     let ld_audit: Option<std::ffi::OsString> = std::env::var_os("LD_AUDIT");
     // TODO: Check zeroth index of colon separated variable instead of checking if LD_AUDIT equals the library path
@@ -10,9 +10,9 @@ pub fn load_whitebeam(test: &str) -> bool {
         let test_path = unsafe { std::ffi::CStr::from_ptr(libc::getauxval(libc::AT_EXECFN) as *const u8)};
         let test_path_str = test_path.to_str().expect("Failed to convert test path to &str");
         let exit_status_test = std::process::Command::new(test_path_str)
-            .args(&["--test", test])
+            .args(&["--nocapture", "--test", test])
             // TODO: Gate behind verbose flag
-            .stdout(std::process::Stdio::null())
+            //.stdout(std::process::Stdio::null())
             // Set LD_PRELOAD to test initialization of LD_AUDIT (/etc/ld.so.preload behavior)
             .env("LD_PRELOAD", lib_path.as_os_str())
             .status().expect("Failed to execute process");
@@ -41,7 +41,7 @@ pub fn toggle_hook(symbol: &str, enabled: bool) {
     use std::io::Write;
     assert!(symbol.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
     // TODO: Cross platform
-    let bin_path: std::path::PathBuf = std::path::PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
+    let bin_path: std::path::PathBuf = std::path::PathBuf::from(format!("{}/target/aarch64-unknown-linux-gnu/debug/whitebeam", env!("PWD")));
     assert!(bin_path.exists(), "WhiteBeam: whitebeam could not be found");
     let sql = String::from(format!("UPDATE Hook SET enabled = {} WHERE symbol = '{}';", enabled, symbol));
     let mut load_command = std::process::Command::new(bin_path)

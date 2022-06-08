@@ -41,30 +41,31 @@ fn build(args: Vec<String>) {
     }
     // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
     let mut cargo_command = Command::new("cargo");
-    cargo_command.env("RUSTFLAGS", "-C link-arg=-s");
-    let lib_target_path: PathBuf = PathBuf::from(format!("{}/target/release/libwhitebeam.so", env!("PWD")));
-    let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
+    cargo_command.env("RUSTFLAGS", "-Zsanitizer=thread");
+    cargo_command.env("RUSTDOCFLAGS", "-Zsanitizer=thread");
+    let lib_target_path: PathBuf = PathBuf::from(format!("{}/target/aarch64-unknown-linux-gnu/debug/libwhitebeam.so", env!("PWD")));
+    let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/aarch64-unknown-linux-gnu/debug/whitebeam", env!("PWD")));
     let subcommand: &str = &(&args[2].to_lowercase());
     let current_target_path = match subcommand {
         "binary" => {
             println!("Building binary");
-            cargo_command.args(&["+stable", "build", "--package", "whitebeam", "--bin", "whitebeam", "--release"]);
+            cargo_command.args(&["+nightly-2022-03-01", "build", "-Zbuild-std", "--target", "aarch64-unknown-linux-gnu", "--package", "whitebeam", "--bin", "whitebeam"]);
             bin_target_path
         },
         "library" => {
             println!("Building library");
-            cargo_command.args(&["+nightly-2022-03-01", "build", "--package", "libwhitebeam", "--lib", "--release"]);
+            cargo_command.args(&["+nightly-2022-03-01", "build", "-Zbuild-std", "--target", "aarch64-unknown-linux-gnu", "--package", "libwhitebeam", "--lib"]);
             lib_target_path
         },
         "binary-test" => {
             println!("Building test binary");
-            cargo_command.args(&["+stable", "build", "--package", "whitebeam", "--bin", "whitebeam", "--release",
+            cargo_command.args(&["+nightly-2022-03-01", "build", "-Zbuild-std", "--target", "aarch64-unknown-linux-gnu", "--package", "whitebeam", "--bin", "whitebeam",
                                  "--features", "whitelist_test"]);
             bin_target_path
         },
         "library-test" => {
             println!("Building test library");
-            cargo_command.args(&["+nightly-2022-03-01", "build", "--package", "libwhitebeam", "--lib", "--release",
+            cargo_command.args(&["+nightly-2022-03-01", "build", "-Zbuild-std", "--target", "aarch64-unknown-linux-gnu", "--package", "libwhitebeam", "--lib",
                                  "--features", "whitelist_test"]);
             lib_target_path
         },
@@ -93,13 +94,13 @@ fn test(args: Vec<String>) {
     // Load platform-specific test data through whitebeam command
     common::db::db_load("Test").expect("WhiteBeam: Failed to load test data");
     // Set a test recovery secret
-    let _exit_status_secret = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+    let _exit_status_secret = Command::new(format!("{}/target/aarch64-unknown-linux-gnu/debug/whitebeam", env!("PWD")))
         .args(&["--setting", "RecoverySecret", "test"])
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
     // Enable prevention (TODO: Make configurable by tests?)
     /*
-    let _exit_status_prevention = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+    let _exit_status_prevention = Command::new(format!("{}/target/aarch64-unknown-linux-gnu/debug/whitebeam", env!("PWD")))
         .args(&["--setting", "Prevention", "true"])
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
@@ -107,25 +108,26 @@ fn test(args: Vec<String>) {
     // Run tests
     let _exit_status_tests = Command::new("cargo")
         .arg("+nightly-2022-03-01").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test")
-        .arg("--no-fail-fast").arg("--test").arg("test_*").arg("--").arg("--test-threads").arg("1")//.arg("--show-output")
+        .arg("--no-fail-fast").arg("-Zbuild-std").arg("--target").arg("aarch64-unknown-linux-gnu").arg("--test").arg("test_*").arg("--").arg("--test-threads").arg("1").arg("--show-output")
         // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
-        .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
+        .env("RUSTFLAGS", "-Z plt=yes -Zsanitizer=thread")
+        .env("RUSTDOCFLAGS", "-Zsanitizer=thread")
         .status()
         .expect("WhiteBeam: Failed to execute cargo command");
     // Disable prevention
-    let _exit_status_disable = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+    let _exit_status_disable = Command::new(format!("{}/target/aarch64-unknown-linux-gnu/debug/whitebeam", env!("PWD")))
         .args(&["--setting", "Prevention", "false"])
         .env("WB_AUTH", "test")
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
     // Reset recovery secret
-    let _exit_status_reset = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+    let _exit_status_reset = Command::new(format!("{}/target/aarch64-unknown-linux-gnu/debug/whitebeam", env!("PWD")))
         .args(&["--setting", "RecoverySecret", "undefined"])
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
     // TODO: Test actions
     // TODO: Make sure SQL schema/defaults exist
-    // TODO: Test binary (e.g. ./target/release/whitebeam || true)
+    // TODO: Test binary (e.g. ./target/aarch64-unknown-linux-gnu/debug/whitebeam || true)
     // TODO: Benches
 }
 
@@ -141,7 +143,7 @@ fn package(_args: Vec<String>) {
     #[cfg(target_os = "windows")]
     let package_path = format!(".\\target\\release\\{}.zip", package_name);
     #[cfg(not(target_os = "windows"))]
-    let package_path = format!("./target/release/{}.tar.gz", package_name);
+    let package_path = format!("./target/aarch64-unknown-linux-gnu/debug/{}.tar.gz", package_name);
     match fs::metadata(&package_path) {
         Ok(meta) => println!("WhiteBeam: Completed ({}). Size: {}", package_path, pretty_bytes(meta.len() as f64)),
         Err(_e) => eprintln!("WhiteBeam: Failed to stat {}", package_path)

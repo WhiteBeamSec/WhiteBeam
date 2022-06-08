@@ -11,7 +11,7 @@ pub fn osstr_split_at_byte(osstr_input: &std::ffi::OsStr, byte: u8) -> (&OsStr, 
 }
 
 whitebeam_test!("linux", initialization_00_ld_audit {
-    let rtld_audit_lib_path = std::path::PathBuf::from(format!("{}/target/release/libwhitebeam.so", env!("PWD")));
+    let rtld_audit_lib_path = std::path::PathBuf::from(format!("{}/target/aarch64-unknown-linux-gnu/debug/libwhitebeam.so", env!("PWD")));
     let ld_audit: Option<std::ffi::OsString> = std::env::var_os("LD_AUDIT");
     assert!(ld_audit.is_some());
     assert!(osstr_split_at_byte(&ld_audit.expect("WhiteBeam: Unexpected null reference"), b':').0 == rtld_audit_lib_path)

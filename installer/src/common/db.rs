@@ -13,7 +13,7 @@ use std::{error::Error,
 fn db_init() -> Result<(), Box<dyn Error>> {
     db_load("Schema")?;
     db_load("Default")?;
-    let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
+    let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/aarch64-unknown-linux-gnu/debug/whitebeam", env!("PWD")));
     let mut child = Command::new(bin_target_path).args(&["--setting", "SystemArchitecture", std::env::consts::ARCH]).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
     // TODO: _output, debugging information follows:
     let output = child.wait_with_output()?;
@@ -53,7 +53,7 @@ pub fn db_optionally_init(release: &str) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn db_load(sql_path: &str) -> std::io::Result<()> {
-    let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
+    let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/aarch64-unknown-linux-gnu/debug/whitebeam", env!("PWD")));
     let mut child = Command::new(bin_target_path).args(&["--load", sql_path]).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
     // TODO: _output, debugging information follows:
     let output = child.wait_with_output()?;

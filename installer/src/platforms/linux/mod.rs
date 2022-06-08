@@ -9,7 +9,7 @@ use std::{env,
 
 pub fn get_data_file_path(data_file: &str, release: &str) -> PathBuf {
     let data_path: String = match release {
-        "test" => format!("{}/target/release/examples/data/", env!("PWD")),
+        "test" => format!("{}/target/aarch64-unknown-linux-gnu/debug/examples/data/", env!("PWD")),
         _ => String::from("/opt/WhiteBeam/data/")
     };
     let data_file_path = data_path + data_file;
@@ -18,7 +18,7 @@ pub fn get_data_file_path(data_file: &str, release: &str) -> PathBuf {
 
 pub fn get_realtime_file_path(realtime_file: &str, release: &str) -> PathBuf {
     let realtime_path: String = match release {
-        "test" => format!("{}/target/release/examples/realtime/", env!("PWD")),
+        "test" => format!("{}/target/aarch64-unknown-linux-gnu/debug/examples/realtime/", env!("PWD")),
         _ => String::from("/opt/WhiteBeam/realtime/")
     };
     let realtime_file_path = realtime_path + realtime_file;
@@ -140,8 +140,8 @@ pub fn run_install() {
     } else if PathBuf::from("./installer/src/platforms/linux/resources/service.sh").exists() {
         // Source
         installation_cmd.push_str(concat!("cp ./installer/src/platforms/linux/resources/service.sh /etc/init.d/whitebeam;",
-                                          "cp ./target/release/libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so;",
-                                          "cp ./target/release/whitebeam /opt/WhiteBeam/whitebeam;"));
+                                          "cp ./target/aarch64-unknown-linux-gnu/debug/libwhitebeam.so /opt/WhiteBeam/libwhitebeam.so;",
+                                          "cp ./target/aarch64-unknown-linux-gnu/debug/whitebeam /opt/WhiteBeam/whitebeam;"));
     } else {
         eprintln!("WhiteBeam: Cannot locate installation files");
         std::process::exit(1);
@@ -172,17 +172,17 @@ pub fn run_package() {
         eprintln!("WhiteBeam: Must be run from source directory");
         std::process::exit(1);
     }
-    if !(PathBuf::from("./target/debug/whitebeam-installer").exists() &&
-         PathBuf::from("./target/release/libwhitebeam.so").exists() &&
-         PathBuf::from("./target/release/whitebeam").exists()) {
+    if !(PathBuf::from("./target/aarch64-unknown-linux-gnu/debug/whitebeam-installer").exists() &&
+         PathBuf::from("./target/aarch64-unknown-linux-gnu/debug/libwhitebeam.so").exists() &&
+         PathBuf::from("./target/aarch64-unknown-linux-gnu/debug/whitebeam").exists()) {
         eprintln!("WhiteBeam: Missing files necessary for packaging, consider running: cargo run build");
         std::process::exit(1);
     }
     let package_name: String = format!("WhiteBeam_{}_{}", env!("CARGO_PKG_VERSION"), std::env::consts::ARCH);
-    let package_cmd: String = format!(concat!("tar --transform='s%.*/%%' --transform 'flags=r;s|^|WhiteBeam/|' --numeric-owner --owner 0 --group 0 -cvzf ./target/release/{}.tar.gz ",
-                                                   "./target/debug/whitebeam-installer ./target/release/libwhitebeam.so ./installer/src/platforms/linux/resources/service.sh ./target/release/whitebeam;",
+    let package_cmd: String = format!(concat!("tar --transform='s%.*/%%' --transform 'flags=r;s|^|WhiteBeam/|' --numeric-owner --owner 0 --group 0 -cvzf ./target/aarch64-unknown-linux-gnu/debug/{}.tar.gz ",
+                                                   "./target/aarch64-unknown-linux-gnu/debug/whitebeam-installer ./target/aarch64-unknown-linux-gnu/debug/libwhitebeam.so ./installer/src/platforms/linux/resources/service.sh ./target/aarch64-unknown-linux-gnu/debug/whitebeam;",
                                               "sha256sum ",
-                                                   "./target/release/{}.tar.gz > ./target/release/{}.SHA256;"), package_name, package_name, package_name);
+                                                   "./target/aarch64-unknown-linux-gnu/debug/{}.tar.gz > ./target/aarch64-unknown-linux-gnu/debug/{}.SHA256;"), package_name, package_name, package_name);
     println!("WhiteBeam: Packaging");
     Command::new(search_path(OsStr::new("bash")).unwrap())
             .arg("-c")
