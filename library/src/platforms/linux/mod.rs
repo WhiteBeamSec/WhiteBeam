@@ -25,6 +25,7 @@ const DN_MULTISHOT: u32 = 0x80000000;
 const F_SETSIG: libc::c_int = 10;
 
 static LIB_MAP: SyncLazy<RwLock<BTreeMap<usize, &str>>> = SyncLazy::new(|| RwLock::new(BTreeMap::new()));
+pub static RT_SIGNAL: SyncLazy<RwLock<i32>> = SyncLazy::new(|| RwLock::new(0));
 
 // LinkMap TODO: Review mut, assign libc datatypes? Upstream into Rust libc
 #[repr(C)]
@@ -170,7 +171,10 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
 fn realtime_cache_init() {
     let mut act: libc::sigaction = unsafe { std::mem::zeroed() };
     let notify_signal: libc::c_int = libc::SIGRTMIN();
-
+    {
+        let mut rt_signal_lock = RT_SIGNAL.write().expect("WhiteBeam: Failed to lock mutex");
+        *rt_signal_lock = notify_signal;
+    }
     act.sa_sigaction = db::populate_cache as usize;
     unsafe { libc::sigemptyset(&mut act.sa_mask) };
     act.sa_flags = libc::SA_SIGINFO;
@@ -225,9 +229,42 @@ unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
     version
 }
 
+fn mask_sigrt(masked: bool) {
+    // Mask realtime signals
+    let rt_signal_number: i32 = match RT_SIGNAL.read() {
+        Ok(lock) => {
+            if *lock == 0 {
+                libc::SIGRTMIN()
+            } else {
+                *lock
+            }
+        },
+        Err(_e) => {
+            libc::SIGRTMIN()
+        }
+    };
+    let mut sig_mask: libc::sigset_t = unsafe { std::mem::zeroed() };
+    unsafe {
+        libc::sigemptyset(&mut sig_mask);
+        if libc::sigaddset(&mut sig_mask, rt_signal_number) == -1 {
+            panic!("WhiteBeam: Lost track of environment");
+        };
+        if masked {
+            if libc::pthread_sigmask(libc::SIG_BLOCK, &sig_mask, std::ptr::null_mut()) == -1 {
+                panic!("WhiteBeam: Lost track of environment");
+            };
+        } else {
+            if libc::pthread_sigmask(libc::SIG_UNBLOCK, &sig_mask, std::ptr::null_mut()) == -1 {
+                panic!("WhiteBeam: Lost track of environment");
+            };
+        }
+    }
+}
+
 // la_objsearch
 #[no_mangle]
 unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: *const libc::uintptr_t, _flag: libc::c_uint) -> *const libc::c_char {
+    mask_sigrt(true);
     let par_prog: String = { crate::common::hook::PAR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     let src_prog: String = { crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     let any = String::from("ANY");
@@ -243,28 +280,34 @@ unsafe extern "C" fn la_objsearch(name: *const libc::c_char, _cookie: *const lib
                                                                           .collect();
     // Permit ANY
     if all_allowed_library_paths.iter().any(|library| library == &any) {
+        mask_sigrt(false);
         return name;
     }
     let target_library = String::from(CStr::from_ptr(name).to_str().expect("WhiteBeam: Unexpected null reference"));
     // Permit whitelisted libraries
     if all_allowed_library_names.iter().any(|library| library == &target_library) {
         // TODO: Check this only if la_objsearch is LA_SER_ORIG?
+        mask_sigrt(false);
         return name;
     }
     if all_allowed_library_paths.iter().any(|library| library == &target_library) {
+        mask_sigrt(false);
         return name;
     }
     if !(crate::common::db::get_prevention()) {
         // TODO: Check if file exists?
         crate::common::event::send_log_event(libc::LOG_NOTICE, format!("Detection: {} -> {} executed {} (la_objsearch)", &par_prog, &src_prog, &target_library));
+        mask_sigrt(false);
         return name;
     }
     // Permit authorized execution
     if crate::common::db::get_valid_auth_env() {
+        mask_sigrt(false);
         return name;
     }
     // Deny by default
     crate::common::event::send_log_event(libc::LOG_WARNING, format!("Prevention: Blocked {} -> {} from executing {} (la_objsearch)", &par_prog, &src_prog, &target_library));
+    mask_sigrt(false);
     0 as *const libc::c_char
 }
 
