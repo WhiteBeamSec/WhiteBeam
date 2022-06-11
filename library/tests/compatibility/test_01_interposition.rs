@@ -11,12 +11,26 @@ whitebeam_test!("linux", interposition_01_system {
 
 // Tests live reloading of hooks
 whitebeam_test!("linux", interposition_02_toggle_hook {
+    // Waits up to ~100 milliseconds for dnotify signal to be delivered
+    let mut enable_checks = 0;
+    let mut disable_checks = 0;
     crate::common::toggle_hook("fexecve", true);
-    assert!(crate::common::is_hooked("fexecve"));
+    while !(crate::common::is_hooked("fexecve")) {
+        assert!(enable_checks < 3);
+        enable_checks += 1;
+        std::thread::sleep(std::time::Duration::from_millis(35));
+    }
     crate::common::toggle_hook("fexecve", false);
-    let res = !(crate::common::is_hooked("fexecve"));
+    while crate::common::is_hooked("fexecve") {
+        disable_checks += 1;
+        if disable_checks < 3 {
+            std::thread::sleep(std::time::Duration::from_millis(35));
+        } else {
+            break
+        }
+    }
     crate::common::toggle_hook("fexecve", true);
-    assert!(res);
+    assert!(disable_checks < 3);
 });
 
 // Tests generic hook
