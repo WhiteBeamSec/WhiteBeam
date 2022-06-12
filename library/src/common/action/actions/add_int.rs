@@ -33,7 +33,7 @@ build_action! { AddInt (_par_prog, _src_prog, hook, _arg_id, args, _act_args, do
         } as usize;
         let new_arg = crate::common::db::ArgumentRow {
             hook: hook.id,
-            parent: None,
+            parent: 0,
             id: -1,
             position: position as i64,
             real: flags,

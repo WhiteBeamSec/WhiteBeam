@@ -30,7 +30,7 @@ build_action! { SplitFilePath (_par_prog, _src_prog, hook, arg_id, args, _act_ar
             args[path_index].real = fd as usize;
             let new_arg = crate::common::db::ArgumentRow {
                 hook: hook.id,
-                parent: None,
+                parent: 0,
                 id: -1,
                 position: path_index as i64,
                 real: Box::leak(basename_cstring).as_ptr() as usize,

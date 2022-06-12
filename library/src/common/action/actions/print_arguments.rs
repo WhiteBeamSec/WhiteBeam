@@ -3,7 +3,7 @@ build_action! { PrintArguments (_par_prog, _src_prog, hook, _arg_id, args, _act_
         // TODO: Refactor to use Display
         let library: &str = &hook.library;
         let symbol: &str = &hook.symbol;
-        let parent_arguments = args.iter().filter(|arg| arg.parent.is_none());
+        let parent_arguments = args.iter().filter(|arg| arg.parent == 0);
         let mut print_string = format!("WhiteBeam: PrintArguments ({}) {}(", library, symbol);
         let mut idx = 0;
         for arg in parent_arguments {

@@ -37,7 +37,7 @@ pub struct HookRow {
 #[derive(Clone)]
 pub struct ArgumentRow {
     pub hook: i64,
-    pub parent: Option<i64>,
+    pub parent: i64,
     pub id: i64,
     pub position: i64,
     pub real: usize,
@@ -116,10 +116,7 @@ pub fn get_argument_view(conn: &Connection) -> Result<Vec<ArgumentRow>, Box<dyn 
     let result_iter = stmt.query_map(params![], |row| {
         Ok(ArgumentRow {
             hook: row.get(0)?,
-            parent: match row.get(1) {
-                Ok(id) => {Some(id)}
-                Err(_) => {None}
-            },
+            parent: row.get(1)?,
             id: row.get(2)?,
             position: row.get(3)?,
             real: 0 as usize,
@@ -301,7 +298,7 @@ pub fn get_redirect(hook_id: i64) -> Option<(String, String)> {
     let arg_id: i64 = {
         let arg_cache_lock = ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         // TODO: Zero argument case
-        arg_cache_lock.iter().find(|arg| (arg.hook == hook_id) && (arg.parent == None) && (arg.position == 0)).expect("WhiteBeam: Lost track of environment").id
+        arg_cache_lock.iter().find(|arg| (arg.hook == hook_id) && (arg.parent == 0) && (arg.position == 0)).expect("WhiteBeam: Lost track of environment").id
     };
     let act_arg_id = {
         let rule_cache_lock = RULE_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");

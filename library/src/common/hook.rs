@@ -51,7 +51,7 @@ pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
         let arg_cache_lock = db::ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
         arg_cache_lock.iter().filter(|arg| arg.hook == stack_hook_id).map(|arg| arg.clone()).collect()
     };
-    let mut argc: usize = arg_vec.iter().filter(|arg| arg.parent.is_none()).count();
+    let mut argc: usize = arg_vec.iter().filter(|arg| arg.parent == 0).count();
     // FIXME: Refactor block, this won't work for edge cases
     // TODO: Only do this for parent arguments?
     if argc > 0 {
@@ -110,7 +110,7 @@ pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     // Dispatch
     let hooked_fn_zargs: unsafe extern "C" fn() -> isize = std::mem::transmute(stack_hook_addr);
     let hooked_fn_margs: unsafe extern "C" fn(arg1: usize, args: ...) -> isize = std::mem::transmute(stack_hook_addr);
-    let par_args: Vec<&db::ArgumentRow> = arg_vec.iter().filter(|arg| arg.parent.is_none()).collect(); // Parent arguments
+    let par_args: Vec<&db::ArgumentRow> = arg_vec.iter().filter(|arg| arg.parent == 0).collect(); // Parent arguments
     argc = par_args.len();
     let ret: isize = match argc {
         0 => hooked_fn_zargs(),

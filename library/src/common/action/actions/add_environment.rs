@@ -4,7 +4,7 @@ build_action! { AddEnvironment (_par_prog, _src_prog, hook, _arg_id, args, _act_
         }
         let new_arg = crate::common::db::ArgumentRow {
             hook: hook.id,
-            parent: None,
+            parent: 0,
             id: -1,
             position: args.len() as i64,
             real: unsafe { platform::environ() } as usize,

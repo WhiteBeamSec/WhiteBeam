@@ -79,7 +79,7 @@ pub fn get_hooks_pretty(conn: &Connection) -> Result<Vec<HookRow>, Box<dyn Error
                                  INNER JOIN HookLanguage ON Hook.language = HookLanguage.id
                                  INNER JOIN Argument ON Hook.id = Argument.hook
                                  INNER JOIN Datatype ON Argument.datatype = Datatype.id
-                                 WHERE Argument.parent IS NULL
+                                 WHERE Argument.parent = 0
                                  GROUP BY Hook.id
                                  ORDER BY Hook.id, Argument.position")?;
     let result_iter = stmt.query_map(params![], |row| {
