@@ -117,7 +117,14 @@ whitebeam_test!("linux", interposition_12_generic_hook_long_unsigned {
 });
 
 whitebeam_test!("linux", interposition_13_generic_hook_struct {
-    // TODO: Load SQL hook with whitebeam command
+    // TODO: Load inet_ntoa hook with whitebeam command
+    /*
+    The structure in_addr as used in inet_ntoa() (..) is defined in <netinet/in.h> as:
+        typedef uint32_t in_addr_t;
+        struct in_addr {
+            in_addr_t s_addr;
+        };
+    */
     println!("Hello generic hook test for Linux!");
 });
 
