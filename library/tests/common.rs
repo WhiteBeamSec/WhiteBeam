@@ -37,13 +37,10 @@ macro_rules! whitebeam_test {
     };
 }
 
-pub fn toggle_hook(symbol: &str, enabled: bool) {
+pub fn load_sql(sql: &str) {
     use std::io::Write;
-    assert!(symbol.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
-    // TODO: Cross platform
     let bin_path: std::path::PathBuf = std::path::PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
     assert!(bin_path.exists(), "WhiteBeam: whitebeam could not be found");
-    let sql = String::from(format!("UPDATE Hook SET enabled = {} WHERE symbol = '{}';", enabled, symbol));
     let mut load_command = std::process::Command::new(bin_path)
             .args(&["--load", "-"])
             .env("WB_AUTH", "test")
@@ -59,6 +56,13 @@ pub fn toggle_hook(symbol: &str, enabled: bool) {
         },
         Err(_e) => {}
     }
+}
+
+pub fn toggle_hook(symbol: &str, enabled: bool) {
+    assert!(symbol.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
+    // TODO: Cross platform
+    let sql = String::from(format!("UPDATE Hook SET enabled = {} WHERE symbol = '{}';", enabled, symbol));
+    load_sql(&sql);
 }
 
 pub fn is_hooked(symbol: &str) -> bool {

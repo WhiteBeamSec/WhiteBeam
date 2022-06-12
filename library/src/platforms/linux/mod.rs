@@ -344,6 +344,7 @@ unsafe extern "C" fn la_symbind32(sym: *const libc::Elf32_Sym, _ndx: libc::c_uin
 unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uint,
                                       refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t,
                                       _flags: *const libc::c_uint, symname: *const libc::c_char) -> libc::uintptr_t {
+    // TODO: How should FN_STACK better work with dlsym of hooked symbols (lookup without a call)?
     // Warning: The Rust standard library is not guaranteed to be available during this function
     //libc::printf("WhiteBeam symbind64: %s\n\0".as_ptr() as *const libc::c_char, symname);
     // TODO: Option instead of empty str?
