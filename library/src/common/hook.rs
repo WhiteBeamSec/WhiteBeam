@@ -27,6 +27,7 @@ pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     macOS:
     Untested
     */
+    // TODO: struct in place of arg1 case
     // TODO: Test zero argument case
     // Parent program
     let par_prog: String = { PAR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };

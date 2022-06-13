@@ -34,6 +34,9 @@ Transparent endpoint security
 
 ## Installation
 
+<details>
+  <summary>WhiteBeam is currently unavailable for installation due to backwards-incompatible security enhancements for 0.3. Check back June 27th!</summary>
+
 ### From Packages (Linux)
 
 Distro-specific packages have not been released yet for WhiteBeam, check again soon!
@@ -55,6 +58,8 @@ Distro-specific packages have not been released yet for WhiteBeam, check again s
     * `cargo run build`
 3. Install WhiteBeam:
     * `cargo run install`
+
+</details><br/>
 
 ## Quick start
 1. Become root (`sudo su`/`su root`)
