@@ -39,11 +39,9 @@ whitebeam_test!("linux", interposition_03_generic_hook_string {
     let sql = r#"BEGIN;
                  INSERT OR IGNORE INTO HookClass (class) VALUES ("Test");
                  INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
-                 WITH const (arch) AS (SELECT value FROM Setting WHERE param="SystemArchitecture")
-                 SELECT * FROM (VALUES ("strdup", "/lib/" || (SELECT const.arch FROM const) || "-linux-gnu/libc.so.6", 1, (SELECT id FROM HookLanguage WHERE language="C"), (SELECT id FROM HookClass WHERE class="Test")));
+                 SELECT * FROM (VALUES ("strdup", "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6", 1, (SELECT id FROM HookLanguage WHERE language="C"), (SELECT id FROM HookClass WHERE class="Test")));
                  INSERT OR IGNORE INTO Argument (name, position, hook, datatype)
-                 WITH const (arch) AS (SELECT value FROM Setting WHERE param="SystemArchitecture")
-                 SELECT * FROM (VALUES ("s", 0, (SELECT id FROM Hook WHERE library = "/lib/" || (SELECT const.arch FROM const) || "-linux-gnu/libc.so.6" AND symbol="strdup"), (SELECT id FROM Datatype WHERE datatype="String")));
+                 SELECT * FROM (VALUES ("s", 0, (SELECT id FROM Hook WHERE library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6" AND symbol="strdup"), (SELECT id FROM Datatype WHERE datatype="String")));
                  COMMIT;"#;
     crate::common::load_sql(sql);
     // Waits up to ~100 milliseconds for dnotify signal to be delivered
@@ -60,10 +58,8 @@ whitebeam_test!("linux", interposition_03_generic_hook_string {
     let dup_cstring = unsafe { hooked_strdup(orig_cstring) } as *const libc::c_char;
     // Clean up
     let sql = r#"BEGIN;
-                 WITH const (arch) AS (SELECT value FROM Setting WHERE param="SystemArchitecture")
-                 DELETE FROM Argument WHERE hook=(SELECT id FROM Hook WHERE symbol = "strdup"  AND library = "/lib/" || (SELECT const.arch FROM const) || "-linux-gnu/libc.so.6");
-                 WITH const (arch) AS (SELECT value FROM Setting WHERE param="SystemArchitecture")
-                 DELETE FROM Hook WHERE symbol = "strdup" AND library = "/lib/" || (SELECT const.arch FROM const) || "-linux-gnu/libc.so.6";
+                 DELETE FROM Argument WHERE hook=(SELECT id FROM Hook WHERE symbol = "strdup"  AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6");
+                 DELETE FROM Hook WHERE symbol = "strdup" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
                  DELETE FROM HookClass WHERE class = "Test";
                  COMMIT;"#;
     crate::common::load_sql(sql);
