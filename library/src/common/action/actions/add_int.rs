@@ -1,4 +1,5 @@
-build_action! { AddInt (_par_prog, _src_prog, hook, _arg_id, args, _act_args, do_return, return_value) {
+build_action! { AddInt (_par_prog, _src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
+        // TODO: Use action args
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
@@ -18,8 +19,6 @@ build_action! { AddInt (_par_prog, _src_prog, hook, _arg_id, args, _act_args, do
             _ => 0
         } as usize;
         let position = match (library_basename, symbol) {
-            // Execution
-            ("libdl.so.2", "dlopen") => 0,
             // Filesystem
             ("libc.so.6", "creat") |
             ("libc.so.6", "creat64") => {
@@ -29,7 +28,13 @@ build_action! { AddInt (_par_prog, _src_prog, hook, _arg_id, args, _act_args, do
                     num_args
                 }
             },
-            _ => num_args
+            _ => {
+                if let Some(arg_pos) = arg_position {
+                    arg_pos as usize
+                } else {
+                    num_args
+                }
+            }
         } as usize;
         let new_arg = crate::common::db::ArgumentRow {
             hook: hook.id,

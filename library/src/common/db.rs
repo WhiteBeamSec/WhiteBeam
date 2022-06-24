@@ -65,9 +65,10 @@ pub struct ActionArgumentRow {
 
 #[derive(Clone)]
 pub struct RuleRow {
-    pub arg: i64,
+    pub hook: i64,
     pub action: String,
-    pub actionarg: Option<i64>
+    pub actionarg: Option<i64>,
+    pub position: Option<i64>
 }
 
 #[derive(Clone)]
@@ -171,12 +172,13 @@ pub fn get_action_argument_table(conn: &Connection) -> Result<Vec<ActionArgument
 pub fn get_rule_view(conn: &Connection) -> Result<Vec<RuleRow>, Box<dyn Error>> {
     // TODO: Log errors
     let mut result_vec: Vec<RuleRow> = Vec::new();
-    let mut stmt = conn.prepare("SELECT arg, action, actionarg FROM RuleView")?;
+    let mut stmt = conn.prepare("SELECT hook, action, actionarg, position FROM RuleView")?;
     let result_iter = stmt.query_map(params![], |row| {
         Ok(RuleRow {
-            arg: row.get(0)?,
+            hook: row.get(0)?,
             action: row.get(1)?,
-            actionarg: row.get(2)?
+            actionarg: row.get(2)?,
+            position: row.get(3)?
         })
     })?;
     for result in result_iter {
@@ -295,14 +297,9 @@ pub fn get_action_arguments(initial_id: i64) -> Vec<String> {
 }
 
 pub fn get_redirect(hook_id: i64) -> Option<(String, String)> {
-    let arg_id: i64 = {
-        let arg_cache_lock = ARG_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-        // TODO: Zero argument case
-        arg_cache_lock.iter().find(|arg| (arg.hook == hook_id) && (arg.parent == 0) && (arg.position == 0)).expect("WhiteBeam: Lost track of environment").id
-    };
     let act_arg_id = {
         let rule_cache_lock = RULE_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-        match rule_cache_lock.iter().find(|rule| (rule.arg == arg_id) && (rule.action == "RedirectFunction") && (rule.actionarg.is_some())) {
+        match rule_cache_lock.iter().find(|rule| (rule.hook == hook_id) && (rule.action == "RedirectFunction") && (rule.actionarg.is_some())) {
             Some(rule) => rule.actionarg.expect("WhiteBeam: Lost track of environment"),
             None => { return None }
         }

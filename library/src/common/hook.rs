@@ -28,7 +28,6 @@ pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     Untested
     */
     // TODO: struct in place of arg1 case
-    // TODO: Test zero argument case
     // Parent program
     let par_prog: String = { PAR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
     // Program
@@ -94,8 +93,7 @@ pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
     // Rules
     let mut rules: Vec<db::RuleRow> = {
         let rule_cache_lock = db::RULE_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
-        let all_arg_ids: Vec<i64> = arg_vec.iter().map(|arg| arg.id).collect();
-        rule_cache_lock.iter().filter(|rule| all_arg_ids.contains(&rule.arg)).map(|rule| rule.clone()).collect()
+        rule_cache_lock.iter().filter(|rule| hook.id == rule.hook).map(|rule| rule.clone()).collect()
     };
     // Actions
     for rule in rules {
