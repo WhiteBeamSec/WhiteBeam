@@ -1,7 +1,7 @@
-build_action! { VerifyCanTerminate (par_prog, src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+build_action! { VerifyCanTerminate (par_prog, src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
         #[cfg(feature = "whitelist_test")]
         return (hook, args, do_return, return_value);
-        let pid_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
+        let pid_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
         let pid: i32 = args[pid_index].clone().real as i32;
         let service_pid_string: String = std::fs::read_to_string(platform::get_data_file_path_string("whitebeam.pid")).expect("WhiteBeam: Lost track of environment");
         let service_pid: i32 = service_pid_string.strip_suffix("\n").unwrap_or(&service_pid_string).parse().expect("WhiteBeam: Unexpected null reference");

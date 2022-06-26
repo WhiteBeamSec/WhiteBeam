@@ -1,5 +1,5 @@
-build_action! { ConsumeVariadic (_par_prog, _src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
-        let variadic_start = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
+build_action! { ConsumeVariadic (_par_prog, _src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
+        let variadic_start = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
         let variadic_start_id: i64 = args[variadic_start].id;
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
