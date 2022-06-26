@@ -1,4 +1,4 @@
-build_action! { VerifyCanExecute (par_prog, src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+build_action! { VerifyCanExecute (par_prog, src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
         // TODO: Depending on LogSeverity, log all use of this action
         // TODO: Use OsString?
         let library: &str = &hook.library;
@@ -20,7 +20,8 @@ build_action! { VerifyCanExecute (par_prog, src_prog, hook, arg_id, args, _act_a
         if all_allowed_executables.iter().any(|executable| executable == &any) {
             return (hook, args, do_return, return_value);
         }
-        let argument: crate::common::db::ArgumentRow = args.iter().find(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment").clone();
+        let argument_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
+        let argument: crate::common::db::ArgumentRow = args[argument_index].clone();
         let target_executable: String = match (library_basename, symbol) {
             ("libdl.so.2", "dlopen") |
             ("libdl.so.2", "dlmopen") => {

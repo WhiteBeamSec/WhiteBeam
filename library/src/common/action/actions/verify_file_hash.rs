@@ -11,7 +11,7 @@ fn fail(library_basename: &str, symbol: &str, argument_path: &str) {
     }
 }
 
-build_action! { VerifyFileHash (par_prog, src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+build_action! { VerifyFileHash (par_prog, src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
         // TODO: Depending on LogSeverity, log all use of this action
         // NB: For Execution hooks, system executables that aren't read world may be whitelisted as ANY
         let library: &str = &hook.library;
@@ -19,7 +19,8 @@ build_action! { VerifyFileHash (par_prog, src_prog, hook, arg_id, args, _act_arg
         let symbol: &str = &hook.symbol;
         let any = String::from("ANY");
         let class = String::from("Hash/");
-        let argument: crate::common::db::ArgumentRow = args.iter().find(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment").clone();
+        let argument_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
+        let argument: crate::common::db::ArgumentRow = args[argument_index].clone();
         let argument_path: String = match (library_basename, symbol) {
             ("libc.so.6", "fexecve") => {
                 let canonical_path = platform::canonicalize_fd(argument.real as i32).expect("WhiteBeam: Lost track of environment");

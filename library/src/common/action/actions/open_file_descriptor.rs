@@ -6,13 +6,13 @@ fn fail(library_basename: &str, symbol: &str) -> isize {
     }
 }
 
-build_action! { OpenFileDescriptor (par_prog, src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+build_action! { OpenFileDescriptor (par_prog, src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
         // TODO: Refactor
         // TODO: No O_CLOEXEC leads to inherited fd's in children
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
-        let file_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
+        let file_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
         let file_argument: crate::common::db::ArgumentRow = args[file_index].clone();
         let file_value = file_argument.real as *const libc::c_char;
         let flags: i32 = match (library_basename, symbol) {

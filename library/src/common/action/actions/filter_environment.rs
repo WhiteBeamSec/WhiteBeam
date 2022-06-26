@@ -6,28 +6,14 @@ fn get_restricted() -> Vec<std::ffi::OsString> {
     )
 }
 
-build_action! { FilterEnvironment (_par_prog, src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+build_action! { FilterEnvironment (_par_prog, src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
         // TODO: Refactor for efficiency
         // Enforce LD_AUDIT, LD_BIND_NOT, WB_PARENT, WB_PROG
         // TODO: Avoid leaking memory (NB: this action is often called before execve on Linux)
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
-        let envp_index: usize = {
-            // Non-positional functions
-            // TODO: Pass in positional boolean into actions so a function list can be avoided here
-            match (library_basename, symbol) {
-                ("libc.so.6", "execl") |
-                ("libc.so.6", "execlp") |
-                ("libc.so.6", "execv") |
-                ("libc.so.6", "execvp") => {
-                    args.iter().position(|arg| arg.id == -1).expect("WhiteBeam: Lost track of environment")
-                }
-                _ => {
-                    args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment")
-                }
-            }
-        };
+        let envp_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
         let envp_argument: crate::common::db::ArgumentRow = args[envp_index].clone();
         let envp = envp_argument.real as *const *const libc::c_char;
         let orig_env_vec = unsafe {
