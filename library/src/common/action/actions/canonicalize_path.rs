@@ -1,8 +1,8 @@
-build_action! { CanonicalizePath (_par_prog, _src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
+build_action! { CanonicalizePath (_par_prog, _src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
-        let file_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
+        let file_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
         let file_argument: crate::common::db::ArgumentRow = args[file_index].clone();
         let file_value = file_argument.real as *const libc::c_char;
         let new_file_value: std::ffi::OsString = match (library_basename, symbol) {

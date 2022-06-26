@@ -25,8 +25,8 @@ pub fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
     ret
 }
 
-build_action! { CombineDirectory (_par_prog, _src_prog, hook, arg_id, args, _act_args, do_return, return_value) {
-        let dirfd_index = args.iter().position(|arg| arg.id == arg_id).expect("WhiteBeam: Lost track of environment");
+build_action! { CombineDirectory (_par_prog, _src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
+        let dirfd_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
         let dirfd_argument: crate::common::db::ArgumentRow = args[dirfd_index].clone();
         let path_argument: crate::common::db::ArgumentRow = args[dirfd_index+1].clone();
         let dirfd_value = dirfd_argument.real as libc::c_int;

@@ -17,7 +17,7 @@ pub struct HookRow {
     pub class: String,
     pub library: String,
     pub symbol: String,
-    pub args: String,
+    pub args: Option<String>,
 }
 
 #[derive(Clone)]
@@ -33,8 +33,8 @@ pub struct WhitelistRow {
 pub struct RuleRow {
     pub library: String,
     pub symbol: String,
-    pub arg: String,
-    pub actions: String
+    pub position: Option<i64>,
+    pub action: String
 }
 
 /*
@@ -77,9 +77,9 @@ pub fn get_hooks_pretty(conn: &Connection) -> Result<Vec<HookRow>, Box<dyn Error
                                  FROM Hook
                                  INNER JOIN HookClass ON Hook.class = HookClass.id
                                  INNER JOIN HookLanguage ON Hook.language = HookLanguage.id
-                                 INNER JOIN Argument ON Hook.id = Argument.hook
-                                 INNER JOIN Datatype ON Argument.datatype = Datatype.id
-                                 WHERE Argument.parent = 0
+                                 LEFT OUTER JOIN Argument ON Hook.id = Argument.hook
+                                 LEFT OUTER JOIN Datatype ON Argument.datatype = Datatype.id
+                                 WHERE Argument.parent = 0 OR Argument.parent IS NULL
                                  GROUP BY Hook.id
                                  ORDER BY Hook.id, Argument.position")?;
     let result_iter = stmt.query_map(params![], |row| {
@@ -101,19 +101,17 @@ pub fn get_hooks_pretty(conn: &Connection) -> Result<Vec<HookRow>, Box<dyn Error
 pub fn get_rules_pretty(conn: &Connection) -> Result<Vec<RuleRow>, Box<dyn Error>> {
     // TODO: Log errors
     let mut result_vec: Vec<RuleRow> = Vec::new();
-    let mut stmt = conn.prepare("SELECT Hook.library, Hook.symbol, IIF(Rule.positional, Argument.name, '-') AS arg, GROUP_CONCAT(Action.name, ', ') AS actions
+    let mut stmt = conn.prepare("SELECT Hook.library, Hook.symbol, Rule.position, Action.name
                                  FROM Rule
                                  INNER JOIN Action ON Rule.action = Action.id
-                                 INNER JOIN Argument on Rule.arg = Argument.id
-                                 INNER JOIN Hook on Argument.hook = Hook.id
-                                 GROUP BY Hook.id, Rule.positional, arg
+                                 INNER JOIN Hook on Rule.hook = Hook.id
                                  ORDER BY Hook.id, Rule.id")?;
     let result_iter = stmt.query_map(params![], |row| {
         Ok(RuleRow {
             library: row.get(0)?,
             symbol: row.get(1)?,
-            arg: row.get(2)?,
-            actions: row.get(3)?
+            position: row.get(2)?,
+            action: row.get(3)?
         })
     })?;
     for result in result_iter {

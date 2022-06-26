@@ -194,7 +194,7 @@ fn run_enable(class: &OsStr) -> Result<(), Box<dyn Error>> {
 }
 
 fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
-    // TODO: Zero argument case
+    // TODO: Pass back errors instead of just returning an empty table
     // TODO: Add hook class
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     let param_str = param.to_str().ok_or(String::from("Invalid UTF-8 provided"))?;
@@ -242,7 +242,10 @@ fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
                                                     entry.class.clone().cell().justify(Justify::Center),
                                                     entry.library.clone().cell(),
                                                     entry.symbol.clone().cell(),
-                                                    entry.args.clone().cell()
+                                                    match &(entry.args) {
+                                                        Some(args) => args.clone().cell(),
+                                                        None => "".cell()
+                                                    }
                                                 ])
                                                 .collect();
             table.table()
@@ -263,21 +266,24 @@ fn run_list(param: &OsStr) -> Result<(), Box<dyn Error>> {
                     )
         },
         "rules" => {
-            // TODO: Columns for actions, separate tables for different classes (easier to follow)
+            // TODO: Include action arguments?
             let table: Vec<Vec<CellStruct>> = common::db::get_rules_pretty(&conn).unwrap_or(Vec::new()).iter()
                                                 .map(|entry| vec![
                                                     entry.library.clone().cell(),
                                                     entry.symbol.clone().cell(),
-                                                    entry.arg.clone().cell(),
-                                                    entry.actions.clone().cell()
+                                                    match entry.position {
+                                                        Some(position) => position.clone().cell(),
+                                                        None => "".cell()
+                                                    },
+                                                    entry.action.clone().cell()
                                                 ])
                                                 .collect();
             table.table()
                     .title(vec![
                         "Library".cell().bold(true),
                         "Symbol".cell().bold(true),
-                        "Argument".cell().bold(true),
-                        "Actions".cell().bold(true)
+                        "Position".cell().bold(true),
+                        "Action".cell().bold(true)
                     ])
                     .separator(
                         Separator::builder()

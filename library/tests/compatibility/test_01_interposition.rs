@@ -130,8 +130,32 @@ whitebeam_test!("linux", interposition_14_generic_hook_struct_pointer {
 });
 
 whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
-    // TODO: Load SQL hook with whitebeam command
-    println!("Hello generic hook zero arg test for Linux!");
+    let getlogin_result_unhooked = unsafe { libc::getlogin() } as *mut libc::c_char;
+    let sql = r#"BEGIN;
+                 INSERT OR IGNORE INTO HookClass (class) VALUES ("Test");
+                 INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
+                 SELECT * FROM (VALUES ("getlogin", "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6", 1, (SELECT id FROM HookLanguage WHERE language="C"), (SELECT id FROM HookClass WHERE class="Test")));
+                 COMMIT;"#;
+    crate::common::load_sql(sql);
+    // Waits up to ~100 milliseconds for dnotify signal to be delivered
+    let mut enable_checks = 0;
+    while !(crate::common::is_hooked("getlogin")) {
+    assert!(enable_checks < 3);
+    enable_checks += 1;
+    std::thread::sleep(std::time::Duration::from_millis(35));
+    }
+    let generic_hook_addr: usize = unsafe { libc::dlsym(libc::RTLD_DEFAULT, "getlogin\0".as_ptr() as *const libc::c_char) } as usize;
+    assert!(generic_hook_addr != 0);
+    let hooked_getlogin: unsafe extern "C" fn() -> isize = unsafe { std::mem::transmute(generic_hook_addr) };
+    let getlogin_result_hooked = unsafe { hooked_getlogin() } as *mut libc::c_char;
+    // Clean up
+    let sql = r#"BEGIN;
+        DELETE FROM Hook WHERE symbol = "getlogin" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
+        DELETE FROM HookClass WHERE class = "Test";
+        COMMIT;"#;
+    crate::common::load_sql(sql);
+    assert!(!(getlogin_result_hooked.is_null()));
+    assert!(unsafe { libc::strncmp(getlogin_result_unhooked, getlogin_result_hooked, libc::strlen(getlogin_result_unhooked)) } == 0);
 });
 
 whitebeam_test!("linux", interposition_16_generic_hook_six_args {

@@ -10,11 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Application-specific whitelists
+- Linux LD_PRELOAD/LD_AUDIT library: Database changes propagate to processes in real-time (real-time cache)
 - Modular test framework (compile time reflection)
 - Parent process whitelisting
 
 ### Changed
 
+- Linux LD_PRELOAD/LD_AUDIT library: Performance improvements in initialization
 - Pinned Nightly Rust toolchain to nightly-2022-03-01
 - Restructured project source directories
 - Updated to latest dependencies
@@ -24,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Installer: Patched ARM glibc linker (in favor of glibc 2.35)
 - Linux LD_PRELOAD/LD_AUDIT library: syslog dependency (in favor of glibc API's)
+
+### Fixed
+
+- Actions run in zero argument functions interposed by generic hook
 
 ## [0.2.6] - 2021-10-13
 

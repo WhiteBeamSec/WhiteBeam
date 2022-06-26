@@ -63,7 +63,7 @@ Distro-specific packages have not been released yet for WhiteBeam, check again s
 
 ## Quick start
 1. Become root (`sudo su`/`su root`)
-2. Set a recovery secret. You'll be able to use this with `whitebeam --auth` to make changes to the system: `whitebeam --setting RecoverySecret mask`
+2. Set a recovery secret: `whitebeam --setting RecoverySecret mask`. After setting the recovery secret, you can run `whitebeam --auth` to make changes to the system.
 
 ### How to Detect Attacks with WhiteBeam
 Multiple guides are provided depending on your preference. [Contact us](mailto:info@whitebeamsec.com) so we can help you integrate WhiteBeam with your environment.
