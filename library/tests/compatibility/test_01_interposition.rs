@@ -131,6 +131,7 @@ whitebeam_test!("linux", interposition_14_generic_hook_struct_pointer {
 
 whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
     let getlogin_result_unhooked = unsafe { libc::getlogin() } as *mut libc::c_char;
+    assert!(!(getlogin_result_unhooked.is_null()));
     let sql = r#"BEGIN;
                  INSERT OR IGNORE INTO HookClass (class) VALUES ("Test");
                  INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
