@@ -141,9 +141,9 @@ whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
     // Waits up to ~100 milliseconds for dnotify signal to be delivered
     let mut enable_checks = 0;
     while !(crate::common::is_hooked("getlogin")) {
-    assert!(enable_checks < 3);
-    enable_checks += 1;
-    std::thread::sleep(std::time::Duration::from_millis(35));
+        assert!(enable_checks < 3);
+        enable_checks += 1;
+        std::thread::sleep(std::time::Duration::from_millis(35));
     }
     let generic_hook_addr: usize = unsafe { libc::dlsym(libc::RTLD_DEFAULT, "getlogin\0".as_ptr() as *const libc::c_char) } as usize;
     assert!(generic_hook_addr != 0);
