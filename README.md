@@ -40,7 +40,7 @@ Copyright 2020, WhiteBeam Security, Inc.
 ## Installation
 
 <details>
-  <summary>WhiteBeam is currently unavailable for installation due to backwards-incompatible security enhancements for 0.3. Check back June 27th!</summary>
+  <summary>WhiteBeam is currently unavailable for installation due to backwards-incompatible security enhancements for 0.3. Check back soon!</summary>
 
 ### From Packages (Linux)
 
