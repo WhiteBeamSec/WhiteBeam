@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Linux LD_PRELOAD/LD_AUDIT library: Performance improvements in initialization
-- Pinned Nightly Rust toolchain to nightly-2022-03-01
+- Pinned Nightly Rust toolchain to nightly-2022-06-25
 - Restructured project source directories
 - Updated to latest dependencies
 - Updated to Rust 2021 edition

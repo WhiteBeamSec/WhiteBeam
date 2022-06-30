@@ -13,7 +13,7 @@ use std::{collections::BTreeMap,
           os::unix::ffi::OsStrExt,
           os::unix::ffi::OsStringExt,
           path::PathBuf,
-          lazy::SyncLazy,
+          sync::LazyLock,
           sync::RwLock};
 
 const LA_FLG_BINDTO: libc::c_uint = 0x01;
@@ -24,8 +24,8 @@ const DN_MULTISHOT: u32 = 0x80000000;
 
 const F_SETSIG: libc::c_int = 10;
 
-static LIB_MAP: SyncLazy<RwLock<BTreeMap<usize, &str>>> = SyncLazy::new(|| RwLock::new(BTreeMap::new()));
-pub static RT_SIGNAL: SyncLazy<RwLock<i32>> = SyncLazy::new(|| RwLock::new(0));
+static LIB_MAP: LazyLock<RwLock<BTreeMap<usize, &str>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+pub static RT_SIGNAL: LazyLock<RwLock<i32>> = LazyLock::new(|| RwLock::new(0));
 
 // LinkMap TODO: Review mut, assign libc datatypes? Upstream into Rust libc
 #[repr(C)]

@@ -1,12 +1,12 @@
 use crate::common::{action,
                     db};
 use std::{ffi::OsString,
-          lazy::SyncLazy,
+          sync::LazyLock,
           sync::Mutex};
 
-pub static PAR_PROG: SyncLazy<Mutex<OsString>> = SyncLazy::new(|| Mutex::new(OsString::new()));
-pub static CUR_PROG: SyncLazy<Mutex<OsString>> = SyncLazy::new(|| Mutex::new(OsString::new()));
-pub static FN_STACK: SyncLazy<Mutex<Vec<(i64, usize)>>> = SyncLazy::new(|| Mutex::new(vec![]));
+pub static PAR_PROG: LazyLock<Mutex<OsString>> = LazyLock::new(|| Mutex::new(OsString::new()));
+pub static CUR_PROG: LazyLock<Mutex<OsString>> = LazyLock::new(|| Mutex::new(OsString::new()));
+pub static FN_STACK: LazyLock<Mutex<Vec<(i64, usize)>>> = LazyLock::new(|| Mutex::new(vec![]));
 
 #[allow(unused_mut)]
 pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {
