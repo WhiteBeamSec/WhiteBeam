@@ -14,7 +14,7 @@ crate-type = ["cdylib"]
 [dependencies]
 libc = { version = "^0.2.98" }
 rusqlite = { version = "0.26", features = ["bundled"] }
-linkme = { version = "0.2" }
+linkme = { version = "0.3" }
 automod = { version = "1.0" }
 glob = { version = "0.3" }
 # Cryptographic dependencies
