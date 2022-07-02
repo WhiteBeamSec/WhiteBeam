@@ -37,7 +37,6 @@ whitebeam_test!("linux", interposition_02_toggle_hook {
 whitebeam_test!("linux", interposition_03_generic_hook_string {
     // Load strdup hook
     let sql = r#"BEGIN;
-                 INSERT OR IGNORE INTO HookClass (class) VALUES ("Test");
                  INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
                  SELECT * FROM (VALUES ("strdup", "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6", 1, (SELECT id FROM HookLanguage WHERE language="C"), (SELECT id FROM HookClass WHERE class="Test")));
                  INSERT OR IGNORE INTO Argument (name, position, hook, datatype)
@@ -60,7 +59,6 @@ whitebeam_test!("linux", interposition_03_generic_hook_string {
     let sql = r#"BEGIN;
                  DELETE FROM Argument WHERE hook=(SELECT id FROM Hook WHERE symbol = "strdup"  AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6");
                  DELETE FROM Hook WHERE symbol = "strdup" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
-                 DELETE FROM HookClass WHERE class = "Test";
                  COMMIT;"#;
     crate::common::load_sql(sql);
     assert!(!(dup_cstring.is_null()));
@@ -133,7 +131,6 @@ whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
     let getlogin_result_unhooked = unsafe { libc::getlogin() } as *mut libc::c_char;
     assert!(!(getlogin_result_unhooked.is_null()));
     let sql = r#"BEGIN;
-                 INSERT OR IGNORE INTO HookClass (class) VALUES ("Test");
                  INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
                  SELECT * FROM (VALUES ("getlogin", "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6", 1, (SELECT id FROM HookLanguage WHERE language="C"), (SELECT id FROM HookClass WHERE class="Test")));
                  COMMIT;"#;
@@ -152,7 +149,6 @@ whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
     // Clean up
     let sql = r#"BEGIN;
         DELETE FROM Hook WHERE symbol = "getlogin" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
-        DELETE FROM HookClass WHERE class = "Test";
         COMMIT;"#;
     crate::common::load_sql(sql);
     assert!(!(getlogin_result_hooked.is_null()));
