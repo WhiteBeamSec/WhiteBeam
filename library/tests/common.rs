@@ -7,7 +7,7 @@ pub fn load_whitebeam(test: &str) -> bool {
     if (ld_audit.is_none()) ||
        (ld_audit != Some(lib_path.as_os_str().to_os_string())) {
         // LD_AUDIT undefined. Restart program with LD_PRELOAD set to libwhitebeam.so
-        let test_path = unsafe { std::ffi::CStr::from_ptr(libc::getauxval(libc::AT_EXECFN) as *const u8)};
+        let test_path = unsafe { std::ffi::CStr::from_ptr(libc::getauxval(libc::AT_EXECFN) as *const libc::c_char)};
         let test_path_str = test_path.to_str().expect("Failed to convert test path to &str");
         let exit_status_test = std::process::Command::new(test_path_str)
             .args(&["--test", test])
