@@ -148,8 +148,8 @@ whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
     let getlogin_result_hooked = unsafe { hooked_getlogin() } as *mut libc::c_char;
     // Clean up
     let sql = r#"BEGIN;
-        DELETE FROM Hook WHERE symbol = "getlogin" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
-        COMMIT;"#;
+                 DELETE FROM Hook WHERE symbol = "getlogin" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
+                 COMMIT;"#;
     crate::common::load_sql(sql);
     assert!(!(getlogin_result_hooked.is_null()));
     assert!(unsafe { libc::strncmp(getlogin_result_unhooked, getlogin_result_hooked, libc::strlen(getlogin_result_unhooked)) } == 0);
