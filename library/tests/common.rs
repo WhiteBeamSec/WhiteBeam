@@ -45,6 +45,7 @@ pub fn load_sql(sql: &str) {
             .args(&["--load", "-"])
             .env("WB_AUTH", "test")
             .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::null())
             .spawn().expect("Failed to execute process");
     let mut stdin = load_command.stdin.take().expect("Failed to capture stdin");
     write!(stdin, "{}", sql).expect("Failed to write to stdin");
@@ -65,21 +66,14 @@ pub fn toggle_hook(symbol: &str, enabled: bool) {
     load_sql(&sql);
 }
 
-pub fn is_hooked(symbol: &str) -> bool {
+pub fn is_hooked(library: &str, symbol: &str) -> bool {
+    let is_hooked_addr: usize = unsafe { libc::dlsym(libc::RTLD_DEFAULT, "is_hooked\0".as_ptr() as *const libc::c_char) } as usize;
+    assert!(is_hooked_addr != 0, "WhiteBeam: is_hooked not found in libwhitebeam.so, consider running: cargo run build library-test");
+    let is_hooked_fn: unsafe extern "C" fn(library: *const libc::c_char, symbol: *const libc::c_char) -> libc::c_int = unsafe { std::mem::transmute(is_hooked_addr) };
+    let mut library_string = String::from(library);
+    library_string.push('\0');
     let mut symbol_string = String::from(symbol);
     symbol_string.push('\0');
-    let dlsym_symbol = unsafe { libc::dlsym(libc::RTLD_DEFAULT, symbol_string.as_ptr() as *const libc::c_char) };
-    let mut dl_info_symbol = libc::Dl_info {
-        dli_fname: core::ptr::null(),
-        dli_fbase: core::ptr::null_mut(),
-        dli_sname: core::ptr::null(),
-        dli_saddr: core::ptr::null_mut(),
-    };
-    let lib_name: *const libc::c_char = match unsafe { libc::dladdr(dlsym_symbol as *const libc::c_void, &mut dl_info_symbol as *mut libc::Dl_info) } {
-        0 => panic!("WhiteBeam: dladdr failed"),
-        _ => dl_info_symbol.dli_fname as *const libc::c_char
-    };
-    assert!(!(lib_name.is_null()));
-    let lib_name_string = String::from(unsafe { std::ffi::CStr::from_ptr(lib_name) }.to_str().expect("WhiteBeam: Unexpected null reference"));
-    return lib_name_string.contains("libwhitebeam.so");
+    let is_hooked_result: libc::c_int = unsafe { is_hooked_fn(library_string.as_ptr() as *const libc::c_char, symbol_string.as_ptr() as *const libc::c_char) };
+    return is_hooked_result == 1;
 }

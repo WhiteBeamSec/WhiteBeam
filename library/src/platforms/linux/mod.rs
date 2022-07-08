@@ -1,5 +1,7 @@
 // Load OS-specific modules
 
+mod support;
+use support::*;
 use crate::common::{convert,
                     db};
 use libc::{c_char, c_int};
@@ -16,26 +18,8 @@ use std::{collections::BTreeMap,
           sync::LazyLock,
           sync::RwLock};
 
-const LA_FLG_BINDTO: libc::c_uint = 0x01;
-const LA_FLG_BINDFROM: libc::c_uint = 0x02;
-
-const DN_CREATE: u32 = 0x00000004;
-const DN_MULTISHOT: u32 = 0x80000000;
-
-const F_SETSIG: libc::c_int = 10;
-
 static LIB_MAP: LazyLock<RwLock<BTreeMap<usize, &str>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
 pub static RT_SIGNAL: LazyLock<RwLock<i32>> = LazyLock::new(|| RwLock::new(0));
-
-// LinkMap TODO: Review mut, assign libc datatypes? Upstream into Rust libc
-#[repr(C)]
-pub struct LinkMap {
-    pub l_addr: usize,
-    pub l_name: *const libc::c_char,
-    pub l_ld: usize,
-    pub l_next: *mut LinkMap,
-    pub l_prev: *mut LinkMap
-}
 
 // Debug: Cause a breakpoint exception by invoking the `int3` instruction.
 //pub fn int3() { unsafe { asm!("int3"); } }
@@ -331,36 +315,77 @@ unsafe extern "C" fn la_objopen(map: *const LinkMap, _lmid: libc::c_long, cookie
 // TODO: Remove key *cookie from LIB_MAP
 
 // la_symbind32
-#[no_mangle]
-unsafe extern "C" fn la_symbind32(sym: *const libc::Elf32_Sym, _ndx: libc::c_uint,
-                                      _refcook: *const libc::uintptr_t, _defcook: *const libc::uintptr_t,
-                                      _flags: *const libc::c_uint, symname: *const libc::c_char) -> libc::uintptr_t {
-    //libc::printf("WhiteBeam symbind32: %s\n\0".as_ptr() as *const libc::c_char, symname);
-    (*(sym)).st_value as usize
-}
 
 // la_symbind64
+#[cfg(feature = "whitelist_test")]
 #[no_mangle]
 unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uint,
                                       refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t,
                                       _flags: *const libc::c_uint, symname: *const libc::c_char) -> libc::uintptr_t {
+    let symbol_str = CStr::from_ptr(symname).to_str().expect("WhiteBeam: Unexpected null reference");
+    if symbol_str == "is_hooked" {
+        return is_hooked as usize;
+    }
+    return (*(sym)).st_value as usize;
+}
+
+// la_pltenter
+/* TODO:
+- alpha
+- arc
+- arm
+- csky
+- hppa
+- ia64
+- m68k
+- microblaze
+- mips
+- nios2
+- powerpc
+- riscv
+- s390
+- sh
+- sparc
+*/
+
+#[cfg(any(target_arch = "i386", target_arch = "i586", target_arch = "i686"))]
+#[no_mangle]
+unsafe extern "C" fn la_i86_gnu_pltenter(sym: *const libc::Elf32_Sym, _ndx: libc::c_uint,
+                                          refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t, _regs: *const La_i86_regs,
+                                          _flags: *const libc::c_uint, symname: *const libc::c_char, framesizep: *const libc::c_long) -> libc::Elf32_Addr {
+    (*(sym)).st_value as usize
+}
+
+/*
+#[cfg(target_arch = "x86")]
+la_x32_gnu_pltenter
+
+#[cfg(target_arch = "x86_64")]
+la_x86_64_gnu_pltenter
+*/
+
+#[cfg(target_arch = "aarch64")]
+#[no_mangle]
+unsafe extern "C" fn la_aarch64_gnu_pltenter(sym: *const ElfW_Sym, _ndx: libc::c_uint,
+                                              refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t, _regs: *const La_aarch64_regs,
+                                              _flags: *const libc::c_uint, symname: *const libc::c_char, framesizep: *const libc::c_long) -> ElfW_Addr {
     // TODO: How should FN_STACK better work with dlsym of hooked symbols (lookup without a call)?
     // Warning: The Rust standard library is not guaranteed to be available during this function
-    //libc::printf("WhiteBeam symbind64: %s\n\0".as_ptr() as *const libc::c_char, symname);
+    //libc::printf("WhiteBeam la_pltenter: %s\n\0".as_ptr() as *const libc::c_char, symname);
     // TODO: Option instead of empty str?
     let empty: &str = "";
     let calling_library_str: &str = match LIB_MAP.read() {
         Ok(lib_map_lock) => { match lib_map_lock.get(&(*refcook)) { Some(cook) => cook, None => empty } }
-        Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in la_symbind64"); /* empty */ }
+        Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in la_pltenter"); /* empty */ }
     };
     let library_path_str: &str = match LIB_MAP.read() {
         Ok(lib_map_lock) => { match lib_map_lock.get(&(*defcook)) { Some(cook) => cook, None => empty } }
-        Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in la_symbind64"); /* empty */ }
+        Err(_e) => { panic!("WhiteBeam: Failed to acquire read lock in la_pltenter"); /* empty */ }
     };
     let calling_library_basename_str: &str = calling_library_str.rsplit('/').next().unwrap_or(calling_library_str);
     let symbol_str = CStr::from_ptr(symname).to_str().expect("WhiteBeam: Unexpected null reference");
     if (*refcook) == 0 {
-        return (*(sym)).st_value as usize;
+        return (*(sym)).st_value as ElfW_Addr;
     }
     // FIXME: Stability exceptions
     match symbol_str {
@@ -369,23 +394,23 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
                 if let Ok(exe_string) = exe.into_os_string().into_string() {
                     if exe_string.starts_with("/usr/bin/python") ||
                        exe_string == String::from("/usr/sbin/rsyslogd") ||
-                       exe_string == String::from("/usr/bin/perl") { return (*(sym)).st_value as usize; }
+                       exe_string == String::from("/usr/bin/perl") { return (*(sym)).st_value as ElfW_Addr; }
                 }
             }
             if calling_library_basename_str == "libpam.so.0" {
-                return (*(sym)).st_value as usize;
+                return (*(sym)).st_value as ElfW_Addr;
             }
         },
         "execvp" => {
             if let Ok(exe) = std::env::current_exe() {
                 if let Ok(exe_string) = exe.into_os_string().into_string() {
-                    if exe_string.starts_with("/usr/bin/apt") { return (*(sym)).st_value as usize; }
+                    if exe_string.starts_with("/usr/bin/apt") { return (*(sym)).st_value as ElfW_Addr; }
                 }
             }
         },
         "fopen64" => {
             if calling_library_basename_str == "libcrypto.so.1.1" {
-                return (*(sym)).st_value as usize;
+                return (*(sym)).st_value as ElfW_Addr;
             }
         }
         _ => ()
@@ -396,7 +421,6 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
         let hook_cache_iter = hook_cache_lock.iter();
         for hook in hook_cache_iter {
             if (hook.symbol == symbol_str) && (hook.library == library_path_str) {
-                //libc::printf("WhiteBeam hook: %s\n\0".as_ptr() as *const libc::c_char, symname);
                 {
                     // Get some information ahead of time of what the redirected symbol/library will be
                     let addr = match db::get_redirect(hook.id) {
@@ -405,11 +429,29 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
                     };
                     crate::common::hook::FN_STACK.lock().unwrap().push((hook.id, addr as usize));
                 };
-                return crate::common::hook::generic_hook as usize
+                return crate::common::hook::generic_hook as ElfW_Addr
             }
         }
     };
-    (*(sym)).st_value as usize
+    (*(sym)).st_value as ElfW_Addr
+}
+
+#[cfg(feature = "whitelist_test")]
+#[no_mangle]
+unsafe extern "C" fn is_hooked(library: *const libc::c_char, symbol: *const libc::c_char) -> libc::c_int {
+    let library_str = CStr::from_ptr(library).to_str().expect("WhiteBeam: Unexpected null reference");
+    let symbol_str = CStr::from_ptr(symbol).to_str().expect("WhiteBeam: Unexpected null reference");
+    {
+        let hook_cache_lock = db::HOOK_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
+        // TODO: Use .find() instead
+        let hook_cache_iter = hook_cache_lock.iter();
+        for hook in hook_cache_iter {
+            if (hook.symbol == symbol_str) && (hook.library == library_str) {
+                return 1;
+            }
+        }
+    }
+    0
 }
 
 pub unsafe fn resolve_symbol(_library: &str, symbol: &str) -> *const u8 {
