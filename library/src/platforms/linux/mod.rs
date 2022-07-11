@@ -464,6 +464,7 @@ unsafe extern "C" fn is_hooked(library: *const libc::c_char, symbol: *const libc
 }
 
 pub unsafe fn resolve_symbol(library: &str, symbol: &str) -> *const u8 {
+    // TODO: Traverse link map, only if library isn't loaded run dlmopen, otherwise dlsym in RTLD_DEFAULT
     // These may no longer be issues with pltenter, more tests needed:
     // - dlmopen() issue with sshd on x86_64
     // - returning libc::execve if symbol == "execve"

@@ -164,14 +164,3 @@ whitebeam_test!("linux", interposition_16_generic_hook_six_args {
     // TODO: Load SQL hook with whitebeam command
     println!("Hello generic hook six arg test for Linux!");
 });
-
-// Tests symbol resolution
-whitebeam_test!("linux", interposition_17_resolve_symbol_execve {
-    // Resolves to libc::execve
-    println!("Hello execve resolution test for Linux!");
-});
-
-whitebeam_test!("linux", interposition_18_resolve_symbol_dlopen {
-    // Resolves to ldl
-    println!("Hello dlopen resolution test for Linux!");
-});
