@@ -330,7 +330,7 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
 }
 
 // la_pltenter
-/* TODO:
+/* TODO: Review mutability of data types, implement the following architectures:
 - alpha
 - arc
 - arm
@@ -348,30 +348,7 @@ unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uin
 - sparc
 */
 
-#[cfg(any(target_arch = "i386", target_arch = "i586", target_arch = "i686"))]
-#[no_mangle]
-unsafe extern "C" fn la_i86_gnu_pltenter(sym: *const libc::Elf32_Sym, _ndx: libc::c_uint,
-                                          refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t, _regs: *const La_i86_regs,
-                                          _flags: *const libc::c_uint, symname: *const libc::c_char, framesizep: *const libc::c_long) -> libc::Elf32_Addr {
-    (*(sym)).st_value as usize
-}
-
-/*
-#[cfg(target_arch = "x86")]
-la_x32_gnu_pltenter
-
-#[cfg(target_arch = "x86_64")]
-la_x86_64_gnu_pltenter
-*/
-
-#[cfg(target_arch = "aarch64")]
-#[no_mangle]
-unsafe extern "C" fn la_aarch64_gnu_pltenter(sym: *const ElfW_Sym, _ndx: libc::c_uint,
-                                              refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t, _regs: *const La_aarch64_regs,
-                                              _flags: *const libc::c_uint, symname: *const libc::c_char, framesizep: *const libc::c_long) -> ElfW_Addr {
-    // TODO: How should FN_STACK better work with dlsym of hooked symbols (lookup without a call)?
-    // Warning: The Rust standard library is not guaranteed to be available during this function
-    //libc::printf("WhiteBeam la_pltenter: %s\n\0".as_ptr() as *const libc::c_char, symname);
+unsafe fn plt_redirect(orig_addr: u64, refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t, symname: *const libc::c_char) -> u64 {
     // TODO: Option instead of empty str?
     let empty: &str = "";
     let calling_library_str: &str = match LIB_MAP.read() {
@@ -385,7 +362,7 @@ unsafe extern "C" fn la_aarch64_gnu_pltenter(sym: *const ElfW_Sym, _ndx: libc::c
     let calling_library_basename_str: &str = calling_library_str.rsplit('/').next().unwrap_or(calling_library_str);
     let symbol_str = CStr::from_ptr(symname).to_str().expect("WhiteBeam: Unexpected null reference");
     if (*refcook) == 0 {
-        return (*(sym)).st_value as ElfW_Addr;
+        return orig_addr;
     }
     // FIXME: Stability exceptions
     match symbol_str {
@@ -394,23 +371,23 @@ unsafe extern "C" fn la_aarch64_gnu_pltenter(sym: *const ElfW_Sym, _ndx: libc::c
                 if let Ok(exe_string) = exe.into_os_string().into_string() {
                     if exe_string.starts_with("/usr/bin/python") ||
                        exe_string == String::from("/usr/sbin/rsyslogd") ||
-                       exe_string == String::from("/usr/bin/perl") { return (*(sym)).st_value as ElfW_Addr; }
+                       exe_string == String::from("/usr/bin/perl") { return orig_addr; }
                 }
             }
             if calling_library_basename_str == "libpam.so.0" {
-                return (*(sym)).st_value as ElfW_Addr;
+                return orig_addr;
             }
         },
         "execvp" => {
             if let Ok(exe) = std::env::current_exe() {
                 if let Ok(exe_string) = exe.into_os_string().into_string() {
-                    if exe_string.starts_with("/usr/bin/apt") { return (*(sym)).st_value as ElfW_Addr; }
+                    if exe_string.starts_with("/usr/bin/apt") { return orig_addr; }
                 }
             }
         },
         "fopen64" => {
             if calling_library_basename_str == "libcrypto.so.1.1" {
-                return (*(sym)).st_value as ElfW_Addr;
+                return orig_addr;
             }
         }
         _ => ()
@@ -424,16 +401,48 @@ unsafe extern "C" fn la_aarch64_gnu_pltenter(sym: *const ElfW_Sym, _ndx: libc::c
                 {
                     // Get some information ahead of time of what the redirected symbol/library will be
                     let addr = match db::get_redirect(hook.id) {
-                        Some(redirected_function) => { resolve_symbol(&redirected_function.0, &redirected_function.1) },
-                        None => (*(sym)).st_value as *const u8
+                        Some(redirected_function) => { unsafe { resolve_symbol(&redirected_function.0, &redirected_function.1) } },
+                        None => orig_addr as *const u8
                     };
                     crate::common::hook::FN_STACK.lock().unwrap().push((hook.id, addr as usize));
                 };
-                return crate::common::hook::generic_hook as ElfW_Addr
+                return crate::common::hook::generic_hook as u64
             }
         }
     };
-    (*(sym)).st_value as ElfW_Addr
+    orig_addr
+}
+
+#[cfg(any(target_arch = "i386", target_arch = "i586", target_arch = "i686"))]
+#[no_mangle]
+unsafe extern "C" fn la_i86_gnu_pltenter(sym: *const libc::Elf32_Sym, _ndx: libc::c_uint,
+                                          refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t, _regs: *const La_i86_regs,
+                                          _flags: *const libc::c_uint, symname: *const libc::c_char, framesizep: *const libc::c_long) -> libc::Elf32_Addr {
+    plt_redirect((*(sym)).st_value as u64, refcook, defcook, symname) as libc::Elf32_Addr
+}
+
+#[cfg(target_arch = "x86")]
+#[no_mangle]
+unsafe extern "C" fn la_x32_gnu_pltenter(sym: *const libc::Elf32_Sym, _ndx: libc::c_uint,
+                                          refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t, _regs: *const La_x32_regs,
+                                          _flags: *const libc::c_uint, symname: *const libc::c_char, framesizep: *const libc::c_long) -> libc::Elf32_Addr {
+    plt_redirect((*(sym)).st_value as u64, refcook, defcook, symname) as libc::Elf32_Addr
+}
+
+#[cfg(target_arch = "x86_64")]
+#[no_mangle]
+unsafe extern "C" fn la_x86_64_gnu_pltenter(sym: *const libc::Elf64_Sym, _ndx: libc::c_uint,
+                                              refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t, _regs: *const La_x86_64_regs,
+                                              _flags: *const libc::c_uint, symname: *const libc::c_char, framesizep: *const libc::c_long) -> libc::Elf64_Addr {
+    plt_redirect((*(sym)).st_value as u64, refcook, defcook, symname) as libc::Elf64_Addr
+}
+
+#[cfg(target_arch = "aarch64")]
+#[no_mangle]
+unsafe extern "C" fn la_aarch64_gnu_pltenter(sym: *const ElfW_Sym, _ndx: libc::c_uint,
+                                              refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t, _regs: *const La_aarch64_regs,
+                                              _flags: *const libc::c_uint, symname: *const libc::c_char, framesizep: *const libc::c_long) -> ElfW_Addr {
+    plt_redirect((*(sym)).st_value as u64, refcook, defcook, symname) as ElfW_Addr
 }
 
 #[cfg(feature = "whitelist_test")]
