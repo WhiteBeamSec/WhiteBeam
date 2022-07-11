@@ -24,7 +24,6 @@ pub struct LinkMap {
     pub l_prev: *mut LinkMap
 }
 
-// TODO: Derive?
 #[cfg(any(target_arch = "i386", target_arch = "i586", target_arch = "i686"))]
 #[repr(C)]
 pub struct La_i86_regs
@@ -45,7 +44,6 @@ pub type La_x86_64_zmm = [f64; 8usize];
 #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[repr(C)]
 #[repr(align(16))]
-#[derive(Copy, Clone)]
 pub union La_x86_64_vector {
     pub ymm: [La_x86_64_ymm; 2usize],
     pub zmm: [La_x86_64_zmm; 1usize],
@@ -55,7 +53,6 @@ pub union La_x86_64_vector {
 #[cfg(target_arch = "x86_64")]
 #[repr(C)]
 #[repr(align(16))]
-#[derive(Copy, Clone)]
 pub struct La_x86_64_regs {
     pub lr_rdx: u64,
     pub lr_r8: u64,
@@ -73,7 +70,6 @@ pub struct La_x86_64_regs {
 #[cfg(target_arch = "x86")]
 #[repr(C)]
 #[repr(align(16))]
-#[derive(Copy, Clone)]
 pub struct La_x32_regs
 {
     pub lr_rdx: u64,
@@ -90,7 +86,6 @@ pub struct La_x32_regs
 
 #[cfg(target_arch = "aarch64")]
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct La_aarch64_regs {
     pub lr_xreg: [u64; 8usize],
     pub lr_dreg: [u64; 8usize],
