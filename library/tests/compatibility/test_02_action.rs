@@ -1,3 +1,4 @@
+/*
 whitebeam_test!("linux", action_00_add_environment {
     println!("Hello AddEnvironment action test for Linux!");
 });
@@ -61,3 +62,4 @@ whitebeam_test!("linux", action_14_verify_can_write {
 whitebeam_test!("linux", action_15_verify_file_hash {
     println!("Hello VerifyFileHash action test for Linux!");
 });
+*/

@@ -69,6 +69,7 @@ whitebeam_test!("linux", interposition_03_generic_hook_string {
     assert!(unsafe { libc::strncmp(orig_cstring, dup_cstring, libc::strlen(orig_cstring)) } == 0);
 });
 
+/*
 whitebeam_test!("linux", interposition_04_generic_hook_string_array {
     // TODO: Load SQL hook with whitebeam command
     println!("Hello generic hook test for Linux!");
@@ -130,6 +131,7 @@ whitebeam_test!("linux", interposition_14_generic_hook_struct_pointer {
     // TODO: Load SQL hook with whitebeam command
     println!("Hello generic hook test for Linux!");
 });
+*/
 
 whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
     let libc: &str = &format!("/lib/{}-linux-gnu/libc.so.6", std::env::consts::ARCH);
@@ -160,7 +162,9 @@ whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
     assert!(unsafe { libc::strncmp(getlogin_result_unhooked, getlogin_result_hooked, libc::strlen(getlogin_result_unhooked)) } == 0);
 });
 
+/*
 whitebeam_test!("linux", interposition_16_generic_hook_six_args {
     // TODO: Load SQL hook with whitebeam command
     println!("Hello generic hook six arg test for Linux!");
 });
+*/

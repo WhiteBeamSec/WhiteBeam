@@ -401,7 +401,7 @@ unsafe fn plt_redirect(orig_addr: u64, refcook: *const libc::uintptr_t, defcook:
                 {
                     // Get some information ahead of time of what the redirected symbol/library will be
                     let addr = match db::get_redirect(hook.id) {
-                        Some(redirected_function) => { unsafe { resolve_symbol(&redirected_function.0, &redirected_function.1) } },
+                        Some(redirected_function) => { resolve_symbol(&redirected_function.0, &redirected_function.1) },
                         None => orig_addr as *const u8
                     };
                     crate::common::hook::FN_STACK.lock().unwrap().push((hook.id, addr as usize));
