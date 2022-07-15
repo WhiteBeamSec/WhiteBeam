@@ -20,7 +20,7 @@ whitebeam_test!("linux", execution_01_execve_library_loaded {
     let pid = unsafe { libc::fork() };
     if pid == 0 {
         unsafe { libc::execve("/usr/bin/grep\0".as_ptr() as *const libc::c_char,
-                              ["/usr/bin/grep\0".as_ptr() as *const libc::c_char, "libwhitebeam.so\0".as_ptr() as *const libc::c_char, "/proc/self/maps\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr(),
+                              ["/usr/bin/grep\0".as_ptr() as *const libc::c_char, "-q\0".as_ptr() as *const libc::c_char, "libwhitebeam.so\0".as_ptr() as *const libc::c_char, "/proc/self/maps\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr(),
                               std::ptr::null()); }
     } else {
         let mut status = 0;
@@ -121,7 +121,6 @@ whitebeam_test!("linux", execution_07_execvpe_simple {
     }
 });
 
-// TODO: execution_08_fexecve_simple sometimes fails because interposition_02_toggle_hook disables the fexecve hook
 whitebeam_test!("linux", execution_08_fexecve_simple {
     let pid = unsafe { libc::fork() };
     if pid == 0 {

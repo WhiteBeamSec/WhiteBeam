@@ -10,6 +10,10 @@ edition = "2021"
 name = "whitebeam"
 crate-type = ["cdylib"]
 
+[[test]]
+name = "test_integration"
+harness = false
+
 # Cross-platform dependencies
 [dependencies]
 libc = { version = "^0.2.98" }

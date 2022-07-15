@@ -107,7 +107,6 @@ fn test(args: Vec<String>) {
     // Run tests
     let _exit_status_tests = Command::new("cargo")
         .arg("+nightly-2022-06-25").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test")
-        .arg("--no-fail-fast").arg("--test").arg("test_*").arg("--").arg("--test-threads").arg("1")//.arg("--show-output")
         // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
         .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
         .status()

@@ -17,14 +17,19 @@ whitebeam_test!("linux", interposition_02_toggle_hook {
     let mut enable_checks = 0;
     let mut disable_checks = 0;
     let libc: &str = &format!("/lib/{}-linux-gnu/libc.so.6", std::env::consts::ARCH);
-    crate::common::toggle_hook("fexecve", true);
-    while !(crate::common::is_hooked(libc, "fexecve")) {
+    let sql_create = r#"BEGIN;
+                        INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
+                        SELECT * FROM (VALUES ("test_hook", "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6", 1, (SELECT id FROM HookLanguage WHERE language="C"), (SELECT id FROM HookClass WHERE class="Test")));
+                        COMMIT;"#;
+    crate::common::load_sql(sql_create);
+    crate::common::toggle_hook("test_hook", true);
+    while !(crate::common::is_hooked(libc, "test_hook")) {
         assert!(enable_checks < 3);
         enable_checks += 1;
         std::thread::sleep(std::time::Duration::from_millis(35));
     }
-    crate::common::toggle_hook("fexecve", false);
-    while crate::common::is_hooked(libc, "fexecve") {
+    crate::common::toggle_hook("test_hook", false);
+    while crate::common::is_hooked(libc, "test_hook") {
         disable_checks += 1;
         if disable_checks < 3 {
             std::thread::sleep(std::time::Duration::from_millis(35));
@@ -32,7 +37,10 @@ whitebeam_test!("linux", interposition_02_toggle_hook {
             break
         }
     }
-    crate::common::toggle_hook("fexecve", true);
+    let sql_delete = r#"BEGIN;
+                        DELETE FROM Hook WHERE symbol = "test_hook" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
+                        COMMIT;"#;
+    crate::common::load_sql(sql_delete);
     assert!(disable_checks < 3);
 });
 
@@ -40,13 +48,13 @@ whitebeam_test!("linux", interposition_02_toggle_hook {
 whitebeam_test!("linux", interposition_03_generic_hook_string {
     let libc: &str = &format!("/lib/{}-linux-gnu/libc.so.6", std::env::consts::ARCH);
     // Load strdup hook
-    let sql = r#"BEGIN;
-                 INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
-                 SELECT * FROM (VALUES ("strdup", "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6", 1, (SELECT id FROM HookLanguage WHERE language="C"), (SELECT id FROM HookClass WHERE class="Test")));
-                 INSERT OR IGNORE INTO Argument (name, position, hook, datatype)
-                 SELECT * FROM (VALUES ("s", 0, (SELECT id FROM Hook WHERE library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6" AND symbol="strdup"), (SELECT id FROM Datatype WHERE datatype="String")));
-                 COMMIT;"#;
-    crate::common::load_sql(sql);
+    let sql_create = r#"BEGIN;
+                        INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
+                        SELECT * FROM (VALUES ("strdup", "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6", 1, (SELECT id FROM HookLanguage WHERE language="C"), (SELECT id FROM HookClass WHERE class="Test")));
+                        INSERT OR IGNORE INTO Argument (name, position, hook, datatype)
+                        SELECT * FROM (VALUES ("s", 0, (SELECT id FROM Hook WHERE library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6" AND symbol="strdup"), (SELECT id FROM Datatype WHERE datatype="String")));
+                        COMMIT;"#;
+    crate::common::load_sql(sql_create);
     // Waits up to ~100 milliseconds for dnotify signal to be delivered
     let mut enable_checks = 0;
     while !(crate::common::is_hooked(libc, "strdup")) {
@@ -60,11 +68,11 @@ whitebeam_test!("linux", interposition_03_generic_hook_string {
     let orig_cstring = "test\0".as_ptr() as *const libc::c_char;
     let dup_cstring = unsafe { hooked_strdup(orig_cstring) } as *const libc::c_char;
     // Clean up
-    let sql = r#"BEGIN;
-                 DELETE FROM Argument WHERE hook=(SELECT id FROM Hook WHERE symbol = "strdup"  AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6");
-                 DELETE FROM Hook WHERE symbol = "strdup" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
-                 COMMIT;"#;
-    crate::common::load_sql(sql);
+    let sql_delete = r#"BEGIN;
+                        DELETE FROM Argument WHERE hook=(SELECT id FROM Hook WHERE symbol = "strdup"  AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6");
+                        DELETE FROM Hook WHERE symbol = "strdup" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
+                        COMMIT;"#;
+    crate::common::load_sql(sql_delete);
     assert!(!(dup_cstring.is_null()));
     assert!(unsafe { libc::strncmp(orig_cstring, dup_cstring, libc::strlen(orig_cstring)) } == 0);
 });
@@ -137,11 +145,11 @@ whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
     let libc: &str = &format!("/lib/{}-linux-gnu/libc.so.6", std::env::consts::ARCH);
     let getlogin_result_unhooked = unsafe { libc::getlogin() } as *mut libc::c_char;
     assert!(!(getlogin_result_unhooked.is_null()));
-    let sql = r#"BEGIN;
-                 INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
-                 SELECT * FROM (VALUES ("getlogin", "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6", 1, (SELECT id FROM HookLanguage WHERE language="C"), (SELECT id FROM HookClass WHERE class="Test")));
-                 COMMIT;"#;
-    crate::common::load_sql(sql);
+    let sql_create = r#"BEGIN;
+                        INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
+                        SELECT * FROM (VALUES ("getlogin", "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6", 1, (SELECT id FROM HookLanguage WHERE language="C"), (SELECT id FROM HookClass WHERE class="Test")));
+                        COMMIT;"#;
+    crate::common::load_sql(sql_create);
     // Waits up to ~100 milliseconds for dnotify signal to be delivered
     let mut enable_checks = 0;
     while !(crate::common::is_hooked(libc, "getlogin")) {
@@ -154,10 +162,10 @@ whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
     let hooked_getlogin: unsafe extern "C" fn() -> isize = unsafe { std::mem::transmute(generic_hook_addr) };
     let getlogin_result_hooked = unsafe { hooked_getlogin() } as *mut libc::c_char;
     // Clean up
-    let sql = r#"BEGIN;
-                 DELETE FROM Hook WHERE symbol = "getlogin" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
-                 COMMIT;"#;
-    crate::common::load_sql(sql);
+    let sql_delete = r#"BEGIN;
+                        DELETE FROM Hook WHERE symbol = "getlogin" AND library = "/lib/" || (SELECT value FROM Setting WHERE param="SystemArchitecture") || "-linux-gnu/libc.so.6";
+                        COMMIT;"#;
+    crate::common::load_sql(sql_delete);
     assert!(!(getlogin_result_hooked.is_null()));
     assert!(unsafe { libc::strncmp(getlogin_result_unhooked, getlogin_result_hooked, libc::strlen(getlogin_result_unhooked)) } == 0);
 });

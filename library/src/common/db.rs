@@ -24,7 +24,7 @@ pub static ACT_ARG_CACHE: LazyLock<Mutex<Vec<ActionArgumentRow>>> = LazyLock::ne
 pub static RULE_CACHE: LazyLock<Mutex<Vec<RuleRow>>> = LazyLock::new(|| Mutex::new(vec![]));
 // TODO: BTreemap for Settings?
 pub static SET_CACHE: LazyLock<Mutex<Vec<SettingRow>>> = LazyLock::new(|| Mutex::new(vec![]));
-pub static REFRESH_THREADS: LazyLock<RwLock<BTreeMap<u64, u128>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+pub static REFRESH_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 #[derive(Clone)]
 pub struct HookRow {
@@ -204,16 +204,7 @@ pub fn get_setting_table(conn: &Connection) -> Result<Vec<SettingRow>, Box<dyn E
 }
 
 pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
-    let thread_id: u64 = platform::gettid();
-    let current_time: u128 = time::get_timestamp_ns();
-    {
-        // TODO: Cleaning up stale entries may help memory usage
-        if let Ok(mut lock) = REFRESH_THREADS.write() {
-            lock.insert(thread_id, current_time);
-        } else {
-            return Err("WhiteBeam: Could not acquire thread lock".into());
-        }
-    }
+    let refresh_lock = REFRESH_LOCK.try_lock()?;
     let conn = db_open()?;
     // Hook cache
     {
