@@ -17,14 +17,14 @@ harness = false
 # Cross-platform dependencies
 [dependencies]
 libc = { version = "^0.2.98" }
-rusqlite = { version = "0.26", features = ["bundled"] }
-linkme = { version = "0.2" }
+rusqlite = { version = "0.28", features = ["bundled"] }
+linkme = { version = "0.3" }
 automod = { version = "1.0" }
 glob = { version = "0.3" }
 # Cryptographic dependencies
 sha3 = { version = "0.10" }
 blake3 = { version = "1.0" }
-argon2 = { version = "0.3" }
+argon2 = { version = "0.4" }
 
 [features]
 whitelist_test = []

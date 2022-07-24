@@ -103,7 +103,7 @@ fn run_add(class: &OsStr, parent: Option<&OsStr>, path: &OsStr, value: Option<&O
 
 fn run_auth() -> Result<(), Box<dyn Error>> {
     // TODO: Log
-    let password: String = rpassword::read_password_from_tty(Some("Password: "))?;
+    let password: String = rpassword::prompt_password("Password: ")?;
     let conn: rusqlite::Connection = common::db::db_open(false)?;
     if !common::db::get_valid_auth_string(&conn, &password)? {
         return Err("WhiteBeam: Authorization failed".into());
@@ -425,8 +425,8 @@ fn run_setting(param: &OsStr, value: Option<&OsStr>) -> Result<(), Box<dyn Error
     }
     let mut val: String = match value.unwrap().to_str().ok_or(String::from("Invalid UTF-8 provided"))? {
         "mask" => {
-            let value_orig: String = rpassword::read_password_from_tty(Some("Value: "))?;
-            let value_confirm: String = rpassword::read_password_from_tty(Some("Confirm: "))?;
+            let value_orig: String = rpassword::prompt_password("Value: ")?;
+            let value_confirm: String = rpassword::prompt_password("Confirm: ")?;
             if value_orig == value_confirm {
                 value_orig
             } else {

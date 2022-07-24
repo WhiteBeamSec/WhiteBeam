@@ -92,11 +92,12 @@ pub fn check_build_environment() {
             .expect("WhiteBeam: Failed to execute rustup command");
     let rustup_toolchains_string = String::from_utf8_lossy(&rustup_toolchains.stdout);
     /*
+    // MSRV: Rust 1.62
     if !rustup_toolchains_string.contains("stable") {
         eprintln!("WhiteBeam: No stable Rust found in toolchain, consider running: rustup toolchain install stable");
         std::process::exit(1);
-    } else */ if !(rustup_toolchains_string.contains("nightly-2022-06-25")) {
-        eprintln!("WhiteBeam: No pinned nightly Rust found in toolchain, consider running: rustup toolchain install nightly-2022-06-25");
+    } else */ if !(rustup_toolchains_string.contains("nightly-2022-07-23")) {
+        eprintln!("WhiteBeam: No pinned nightly Rust found in toolchain, consider running: rustup toolchain install nightly-2022-07-23");
         std::process::exit(1);
     }
 }

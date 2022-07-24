@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Linux LD_PRELOAD/LD_AUDIT library: Performance improvements in initialization
 - Linux LD_PRELOAD/LD_AUDIT library: Replaced la_symbind with la_pltenter auditing API to support bind now (-z now) compiler flag
-- Pinned Nightly Rust toolchain to nightly-2022-06-25
+- Pinned Nightly Rust toolchain to nightly-2022-07-23
 - Restructured project source directories
 - Updated to latest dependencies
 - Updated to Rust 2021 edition

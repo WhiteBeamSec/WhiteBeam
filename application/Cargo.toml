@@ -14,15 +14,15 @@ name = "whitebeam"
 libc = { version = "0.2" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-rusqlite = { version = "0.26", features = ["bundled"] }
+rusqlite = { version = "0.28", features = ["bundled"] }
 hex = { version = "0.4" }
 clap = { version = "2.33" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 warp = { version = "0.3" }
 reqwest = { version = "0.11", features = ["blocking"] }
-rpassword = { version = "5.0" }
+rpassword = { version = "7.0" }
 cli-table = { version = "0.4" }
-linkme = { version = "0.2" }
+linkme = { version = "0.3" }
 automod = { version = "1.0" }
 rand = { version = "0.8" }
 glob = { version = "0.3" }
@@ -30,7 +30,7 @@ goblin = { version = "0.5" }
 # Cryptographic dependencies
 sha3 = { version = "0.10" }
 blake3 = { version = "1.0" }
-argon2 = { version = "0.3" }
+argon2 = { version = "0.4" }
 crypto_box = { version = "0.7" }
 
 [features]
