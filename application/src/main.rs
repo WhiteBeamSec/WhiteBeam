@@ -501,6 +501,7 @@ fn main() -> Result<(), MainError> {
         .arg(Arg::with_name("add")
                  .long("add")
                  .takes_value(true)
+                 .value_parser(clap::value_parser!(std::ffi::OsString))
                  .multiple(true)
                  .help("Add policy to whitelist (+auth with Prevention)")
                  .value_name("path"))
@@ -515,22 +516,27 @@ fn main() -> Result<(), MainError> {
         .arg(Arg::with_name("disable")
                  .long("disable")
                  .takes_value(true)
+                 .value_parser(clap::value_parser!(std::ffi::OsString))
                  .help("Disable a class of hooks (+auth with Prevention)"))
         .arg(Arg::with_name("enable")
                  .long("enable")
                  .takes_value(true)
+                 .value_parser(clap::value_parser!(std::ffi::OsString))
                  .help("Enable a class of hooks (+auth with Prevention)"))
         .arg(Arg::with_name("list")
                  .long("list")
                  .takes_value(true)
+                 .value_parser(clap::value_parser!(std::ffi::OsString))
                  .help("List hooks, rules, or whitelist policy on this host"))
         .arg(Arg::with_name("load")
                  .long("load")
                  .takes_value(true)
+                 .value_parser(clap::value_parser!(std::ffi::OsString))
                  .help("Load SQL from standard input, a file, or repository (+auth with Prevention)"))
         .arg(Arg::with_name("remove")
                  .long("remove")
                  .takes_value(true)
+                 .value_parser(clap::value_parser!(u32))
                  .help("Remove a whitelist rule by id (+auth with Prevention)")
                  .value_name("id"))
         .arg(Arg::with_name("service")
@@ -540,6 +546,7 @@ fn main() -> Result<(), MainError> {
         .arg(Arg::with_name("setting")
                  .long("setting")
                  .takes_value(true)
+                 .value_parser(clap::value_parser!(std::ffi::OsString))
                  .multiple(true)
                  .help("Modify or view WhiteBeam client settings (+auth with Prevention)"))
         .arg(Arg::with_name("start")
@@ -556,8 +563,8 @@ fn main() -> Result<(), MainError> {
                  .help("Stop the WhiteBeam service (+auth with Prevention)"))
         .get_matches();
 
-    if matches.is_present("add") {
-        match matches.values_of_os("add") {
+    if matches.contains_id("add") {
+        match matches.get_many::<std::ffi::OsString>("add") {
             Some(vals) => {
                 let mut vals_iter = vals.clone();
                 // TODO: Refactor
@@ -586,24 +593,24 @@ fn main() -> Result<(), MainError> {
                 return Err("WhiteBeam: Missing parameters for 'add' argument".into());
             }
         };
-    } else if matches.is_present("auth") {
+    } else if matches.contains_id("auth") {
         run_auth()?;
-    } else if matches.is_present("baseline") {
+    } else if matches.contains_id("baseline") {
         run_baseline()?;
-    } else if matches.is_present("disable") {
-        run_disable(matches.value_of_os("disable").ok_or(String::from("WhiteBeam: Missing parameter for 'disable' argument"))?)?;
-    } else if matches.is_present("enable") {
-        run_enable(matches.value_of_os("enable").ok_or(String::from("WhiteBeam: Missing parameter for 'enable' argument"))?)?;
-    } else if matches.is_present("list") {
-        run_list(matches.value_of_os("list").ok_or(String::from("WhiteBeam: Missing parameter for 'list' argument"))?)?;
-    } else if matches.is_present("load") {
-        run_load(matches.value_of_os("load").unwrap_or(OsStr::new("stdin")))?;
-    } else if matches.is_present("remove") {
-        run_remove(matches.value_of("remove").ok_or(String::from("WhiteBeam: Missing parameter for 'remove' argument"))?.parse::<u32>()?)?;
-    } else if matches.is_present("service") {
+    } else if matches.contains_id("disable") {
+        run_disable(matches.get_one::<std::ffi::OsString>("disable").ok_or(String::from("WhiteBeam: Missing parameter for 'disable' argument"))?)?;
+    } else if matches.contains_id("enable") {
+        run_enable(matches.get_one::<std::ffi::OsString>("enable").ok_or(String::from("WhiteBeam: Missing parameter for 'enable' argument"))?)?;
+    } else if matches.contains_id("list") {
+        run_list(matches.get_one::<std::ffi::OsString>("list").ok_or(String::from("WhiteBeam: Missing parameter for 'list' argument"))?)?;
+    } else if matches.contains_id("load") {
+        run_load(matches.get_one::<std::ffi::OsString>("load").unwrap_or(&std::ffi::OsString::from("stdin")))?;
+    } else if matches.contains_id("remove") {
+        run_remove(*(matches.get_one::<u32>("remove").ok_or(String::from("WhiteBeam: Missing parameter for 'remove' argument"))?))?;
+    } else if matches.contains_id("service") {
         run_service();
-    } else if matches.is_present("setting") {
-        match matches.values_of_os("setting") {
+    } else if matches.contains_id("setting") {
+        match matches.get_many::<std::ffi::OsString>("setting") {
             Some(vals) => {
                 let mut vals_iter = vals.clone();
                 // TODO: Refactor
@@ -623,11 +630,11 @@ fn main() -> Result<(), MainError> {
                 return Err("WhiteBeam: Missing parameters for 'setting' argument".into());
             }
         };
-    } else if matches.is_present("start") {
+    } else if matches.contains_id("start") {
         run_start();
-    } else if matches.is_present("status") {
+    } else if matches.contains_id("status") {
         run_status()?;
-    } else if matches.is_present("stop") {
+    } else if matches.contains_id("stop") {
         run_stop()?;
     }
     Ok(())

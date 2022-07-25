@@ -4,6 +4,7 @@ mod common;
 macro_rules! whitebeam_test {
     ($os:expr, $func:ident $body:block) => {
         #[cfg(target_os = $os)]
+        #[allow(non_snake_case)]
         #[linkme::distributed_slice(crate::TEST_INDEX)]
         fn $func() {
             print!("Running {}", stringify!($func));
