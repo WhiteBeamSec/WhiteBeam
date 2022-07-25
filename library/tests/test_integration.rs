@@ -44,7 +44,7 @@ fn main() {
         return;
     }
     println!("Running tests");
-    for test in TEST_INDEX.iter() {
+    for test in TEST_INDEX.iter().rev() {
         test();
     }
 }

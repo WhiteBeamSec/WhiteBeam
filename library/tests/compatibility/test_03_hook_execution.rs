@@ -168,7 +168,64 @@ whitebeam_test!("linux", execution_10_posix_spawnp_simple {
     std::fs::remove_file(test_path).expect(&format!("WhiteBeam: Failed to remove {:?}", test_path));
 });
 
-// Tests for:
-// dlopen
-// dlmopen
-// kill
+whitebeam_test!("linux", execution_11_kill_simple {
+    let mut pid: libc::pid_t = 0;
+    unsafe { libc::posix_spawn(&mut pid as *mut libc::pid_t,
+                               "/usr/bin/sleep\0".as_ptr() as *const libc::c_char,
+                               std::ptr::null(),
+                               std::ptr::null(),
+                               ["/usr/bin/sleep\0".as_ptr() as *const libc::c_char, "10\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr() as *const *mut libc::c_char,
+                               std::ptr::null()); }
+    unsafe { libc::kill(pid, libc::SIGKILL); }
+    let mut status = 0;
+    unsafe { libc::waitpid(pid, &mut status, 0); }
+    assert!(status == libc::SIGKILL as i32);
+});
+
+whitebeam_test!("linux", execution_12_dlopen_lazy {
+    let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
+    assert!(handle != std::ptr::null_mut());
+    unsafe { libc::dlclose(handle); }
+});
+
+whitebeam_test!("linux", execution_13_dlopen_now {
+    let handle = unsafe { libc::dlopen("libm.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_NOW) };
+    assert!(handle != std::ptr::null_mut());
+    unsafe { libc::dlclose(handle); }
+});
+
+whitebeam_test!("linux", execution_14_dlopen_lazy_call_unhooked {
+    let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
+    assert!(handle != std::ptr::null_mut());
+    let getpid_ptr = unsafe { libc::dlsym(handle, "getpid\0".as_ptr() as *const libc::c_char) };
+    assert!(getpid_ptr != std::ptr::null_mut());
+    let getpid_fn: unsafe extern "C" fn() -> libc::pid_t = unsafe { std::mem::transmute(getpid_ptr) };
+    assert!(unsafe { getpid_fn() } == unsafe { libc::getpid() });
+    unsafe { libc::dlclose(handle); }
+});
+
+/*
+// WIP
+whitebeam_test!("linux", execution_15_dlopen_lazy_call_hooked {
+    let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
+    assert!(handle != std::ptr::null_mut());
+    unsafe { libc::dlclose(handle); }
+});
+
+whitebeam_test!("linux", execution_16_dlopen_now_call_unhooked {
+    let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
+    assert!(handle != std::ptr::null_mut());
+    unsafe { libc::dlclose(handle); }
+});
+
+whitebeam_test!("linux", execution_17_dlopen_now_call_hooked {
+    let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
+    assert!(handle != std::ptr::null_mut());
+    unsafe { libc::dlclose(handle); }
+});
+*/
+
+// TODO: Prevention tests
+// TODO: dlerror tests (missing library specified, prevention enabled, etc.)
+// TODO: dlopen flags: RTLD_GLOBAL, RTLD_LOCAL, RTLD_NODELETE, RTLD_NOLOAD, RTLD_DEEPBIND
+// TODO: dlmopen flags: LM_ID_BASE, LM_ID_NEWLM
