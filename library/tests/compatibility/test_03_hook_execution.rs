@@ -136,9 +136,39 @@ whitebeam_test!("linux", execution_08_fexecve_simple {
     }
 });
 
+whitebeam_test!("linux", execution_09_posix_spawn_simple {
+    let mut pid: libc::pid_t = 0;
+    unsafe { libc::posix_spawn(&mut pid as *mut libc::pid_t,
+                               "/usr/bin/touch\0".as_ptr() as *const libc::c_char,
+                               std::ptr::null(),
+                               std::ptr::null(),
+                               ["/usr/bin/touch\0".as_ptr() as *const libc::c_char, "/tmp/posix_spawn_test\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr() as *const *mut libc::c_char,
+                               std::ptr::null()); }
+    let mut status = 0;
+    unsafe { libc::waitpid(pid, &mut status, 0); }
+    assert!(status == 0);
+    let test_path = std::path::Path::new("/tmp/posix_spawn_test");
+    assert!(test_path.exists());
+    std::fs::remove_file(test_path).expect(&format!("WhiteBeam: Failed to remove {:?}", test_path));
+});
+
+whitebeam_test!("linux", execution_10_posix_spawnp_simple {
+    let mut pid: libc::pid_t = 0;
+    unsafe { libc::posix_spawnp(&mut pid as *mut libc::pid_t,
+                                "touch\0".as_ptr() as *const libc::c_char,
+                                std::ptr::null(),
+                                std::ptr::null(),
+                                ["touch\0".as_ptr() as *const libc::c_char, "/tmp/posix_spawnp_test\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr() as *const *mut libc::c_char,
+                                std::ptr::null()); }
+    let mut status = 0;
+    unsafe { libc::waitpid(pid, &mut status, 0); }
+    assert!(status == 0);
+    let test_path = std::path::Path::new("/tmp/posix_spawnp_test");
+    assert!(test_path.exists());
+    std::fs::remove_file(test_path).expect(&format!("WhiteBeam: Failed to remove {:?}", test_path));
+});
+
 // Tests for:
-// posix_spawn
-// posix_spawnp
 // dlopen
 // dlmopen
 // kill
