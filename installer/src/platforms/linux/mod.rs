@@ -102,6 +102,13 @@ pub fn check_build_environment() {
     }
 }
 
+pub unsafe fn gnu_get_libc_version() -> *const libc::c_char {
+    extern "C" {
+        fn gnu_get_libc_version() -> *const libc::c_char;
+    }
+    gnu_get_libc_version()
+}
+
 pub fn run_install() {
     // TODO: Eliminate service.sh
     if get_current_uid() != 0 {
@@ -119,16 +126,12 @@ pub fn run_install() {
             .status().expect("WhiteBeam: Child process failed to start");
         return;
     }
-    // TODO: Update by the time glibc 2.36 is released (~Aug 2022)
     if std::env::consts::ARCH == "aarch64" {
-        let ld_reported_version = match Command::new("/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1")
-            .arg("--version")
-            .output() {
-            Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
-            Err(_) => String::from("")
-        };
-        if !(ld_reported_version.contains("version 2.35")) && !(Path::new("/usr/lib/aarch64-linux-gnu/ld-2.35.so").exists()) {
-            eprintln!("WhiteBeam: glibc 2.35 required on aarch64 platforms");
+        let libc_version = unsafe { gnu_get_libc_version() };
+        let libc_version_str = unsafe { std::ffi::CStr::from_ptr(libc_version).to_str().expect("WhiteBeam: Failed to determine libc version") };
+        if libc_version_str.split('.').collect::<Vec<&str>>()[0] < "2" ||
+           (libc_version_str.split('.').collect::<Vec<&str>>()[0] == "2" && libc_version_str.split('.').collect::<Vec<&str>>()[1] < "35") {
+            eprintln!("WhiteBeam: libc 2.35 or higher required on aarch64");
             std::process::exit(1);
         }
     }

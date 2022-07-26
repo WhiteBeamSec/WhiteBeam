@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Installer: Patched ARM glibc linker (in favor of glibc 2.35)
+- Installer: Patched ARM glibc linker (in favor of glibc 2.35+)
 - Linux LD_PRELOAD/LD_AUDIT library: syslog dependency (in favor of glibc APIs)
 
 ### Fixed
