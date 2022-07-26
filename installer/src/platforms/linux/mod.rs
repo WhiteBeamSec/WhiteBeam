@@ -129,8 +129,11 @@ pub fn run_install() {
     if std::env::consts::ARCH == "aarch64" {
         let libc_version = unsafe { gnu_get_libc_version() };
         let libc_version_str = unsafe { std::ffi::CStr::from_ptr(libc_version).to_str().expect("WhiteBeam: Failed to determine libc version") };
-        if libc_version_str.split('.').collect::<Vec<&str>>()[0] < "2" ||
-           (libc_version_str.split('.').collect::<Vec<&str>>()[0] == "2" && libc_version_str.split('.').collect::<Vec<&str>>()[1] < "35") {
+        let libc_version_split: Vec<u32> = libc_version_str.split('.').map(|n| n.parse::<u32>().expect("WhiteBeam: Failed to parse libc version")).collect::<Vec<u32>>();
+        assert!(libc_version_split.len() >= 2, "WhiteBeam: Failed to parse libc version");
+        let libc_version_major = libc_version_split[0];
+        let libc_version_minor = libc_version_split[1];
+        if (libc_version_major < 2) || ((libc_version_major == 2) && (libc_version_minor < 35)) {
             eprintln!("WhiteBeam: libc 2.35 or higher required on aarch64");
             std::process::exit(1);
         }
