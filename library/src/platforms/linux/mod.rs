@@ -550,13 +550,18 @@ pub fn get_env_path() -> OsString {
     }
 }
 
+pub fn get_lib_path() -> OsString {
+    // TODO: DT_RPATH/DT_RUNPATH/LD_LIBRARY_PATH/ld.so.cache (?)
+    let lib_path: &str = &format!("/lib/{}-linux-gnu:/usr/lib/{}-linux-gnu", std::env::consts::ARCH, std::env::consts::ARCH);
+    OsString::from(lib_path)
+}
+
 pub fn gettid() -> u64 {
     unsafe { libc::syscall(libc::SYS_gettid) as u64 }
 }
 
-pub fn search_path(program: &OsStr) -> Option<PathBuf> {
-    let env_path: OsString = get_env_path();
-    let mut paths: Vec<PathBuf> = env::split_paths(&env_path).collect();
+pub fn search_path(program: &OsStr, paths: &OsStr) -> Option<PathBuf> {
+    let mut paths: Vec<PathBuf> = env::split_paths(paths).collect();
     if program.as_bytes().contains(&b'/') {
         match env::current_dir() {
             Ok(cwd) => paths.push(cwd),
