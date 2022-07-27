@@ -1,4 +1,6 @@
+// TODO: Prevention tests
 // TODO: Tests to ensure environment is not corrupted
+// TODO: Ensure library is loaded when dl*open is called (will require loading a library that is not linked with WhiteBeam)
 
 whitebeam_test!("linux", execution_00_execve_simple {
     let pid = unsafe { libc::fork() };
@@ -194,7 +196,14 @@ whitebeam_test!("linux", execution_13_dlopen_now {
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_14_dlopen_lazy_call_unhooked {
+whitebeam_test!("linux", execution_14_dlopen_absolute_path {
+    let libc: &str = &format!("/lib/{}-linux-gnu/libc.so.6\0", std::env::consts::ARCH);
+    let handle = unsafe { libc::dlopen(libc.as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
+    assert!(handle != std::ptr::null_mut());
+    unsafe { libc::dlclose(handle); }
+});
+
+whitebeam_test!("linux", execution_15_dlopen_lazy_call_unhooked {
     let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());
     let getpid_ptr = unsafe { libc::dlsym(handle, "getpid\0".as_ptr() as *const libc::c_char) };
@@ -204,28 +213,70 @@ whitebeam_test!("linux", execution_14_dlopen_lazy_call_unhooked {
     unsafe { libc::dlclose(handle); }
 });
 
-/*
-// WIP
-whitebeam_test!("linux", execution_15_dlopen_lazy_call_hooked {
+whitebeam_test!("linux", execution_16_dlopen_lazy_call_hooked {
     let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
+    assert!(handle != std::ptr::null_mut());
+    let kill_ptr = unsafe { libc::dlsym(handle, "kill\0".as_ptr() as *const libc::c_char) };
+    assert!(kill_ptr != std::ptr::null_mut());
+    let kill_fn: unsafe extern "C" fn(libc::pid_t, libc::c_int) -> libc::c_int = unsafe { std::mem::transmute(kill_ptr) };
+    assert!(unsafe { kill_fn(libc::getpid(), libc::SIGCONT) } == 0);
+    unsafe { libc::dlclose(handle); }
+});
+
+whitebeam_test!("linux", execution_17_dlopen_now_call_unhooked {
+    let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_NOW) };
+    assert!(handle != std::ptr::null_mut());
+    let getpid_ptr = unsafe { libc::dlsym(handle, "getpid\0".as_ptr() as *const libc::c_char) };
+    assert!(getpid_ptr != std::ptr::null_mut());
+    let getpid_fn: unsafe extern "C" fn() -> libc::pid_t = unsafe { std::mem::transmute(getpid_ptr) };
+    assert!(unsafe { getpid_fn() } == unsafe { libc::getpid() });
+    unsafe { libc::dlclose(handle); }
+});
+
+whitebeam_test!("linux", execution_18_dlopen_now_call_hooked {
+    let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_NOW) };
+    assert!(handle != std::ptr::null_mut());
+    let kill_ptr = unsafe { libc::dlsym(handle, "kill\0".as_ptr() as *const libc::c_char) };
+    assert!(kill_ptr != std::ptr::null_mut());
+    let kill_fn: unsafe extern "C" fn(libc::pid_t, libc::c_int) -> libc::c_int = unsafe { std::mem::transmute(kill_ptr) };
+    assert!(unsafe { kill_fn(libc::getpid(), libc::SIGCONT) } == 0);
+    unsafe { libc::dlclose(handle); }
+});
+
+whitebeam_test!("linux", execution_19_dlerror_not_found {
+    let handle = unsafe { libc::dlopen("missing.so\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
+    assert!(handle == std::ptr::null_mut());
+    let error: *const libc::c_char = unsafe { libc::dlerror() };
+    let error_str = unsafe { std::ffi::CStr::from_ptr(error).to_str().expect("WhiteBeam: Failed to convert dlerror to &str type") };
+    assert!(error_str == "missing.so: cannot open shared object file: No such file or directory");
+});
+
+whitebeam_test!("linux", execution_20_dlopen_noload {
+    let handle = unsafe { libc::dlopen("libcap.so.2\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
+    assert!(handle == std::ptr::null_mut());
+});
+
+whitebeam_test!("linux", execution_21_dlmopen_base {
+    let handle = unsafe { libc::dlmopen(libc::LM_ID_BASE, "libcap.so.2\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_16_dlopen_now_call_unhooked {
-    let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
+whitebeam_test!("linux", execution_22_dlmopen_absolute_path {
+    let libcap: &str = &format!("/lib/{}-linux-gnu/libcap.so.2\0", std::env::consts::ARCH);
+    let handle = unsafe { libc::dlmopen(libc::LM_ID_BASE, libcap.as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_17_dlopen_now_call_hooked {
-    let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
+whitebeam_test!("linux", execution_23_dlmopen_lazy_call_unhooked {
+    let handle = unsafe { libc::dlmopen(libc::LM_ID_BASE, "libcap.so.2\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());
+    let cap_from_name_ptr = unsafe { libc::dlsym(handle, "cap_from_name\0".as_ptr() as *const libc::c_char) };
+    assert!(cap_from_name_ptr != std::ptr::null_mut());
+    let mut cap_value: libc::c_int = 0;
+    let cap_from_name_fn: unsafe extern "C" fn(*const libc::c_char, *mut libc::c_int) -> libc::c_int = unsafe { std::mem::transmute(cap_from_name_ptr) };
+    assert!(unsafe { cap_from_name_fn("CAP_SETUID\0".as_ptr() as *const libc::c_char, &mut cap_value as *mut _) } == 0);
+    assert!(cap_value == 7);
     unsafe { libc::dlclose(handle); }
 });
-*/
-
-// TODO: Prevention tests
-// TODO: dlerror tests (missing library specified, prevention enabled, etc.)
-// TODO: dlopen flags: RTLD_GLOBAL, RTLD_LOCAL, RTLD_NODELETE, RTLD_NOLOAD, RTLD_DEEPBIND
-// TODO: dlmopen flags: LM_ID_BASE, LM_ID_NEWLM

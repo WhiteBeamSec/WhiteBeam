@@ -43,6 +43,7 @@ fn main() {
         assert!(exit_status_test.success());
         return;
     }
+    // TODO: Allow a specific test to be run
     println!("Running tests");
     for test in TEST_INDEX.iter().rev() {
         test();
