@@ -14,8 +14,7 @@ build_action! { CanonicalizePath (_par_prog, _src_prog, hook, arg_position, args
                 match platform::search_path(&file_osstring, &lib_path) {
                     Some(abspath) => abspath.as_os_str().to_owned(),
                     None => {
-                        do_return = true;
-                        return_value = 0;
+                        args[file_index+1].real |= (libc::RTLD_NOLOAD as usize);
                         return (hook, args, do_return, return_value);
                     }
                 }

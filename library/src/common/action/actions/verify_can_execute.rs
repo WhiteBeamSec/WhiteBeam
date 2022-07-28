@@ -22,6 +22,16 @@ build_action! { VerifyCanExecute (par_prog, src_prog, hook, arg_position, args, 
         }
         let argument_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
         let argument: crate::common::db::ArgumentRow = args[argument_index].clone();
+        match (library_basename, symbol) {
+            ("libdl.so.2", "dlopen") |
+            ("libdl.so.2", "dlmopen") => {
+                if (args[argument_index+1].real & (libc::RTLD_NOLOAD as usize)) != 0 {
+                    // Permit NOLOAD
+                    return (hook, args, do_return, return_value);
+                }
+            },
+            _ => ()
+        };
         let target_executable: String = match (library_basename, symbol) {
             ("libdl.so.2", "dlopen") |
             ("libdl.so.2", "dlmopen") => {
