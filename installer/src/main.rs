@@ -92,18 +92,16 @@ fn test(args: Vec<String>) {
     common::db::db_load("Essential").expect("WhiteBeam: Failed to load Essential hooks");
     // Load platform-specific test data through whitebeam command
     common::db::db_load("Test").expect("WhiteBeam: Failed to load test data");
+    // Allow the whitebeam command to run when Prevention is enabled
+    let _exit_status_secret = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+        .args(&["--add", "Filesystem/Path/Executable", &format!("{}/target/release/whitebeam", env!("PWD"))])
+        .status()
+        .expect("WhiteBeam: Failed to execute whitebeam command");
     // Set a test recovery secret
     let _exit_status_secret = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
         .args(&["--setting", "RecoverySecret", "test"])
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
-    // Enable prevention (TODO: Make configurable by tests?)
-    /*
-    let _exit_status_prevention = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
-        .args(&["--setting", "Prevention", "true"])
-        .status()
-        .expect("WhiteBeam: Failed to execute whitebeam command");
-    */
     // Run tests
     let _exit_status_tests = Command::new("cargo")
         .arg("+nightly-2022-07-23").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test")
@@ -111,12 +109,6 @@ fn test(args: Vec<String>) {
         .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
         .status()
         .expect("WhiteBeam: Failed to execute cargo command");
-    // Disable prevention
-    let _exit_status_disable = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
-        .args(&["--setting", "Prevention", "false"])
-        .env("WB_AUTH", "test")
-        .status()
-        .expect("WhiteBeam: Failed to execute whitebeam command");
     // Reset recovery secret
     let _exit_status_reset = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
         .args(&["--setting", "RecoverySecret", "undefined"])

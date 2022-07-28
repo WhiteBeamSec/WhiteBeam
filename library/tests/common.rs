@@ -21,9 +21,19 @@ pub fn load_sql(sql: &str) {
     }
 }
 
+pub fn update_setting(param: &str, value: &str) {
+    assert!(param.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
+    assert!(value.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == ':' || c == '.' || c == '/'));
+    let sql = String::from(format!("UPDATE Setting SET value = '{}' WHERE param = '{}';", value, param));
+    load_sql(&sql);
+}
+
+pub fn toggle_prevention(enabled: bool) {
+    update_setting("Prevention", &(enabled.to_string()));
+}
+
 pub fn toggle_hook(symbol: &str, enabled: bool) {
     assert!(symbol.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
-    // TODO: Cross platform
     let sql = String::from(format!("UPDATE Hook SET enabled = {} WHERE symbol = '{}';", enabled, symbol));
     load_sql(&sql);
 }
