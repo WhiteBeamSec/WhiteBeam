@@ -1,5 +1,4 @@
 build_action! { CanonicalizePath (_par_prog, _src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
-        // TODO: Handle NULL dlopen
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
@@ -10,11 +9,16 @@ build_action! { CanonicalizePath (_par_prog, _src_prog, hook, arg_position, args
         let new_file_value: std::ffi::OsString = match (library_basename, symbol) {
             ("libdl.so.2", "dlopen") |
             ("libdl.so.2", "dlmopen") => {
+                // TODO: Eliminate repetition if possible
+                if file_argument.real == 0 {
+                    args[file_index+1].real |= libc::RTLD_NOLOAD as usize;
+                    return (hook, args, do_return, return_value);
+                }
                 let lib_path: std::ffi::OsString = platform::get_lib_path();
                 match platform::search_path(&file_osstring, &lib_path) {
                     Some(abspath) => abspath.as_os_str().to_owned(),
                     None => {
-                        args[file_index+1].real |= (libc::RTLD_NOLOAD as usize);
+                        args[file_index+1].real |= libc::RTLD_NOLOAD as usize;
                         return (hook, args, do_return, return_value);
                     }
                 }

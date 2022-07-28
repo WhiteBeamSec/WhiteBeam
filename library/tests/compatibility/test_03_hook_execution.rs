@@ -203,7 +203,13 @@ whitebeam_test!("linux", execution_14_dlopen_absolute_path {
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_15_dlopen_lazy_call_unhooked {
+whitebeam_test!("linux", execution_15_dlopen_null {
+    let handle = unsafe { libc::dlopen(std::ptr::null() as *const libc::c_char, libc::RTLD_LAZY) };
+    assert!(handle != std::ptr::null_mut());
+    unsafe { libc::dlclose(handle); }
+});
+
+whitebeam_test!("linux", execution_16_dlopen_lazy_call_unhooked {
     let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());
     let getpid_ptr = unsafe { libc::dlsym(handle, "getpid\0".as_ptr() as *const libc::c_char) };
@@ -213,7 +219,7 @@ whitebeam_test!("linux", execution_15_dlopen_lazy_call_unhooked {
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_16_dlopen_lazy_call_hooked {
+whitebeam_test!("linux", execution_17_dlopen_lazy_call_hooked {
     let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());
     let kill_ptr = unsafe { libc::dlsym(handle, "kill\0".as_ptr() as *const libc::c_char) };
@@ -223,7 +229,7 @@ whitebeam_test!("linux", execution_16_dlopen_lazy_call_hooked {
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_17_dlopen_now_call_unhooked {
+whitebeam_test!("linux", execution_18_dlopen_now_call_unhooked {
     let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_NOW) };
     assert!(handle != std::ptr::null_mut());
     let getpid_ptr = unsafe { libc::dlsym(handle, "getpid\0".as_ptr() as *const libc::c_char) };
@@ -233,7 +239,7 @@ whitebeam_test!("linux", execution_17_dlopen_now_call_unhooked {
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_18_dlopen_now_call_hooked {
+whitebeam_test!("linux", execution_19_dlopen_now_call_hooked {
     let handle = unsafe { libc::dlopen("libc.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_NOW) };
     assert!(handle != std::ptr::null_mut());
     let kill_ptr = unsafe { libc::dlsym(handle, "kill\0".as_ptr() as *const libc::c_char) };
@@ -243,7 +249,7 @@ whitebeam_test!("linux", execution_18_dlopen_now_call_hooked {
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_19_dlerror_not_found {
+whitebeam_test!("linux", execution_20_dlerror_not_found {
     let handle = unsafe { libc::dlopen("missing.so\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle == std::ptr::null_mut());
     let error: *const libc::c_char = unsafe { libc::dlerror() };
@@ -251,25 +257,25 @@ whitebeam_test!("linux", execution_19_dlerror_not_found {
     assert!(error_str == "missing.so: cannot open shared object file: No such file or directory");
 });
 
-whitebeam_test!("linux", execution_20_dlopen_noload {
+whitebeam_test!("linux", execution_21_dlopen_noload {
     let handle = unsafe { libc::dlopen("libcap.so.2\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
     assert!(handle == std::ptr::null_mut());
 });
 
-whitebeam_test!("linux", execution_21_dlmopen_base {
+whitebeam_test!("linux", execution_22_dlmopen_base {
     let handle = unsafe { libc::dlmopen(libc::LM_ID_BASE, "libcap.so.2\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_22_dlmopen_absolute_path {
+whitebeam_test!("linux", execution_23_dlmopen_absolute_path {
     let libcap: &str = &format!("/lib/{}-linux-gnu/libcap.so.2\0", std::env::consts::ARCH);
     let handle = unsafe { libc::dlmopen(libc::LM_ID_BASE, libcap.as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_23_dlmopen_lazy_call_unhooked {
+whitebeam_test!("linux", execution_24_dlmopen_lazy_call_unhooked {
     let handle = unsafe { libc::dlmopen(libc::LM_ID_BASE, "libcap.so.2\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());
     let cap_from_name_ptr = unsafe { libc::dlsym(handle, "cap_from_name\0".as_ptr() as *const libc::c_char) };
