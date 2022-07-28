@@ -561,15 +561,22 @@ pub fn gettid() -> u64 {
 }
 
 pub fn search_path(program: &OsStr, paths: &OsStr) -> Option<PathBuf> {
-    let mut paths: Vec<PathBuf> = env::split_paths(paths).collect();
-    if program.as_bytes().contains(&b'/') {
+    let mut paths_vec: Vec<PathBuf> = env::split_paths(paths).collect();
+    if program.as_bytes()[0] == b'/' {
+        // Absolute path
+        let path = PathBuf::from(program);
+        paths_vec.push(path);
+    } else if program.as_bytes().contains(&b'/') {
+        // Relative path with forward slashes
         match env::current_dir() {
-            Ok(cwd) => paths.push(cwd),
+            Ok(cwd) => paths_vec.push(cwd),
             Err(_val) => () // TODO: Log errors
         }
     }
-    for mut path in paths {
-        path.push(program);
+    for mut path in paths_vec {
+        if path != program {
+            path.push(program);
+        }
         let mut stat_struct: libc::stat = unsafe { std::mem::zeroed() };
         let c_path = convert::osstr_to_cstring(path.as_os_str()).expect("WhiteBeam: Unexpected null reference");
         let path_stat = match unsafe { libc::stat(c_path.as_ptr(), &mut stat_struct) } {
