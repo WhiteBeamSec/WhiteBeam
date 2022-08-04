@@ -40,7 +40,8 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
         // More info: https://sourceware.org/bugzilla/show_bug.cgi?id=23734
         if env::var_os("LD_BIND_NOW").is_some() {
             // Technically we're looking for a non-empty string here, but instead we deny it altogether
-            panic!("WhiteBeam: LD_BIND_NOW restricted");
+            eprintln!("WhiteBeam: LD_BIND_NOW restricted");
+            std::process::exit(1);
         }
         let new_ld_audit_var: OsString = match env::var_os("LD_AUDIT") {
             Some(val) => {

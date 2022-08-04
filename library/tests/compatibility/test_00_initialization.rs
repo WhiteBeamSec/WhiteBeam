@@ -31,12 +31,28 @@ whitebeam_test!("linux", initialization_02_env_sanity {
 
 whitebeam_test!("linux", initialization_03_wb_parent {
     // /proc/self/environ preserves environment variables after they are unset at runtime
-    let status = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/grep -qPa 'WB_PARENT=/bin/bash\\0' /proc/self/environ").status().expect("bash command failed to start");
-    assert!(status.success());
+    let pid = unsafe { libc::fork() };
+    if pid == 0 {
+        unsafe { libc::execve("/bin/bash\0".as_ptr() as *const libc::c_char,
+                              ["/bin/bash\0".as_ptr() as *const libc::c_char, "-c\0".as_ptr() as *const libc::c_char, "/usr/bin/grep -qPa 'WB_PARENT=/bin/bash\\0' /proc/self/environ\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr(),
+                              std::ptr::null()); }
+    } else {
+        let mut status = 0;
+        unsafe { libc::waitpid(pid, &mut status, 0); }
+        assert!(status == 0);
+    }
 });
 
 whitebeam_test!("linux", initialization_04_wb_prog {
     // /proc/self/environ preserves environment variables after they are unset at runtime
-    let status = std::process::Command::new("/bin/bash").arg("-c").arg("/usr/bin/grep -qPa 'WB_PROG=/usr/bin/grep\\0' /proc/self/environ").status().expect("bash command failed to start");
-    assert!(status.success());
+    let pid = unsafe { libc::fork() };
+    if pid == 0 {
+        unsafe { libc::execve("/bin/bash\0".as_ptr() as *const libc::c_char,
+                              ["/bin/bash\0".as_ptr() as *const libc::c_char, "-c\0".as_ptr() as *const libc::c_char, "/usr/bin/grep -qPa 'WB_PROG=/usr/bin/grep\\0' /proc/self/environ\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr(),
+                              std::ptr::null()); }
+    } else {
+        let mut status = 0;
+        unsafe { libc::waitpid(pid, &mut status, 0); }
+        assert!(status == 0);
+    }
 });
