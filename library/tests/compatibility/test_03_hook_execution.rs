@@ -286,14 +286,31 @@ whitebeam_test!("linux", execution_24_dlmopen_lazy_call_unhooked {
     unsafe { libc::dlclose(handle); }
 });
 
-whitebeam_test!("linux", execution_25_posix_spawn_prevention {
+whitebeam_test!("linux", execution_25_execve_prevention {
+    crate::common::toggle_prevention(true);
+    let pid = unsafe { libc::fork() };
+    if pid == 0 {
+        unsafe { libc::execve("/bin/bash\0".as_ptr() as *const libc::c_char,
+                              ["/bin/bash\0".as_ptr() as *const libc::c_char, "-c\0".as_ptr() as *const libc::c_char, "/usr/bin/touch /tmp/execve_prevention_test 2>/dev/null\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr(),
+                              std::ptr::null()); }
+    } else {
+        let mut status = 0;
+        unsafe { libc::waitpid(pid, &mut status, 0); }
+        crate::common::toggle_prevention(false);
+        assert!(status != 0);
+        let test_path = std::path::Path::new("/tmp/execve_prevention_test");
+        assert!(!(test_path.exists()));
+    }
+});
+
+whitebeam_test!("linux", execution_26_posix_spawn_prevention {
     crate::common::toggle_prevention(true);
     let mut pid: libc::pid_t = 0;
     unsafe { libc::posix_spawn(&mut pid as *mut libc::pid_t,
-                               "/usr/bin/bash\0".as_ptr() as *const libc::c_char,
+                               "/bin/bash\0".as_ptr() as *const libc::c_char,
                                std::ptr::null(),
                                std::ptr::null(),
-                               ["/usr/bin/bash\0".as_ptr() as *const libc::c_char, "-c\0".as_ptr() as *const libc::c_char, "/usr/bin/touch /tmp/posix_spawn_prevention_test 2>/dev/null\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr() as *const *mut libc::c_char,
+                               ["/bin/bash\0".as_ptr() as *const libc::c_char, "-c\0".as_ptr() as *const libc::c_char, "/usr/bin/touch /tmp/posix_spawn_prevention_test 2>/dev/null\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr() as *const *mut libc::c_char,
                                std::ptr::null()); }
     let mut status = 0;
     unsafe { libc::waitpid(pid, &mut status, 0); }

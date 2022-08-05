@@ -12,3 +12,4 @@ name = "whitebeam-installer"
 # Cross-platform dependencies
 [dependencies]
 libc = { version = "0.2" }
+spinners = { version = "4.1.0" }

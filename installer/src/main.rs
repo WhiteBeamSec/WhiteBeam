@@ -1,4 +1,4 @@
-// TODO: Cross platform, tests, replace install.sh, add sqlite config for osquery/osquery pkgs
+// TODO: Cross platform, replace install.sh, add sqlite config for osquery/osquery pkgs, disable spinner if terminal is not interactive
 
 use std::{env,
           ffi::OsStr,
@@ -13,6 +13,8 @@ use platforms::windows as platform;
 use platforms::linux as platform;
 #[cfg(target_os = "macos")]
 use platforms::macos as platform;
+
+static SPINNER_CHOICE: spinners::Spinners = spinners::Spinners::Dots;
 
 // Minimal build program
 
@@ -40,32 +42,33 @@ fn build(args: Vec<String>) {
         return;
     }
     // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
+    let message: &str;
     let mut cargo_command = Command::new("cargo");
-    cargo_command.env("RUSTFLAGS", "-C link-arg=-s");
+    cargo_command.env("RUSTFLAGS", "-C link-arg=-s -Awarnings");
     let lib_target_path: PathBuf = PathBuf::from(format!("{}/target/release/libwhitebeam.so", env!("PWD")));
     let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
     let subcommand: &str = &(&args[2].to_lowercase());
     let current_target_path = match subcommand {
         "binary" => {
-            println!("Building binary");
-            cargo_command.args(&["+stable", "build", "--package", "whitebeam", "--bin", "whitebeam", "--release"]);
+            message = "WhiteBeam: Building binary";
+            cargo_command.args(&["+stable", "build", "--package", "whitebeam", "--bin", "whitebeam", "--release", "-q"]);
             bin_target_path
         },
         "library" => {
-            println!("Building library");
-            cargo_command.args(&["+nightly-2022-07-23", "build", "--package", "libwhitebeam", "--lib", "--release"]);
+            message = "WhiteBeam: Building library";
+            cargo_command.args(&["+nightly-2022-07-23", "build", "--package", "libwhitebeam", "--lib", "--release", "-q"]);
             lib_target_path
         },
         "binary-test" => {
-            println!("Building test binary");
+            message = "WhiteBeam: Building test binary";
             cargo_command.args(&["+stable", "build", "--package", "whitebeam", "--bin", "whitebeam", "--release",
-                                 "--features", "whitelist_test"]);
+                                 "--features", "whitelist_test", "-q"]);
             bin_target_path
         },
         "library-test" => {
-            println!("Building test library");
+            message = "WhiteBeam: Building test library";
             cargo_command.args(&["+nightly-2022-07-23", "build", "--package", "libwhitebeam", "--lib", "--release",
-                                 "--features", "whitelist_test"]);
+                                 "--features", "whitelist_test", "-q"]);
             lib_target_path
         },
         _ => {
@@ -73,38 +76,63 @@ fn build(args: Vec<String>) {
             return;
         }
     };
-    cargo_command.status().expect("WhiteBeam: Failed to execute cargo command");
+    let mut sp_build = spinners::Spinner::new(SPINNER_CHOICE.clone(), message.into());
+    let status = cargo_command.status().expect("WhiteBeam: Failed to execute cargo command");
+    sp_build.stop_with_newline();
+    if !(status.success()) {
+        eprintln!("WhiteBeam: Failed to build {}", subcommand);
+        std::process::exit(1);
+    }
     match fs::metadata(&current_target_path) {
         Ok(meta) => println!("WhiteBeam: Completed. Size: {}", pretty_bytes(meta.len() as f64)),
-        Err(_e) => println!("WhiteBeam: Failed to stat {}", (&current_target_path).display())
+        Err(_e) => eprintln!("WhiteBeam: Failed to stat {}", (&current_target_path).display())
     }
 }
 
 fn test(args: Vec<String>) {
     // TODO: Use build.rs for test setup steps?
     // TODO: More error handling
+    println!("WhiteBeam: Testing:");
     build(vec![String::from("whitebeam-installer"), String::from("build"), String::from("library-test")]);
     build(vec![String::from("whitebeam-installer"), String::from("build"), String::from("binary-test")]);
-    println!("WhiteBeam: Testing:");
     // Initialize test database
+    let mut sp_db_init = spinners::Spinner::new(SPINNER_CHOICE.clone(), "WhiteBeam: Initializing test database".into());
     common::db::db_optionally_init(&args[1].to_lowercase()).expect("WhiteBeam: Failed to initialize test database");
     // Load platform-specific Essential hooks through whitebeam command
     common::db::db_load("Essential").expect("WhiteBeam: Failed to load Essential hooks");
     // Load platform-specific test data through whitebeam command
     common::db::db_load("Test").expect("WhiteBeam: Failed to load test data");
-    // Allow the whitebeam command to run when Prevention is enabled
-    let _exit_status_secret = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+    // Allow the libwhitebeam.so (test) library to load when Prevention is enabled
+    let _exit_status_allow_libwhitebeam = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
+        .args(&["--add", "Filesystem/Path/Library", "ANY", &format!("{}/target/release/libwhitebeam.so", env!("PWD"))])
+        .stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null())
+        .status()
+        .expect("WhiteBeam: Failed to execute whitebeam command");
+    // Allow the whitebeam (test) binary to run when Prevention is enabled
+    let _exit_status_allow_whitebeam = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
         .args(&["--add", "Filesystem/Path/Executable", &format!("{}/target/release/whitebeam", env!("PWD"))])
+        .stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null())
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
     // Set a test recovery secret
     let _exit_status_secret = Command::new(format!("{}/target/release/whitebeam", env!("PWD")))
         .args(&["--setting", "RecoverySecret", "test"])
+        .stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null())
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
-    // Run tests
+    sp_db_init.stop_with_newline();
+    // Build integration tests
+    let mut sp_integration = spinners::Spinner::new(SPINNER_CHOICE.clone(), "WhiteBeam: Building integration tests".into());
     let _exit_status_tests = Command::new("cargo")
-        .arg("+nightly-2022-07-23").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test")
+        .arg("+nightly-2022-07-23").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test").arg("--test").arg("test_integration").arg("-q").arg("--no-run")
+        // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
+        .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
+        .status()
+        .expect("WhiteBeam: Failed to execute cargo command");
+    sp_integration.stop_with_newline();
+    // Run integration tests
+    let _exit_status_tests = Command::new("cargo")
+        .arg("+nightly-2022-07-23").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test").arg("--test").arg("test_integration").arg("-q")
         // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
         .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
         .status()
@@ -114,6 +142,7 @@ fn test(args: Vec<String>) {
         .args(&["--setting", "RecoverySecret", "undefined"])
         .status()
         .expect("WhiteBeam: Failed to execute whitebeam command");
+    // TODO: Remove libwhitebeam.so and whitebeam from whitelist
     // TODO: Test actions
     // TODO: Make sure SQL schema/defaults exist
     // TODO: Test binary (e.g. ./target/release/whitebeam || true)

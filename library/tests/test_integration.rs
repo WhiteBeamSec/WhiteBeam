@@ -7,7 +7,7 @@ macro_rules! whitebeam_test {
         #[allow(non_snake_case)]
         #[linkme::distributed_slice(crate::TEST_INDEX)]
         fn $func() {
-            print!("Running {}", stringify!($func));
+            print!("Test {}", stringify!($func));
             $body
             println!("... \x1b[1;32mok\x1b[0m");
         }
@@ -44,7 +44,7 @@ fn main() {
         return;
     }
     // TODO: Allow a specific test to be run
-    println!("Running tests");
+    println!("WhiteBeam: Running tests");
     for test in TEST_INDEX.iter().rev() {
         test();
     }

@@ -5,7 +5,6 @@ use crate::platforms::linux as platform;
 #[cfg(target_os = "macos")]
 use crate::platforms::macos as platform;
 use std::{error::Error,
-          io::Write,
           path::PathBuf,
           process::Command,
           process::Stdio};
@@ -14,13 +13,7 @@ fn db_init() -> Result<(), Box<dyn Error>> {
     db_load("Schema")?;
     db_load("Default")?;
     let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
-    let mut child = Command::new(bin_target_path).args(&["--setting", "SystemArchitecture", std::env::consts::ARCH]).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
-    // TODO: _output, debugging information follows:
-    let output = child.wait_with_output()?;
-    print!("stdout: {}", std::str::from_utf8(&output.stdout).unwrap());
-    if output.stderr.len() > 0 {
-        eprint!("stderr: {}", std::str::from_utf8(&output.stderr).unwrap());
-    }
+    let _status = Command::new(bin_target_path).args(&["--setting", "SystemArchitecture", std::env::consts::ARCH]).stdout(Stdio::null()).stderr(Stdio::null()).status()?;
     Ok(())
 }
 
@@ -54,12 +47,6 @@ pub fn db_optionally_init(release: &str) -> Result<(), Box<dyn Error>> {
 
 pub fn db_load(sql_path: &str) -> std::io::Result<()> {
     let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
-    let mut child = Command::new(bin_target_path).args(&["--load", sql_path]).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
-    // TODO: _output, debugging information follows:
-    let output = child.wait_with_output()?;
-    print!("stdout: {}", std::str::from_utf8(&output.stdout).unwrap());
-    if output.stderr.len() > 0 {
-        eprint!("stderr: {}", std::str::from_utf8(&output.stderr).unwrap());
-    }
+    let _status = Command::new(bin_target_path).args(&["--load", sql_path]).stdout(Stdio::null()).stderr(Stdio::null()).status()?;
     Ok(())
 }
