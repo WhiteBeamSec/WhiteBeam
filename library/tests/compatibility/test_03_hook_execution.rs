@@ -303,7 +303,22 @@ whitebeam_test!("linux", execution_25_execve_prevention {
     }
 });
 
-whitebeam_test!("linux", execution_26_fexecve_prevention {
+whitebeam_test!("linux", execution_26_execve_prevention_allowed {
+    crate::common::toggle_prevention(true);
+    let pid = unsafe { libc::fork() };
+    if pid == 0 {
+        unsafe { libc::execve("/bin/bash\0".as_ptr() as *const libc::c_char,
+                              ["/bin/bash\0".as_ptr() as *const libc::c_char, "-c\0".as_ptr() as *const libc::c_char, "/usr/bin/whoami > /dev/null\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr(),
+                              std::ptr::null()); }
+    } else {
+        let mut status = 0;
+        unsafe { libc::waitpid(pid, &mut status, 0); }
+        crate::common::toggle_prevention(false);
+        assert!(status == 0);
+    }
+});
+
+whitebeam_test!("linux", execution_27_fexecve_prevention {
     crate::common::toggle_prevention(true);
     let pid = unsafe { libc::fork() };
     if pid == 0 {
@@ -321,7 +336,7 @@ whitebeam_test!("linux", execution_26_fexecve_prevention {
     }
 });
 
-whitebeam_test!("linux", execution_27_posix_spawn_prevention {
+whitebeam_test!("linux", execution_28_posix_spawn_prevention {
     crate::common::toggle_prevention(true);
     let mut pid: libc::pid_t = 0;
     unsafe { libc::posix_spawn(&mut pid as *mut libc::pid_t,
@@ -338,7 +353,7 @@ whitebeam_test!("linux", execution_27_posix_spawn_prevention {
     assert!(!(test_path.exists()));
 });
 
-whitebeam_test!("linux", execution_28_dlopen_prevention {
+whitebeam_test!("linux", execution_29_dlopen_prevention {
     crate::common::toggle_prevention(true);
     // Mute stderr
     let dup_stderr_fd = unsafe { libc::dup(libc::STDERR_FILENO) };
@@ -352,14 +367,14 @@ whitebeam_test!("linux", execution_28_dlopen_prevention {
     assert!(handle == std::ptr::null_mut());
 });
 
-whitebeam_test!("linux", execution_29_dlopen_prevention_allowed {
+whitebeam_test!("linux", execution_30_dlopen_prevention_allowed {
     crate::common::toggle_prevention(true);
     let handle = unsafe { libc::dlopen("libm.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     crate::common::toggle_prevention(false);
     assert!(handle != std::ptr::null_mut());
 });
 
-whitebeam_test!("linux", execution_30_dlmopen_prevention {
+whitebeam_test!("linux", execution_31_dlmopen_prevention {
     crate::common::toggle_prevention(true);
     // Mute stderr
     let dup_stderr_fd = unsafe { libc::dup(libc::STDERR_FILENO) };
@@ -373,7 +388,7 @@ whitebeam_test!("linux", execution_30_dlmopen_prevention {
     assert!(handle == std::ptr::null_mut());
 });
 
-whitebeam_test!("linux", execution_31_dlmopen_prevention_allowed {
+whitebeam_test!("linux", execution_32_dlmopen_prevention_allowed {
     crate::common::toggle_prevention(true);
     let handle = unsafe { libc::dlmopen(libc::LM_ID_BASE, "libm.so.6\0".as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     crate::common::toggle_prevention(false);
