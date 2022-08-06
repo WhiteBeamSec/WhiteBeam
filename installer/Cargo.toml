@@ -4,6 +4,11 @@ name = "whitebeam-installer"
 version = "0.3.0"
 authors = ["WhiteBeam Security, Inc."]
 edition = "2021"
+rust-version = "1.62"
+description = "WhiteBeam client installer"
+documentation = "https://github.com/WhiteBeamSec/WhiteBeam/wiki"
+repository = "https://github.com/WhiteBeamSec/WhiteBeam/"
+license = "CC-BY-NC-4.0"
 
 # Build targets
 [[bin]]

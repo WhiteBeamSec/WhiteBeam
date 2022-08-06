@@ -92,7 +92,6 @@ pub fn check_build_environment() {
             .expect("WhiteBeam: Failed to execute rustup command");
     let rustup_toolchains_string = String::from_utf8_lossy(&rustup_toolchains.stdout);
     /*
-    // MSRV: Rust 1.62
     if !rustup_toolchains_string.contains("stable") {
         eprintln!("WhiteBeam: No stable Rust found in toolchain, consider running: rustup toolchain install stable");
         std::process::exit(1);
