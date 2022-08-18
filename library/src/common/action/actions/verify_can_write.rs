@@ -116,7 +116,8 @@ build_action! { VerifyCanWrite (par_prog, src_prog, hook, arg_position, args, _a
         }
         // Deny by default
         event::send_log_event(libc::LOG_WARNING, format!("Prevention: Blocked {} -> {} from writing to {} (VerifyCanWrite)", &par_prog, &src_prog, &target_directory));
-        eprintln!("WhiteBeam: {}: Permission denied", &full_path);
+        // TODO: Configurable verbosity here
+        //eprintln!("WhiteBeam: {}: Permission denied", &full_path);
         do_return = true;
         match (library_basename, symbol) {
             ("libc.so.6", "fopen") |
@@ -128,4 +129,5 @@ build_action! { VerifyCanWrite (par_prog, src_prog, hook, arg_position, args, _a
                 return_value = -1;
             }
         };
+        platform::set_errno(libc::EACCES);
 }}

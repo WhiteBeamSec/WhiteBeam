@@ -22,5 +22,6 @@ build_action! { VerifyCanTerminate (par_prog, src_prog, hook, arg_position, args
             eprintln!("WhiteBeam: kill ({}): Operation not permitted", pid);
             do_return = true;
             return_value = -1;
+            platform::set_errno(libc::EPERM);
         }
 }}

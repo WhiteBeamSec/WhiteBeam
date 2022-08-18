@@ -28,7 +28,10 @@ build_action! { CanonicalizePath (_par_prog, _src_prog, hook, arg_position, args
                 match platform::search_path(&file_osstring, &env_path) {
                     Some(abspath) => abspath.as_os_str().to_owned(),
                     None => {
-                        unsafe { libc::exit(127) };
+                        do_return = true;
+                        return_value = -1;
+                        platform::set_errno(libc::ENOENT);
+                        return (hook, args, do_return, return_value);
                     }
                 }
             }

@@ -46,6 +46,30 @@ build_action! { VerifyCanExecute (par_prog, src_prog, hook, arg_position, args, 
             },
             _ => unsafe { String::from(std::ffi::CStr::from_ptr(argument.real as *const libc::c_char).to_str().expect("WhiteBeam: Unexpected null reference")) }
         };
+        // Ensure the target path is either a regular file or a symlink
+        let mut stat_struct: libc::stat = unsafe { std::mem::zeroed() };
+        let target_executable_null = format!("{}\0", target_executable);
+        let path_stat = match unsafe { libc::stat(target_executable_null.as_ptr() as *const libc::c_char, &mut stat_struct) } {
+          0 => Ok(stat_struct),
+          _ => Err(()),
+        };
+        match path_stat {
+            Ok(valid_path) => {
+                if !(((valid_path.st_mode & libc::S_IFMT) == libc::S_IFREG) ||
+                     ((valid_path.st_mode & libc::S_IFMT) == libc::S_IFLNK)) {
+                    do_return = true;
+                    return_value = -1;
+                    platform::set_errno(libc::ENOENT);
+                    return (hook, args, do_return, return_value);
+                }
+            }
+            Err(_) => {
+                do_return = true;
+                return_value = -1;
+                platform::set_errno(libc::ENOENT);
+                return (hook, args, do_return, return_value);
+            }
+        }
         // Permit whitelisted executables
         if all_allowed_executables.iter().any(|executable| executable == &target_executable) {
             return (hook, args, do_return, return_value);
@@ -61,10 +85,13 @@ build_action! { VerifyCanExecute (par_prog, src_prog, hook, arg_position, args, 
         }
         // Deny by default
         event::send_log_event(libc::LOG_WARNING, format!("Prevention: Blocked {} -> {} from executing {} (VerifyCanExecute)", &par_prog, &src_prog, &target_executable));
-        eprintln!("WhiteBeam: {}: Permission denied", &target_executable);
+        // TODO: Configurable verbosity here
+        //eprintln!("WhiteBeam: {}: Permission denied", &target_executable);
         if (symbol.contains("exec") || symbol.contains("posix_spawn")) && (library_basename == "libc.so.6") {
-            // Terminate the child process
-            unsafe { libc::exit(126) };
+            do_return = true;
+            return_value = -1;
+            platform::set_errno(libc::EPERM);
+            return (hook, args, do_return, return_value);
         }
         do_return = true;
         match (library_basename, symbol) {

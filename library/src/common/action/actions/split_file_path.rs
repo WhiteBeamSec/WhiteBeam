@@ -45,4 +45,5 @@ build_action! { SplitFilePath (_par_prog, _src_prog, hook, arg_position, args, _
         }
         do_return = true;
         return_value = -1;
+        platform::reflect_linker_errno();
 }}

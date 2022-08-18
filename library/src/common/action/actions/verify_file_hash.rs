@@ -1,22 +1,16 @@
 use std::io::prelude::*;
 
-fn fail(library_basename: &str, symbol: &str, argument_path: &str) {
-    // TODO: Library path in error inconsistent with rest of application
-    if (symbol.contains("exec") || symbol.contains("posix_spawn")) && (library_basename == "libc.so.6") {
-        // Terminate the child process
-        eprintln!("WhiteBeam: {}: Permission denied", argument_path);
-        unsafe { libc::exit(126) };
-    } else {
-        unimplemented!("WhiteBeam: The '{}' symbol (from {}) is not supported by the VerifyFileHash action", symbol, library_basename);
-    }
-}
-
 build_action! { VerifyFileHash (par_prog, src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
         // TODO: Depending on LogSeverity, log all use of this action
         // NB: For Execution hooks, system executables that aren't read world may be whitelisted as ANY
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
+        // TODO: dl*open support?
+        if !((symbol.contains("exec") || symbol.contains("posix_spawn")) && (library_basename == "libc.so.6")) {
+            // TODO: Library path in error inconsistent with rest of application
+            unimplemented!("WhiteBeam: The '{}' symbol (from {}) is not supported by the VerifyFileHash action", symbol, library_basename);
+        }
         let any = String::from("ANY");
         let class = String::from("Hash/");
         let argument_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
@@ -41,8 +35,10 @@ build_action! { VerifyFileHash (par_prog, src_prog, hook, arg_position, args, _a
         let mut argument_file: std::fs::File = match std::fs::File::open(&argument_path) {
             Ok(f) => f,
             Err(_e) => {
-                fail(library_basename, symbol, &argument_path);
-                unreachable!("WhiteBeam: Lost track of environment");
+                do_return = true;
+                return_value = -1;
+                platform::set_errno(libc::ENOENT);
+                return (hook, args, do_return, return_value);
             }
         };
         let passed_all: bool = all_allowed_hashes.iter().all(|hash_tuple| {
@@ -62,5 +58,7 @@ build_action! { VerifyFileHash (par_prog, src_prog, hook, arg_position, args, _a
         }
         // Deny by default
         event::send_log_event(libc::LOG_WARNING, format!("Prevention: Blocked {} -> {} due to incorrect hash of {} (VerifyFileHash)", &par_prog, &src_prog, &argument_path));
-        fail(library_basename, symbol, &argument_path);
+        do_return = true;
+        return_value = -1;
+        platform::set_errno(libc::EPERM);
 }}

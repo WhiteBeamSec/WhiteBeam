@@ -59,4 +59,5 @@ build_action! { CombineDirectory (_par_prog, _src_prog, hook, arg_position, args
         }
         do_return = true;
         return_value = -1;
+        platform::reflect_linker_errno();
 }}

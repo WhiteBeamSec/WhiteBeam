@@ -518,8 +518,21 @@ pub fn get_rtld_audit_lib_path() -> PathBuf {
     rtld_audit_lib_path
 }
 
-pub unsafe fn errno_location() -> *mut c_int {
+#[no_mangle]
+pub unsafe extern "C" fn errno_location() -> *mut c_int {
     libc::__errno_location()
+}
+
+pub fn set_errno(errno_value: c_int) {
+    let preload_whitebeam_path: std::ffi::CString = crate::common::convert::osstr_to_cstring((get_rtld_audit_lib_path()).as_os_str()).expect("WhiteBeam: Unexpected null reference");
+    let preload_whitebeam = unsafe { libc::dlmopen(libc::LM_ID_BASE, preload_whitebeam_path.as_ptr() as *const libc::c_char, libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
+    let errno_location_addr = unsafe { libc::dlsym(preload_whitebeam, "errno_location\0".as_ptr() as *const libc::c_char) as *const libc::c_int };
+    let errno_location_fn: fn() -> *mut libc::c_int = unsafe { std::mem::transmute(errno_location_addr) };
+    unsafe { *(errno_location_fn()) = errno_value };
+}
+
+pub fn reflect_linker_errno() {
+    set_errno(unsafe { *(errno_location()) });
 }
 
 pub fn canonicalize_fd(fd: i32) -> Option<PathBuf> {
@@ -582,11 +595,12 @@ pub fn search_path(program: &OsStr, paths: &OsStr) -> Option<PathBuf> {
         let c_path = convert::osstr_to_cstring(path.as_os_str()).expect("WhiteBeam: Unexpected null reference");
         let path_stat = match unsafe { libc::stat(c_path.as_ptr(), &mut stat_struct) } {
           0 => Ok(stat_struct),
-          _ => Err(unsafe { errno_location() }),
+          _ => Err(()),
         };
         match path_stat {
             Ok(valid_path) => {
-                if (valid_path.st_mode & libc::S_IFMT) == libc::S_IFREG {
+                if ((valid_path.st_mode & libc::S_IFMT) == libc::S_IFREG) ||
+                   ((valid_path.st_mode & libc::S_IFMT) == libc::S_IFLNK) {
                     return Some(path);
                 }
             }

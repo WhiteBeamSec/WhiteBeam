@@ -38,7 +38,7 @@ build_action! { OpenFileDescriptor (par_prog, src_prog, hook, arg_position, args
                     _ => {
                         do_return = true;
                         return_value = 0;
-                        unsafe { *platform::errno_location() = libc::EINVAL };
+                        platform::set_errno(libc::EINVAL);
                         return (hook, args, do_return, return_value);
                     }
                 };
@@ -88,6 +88,7 @@ build_action! { OpenFileDescriptor (par_prog, src_prog, hook, arg_position, args
             }
             do_return = true;
             return_value = fail(library_basename, symbol);
+            platform::reflect_linker_errno();
             return (hook, args, do_return, return_value);
         }
         let any = String::from("ANY");
@@ -109,6 +110,7 @@ build_action! { OpenFileDescriptor (par_prog, src_prog, hook, arg_position, args
             }
             do_return = true;
             return_value = fail(library_basename, symbol);
+            platform::reflect_linker_errno();
             return (hook, args, do_return, return_value);
         }
         // NB: Do not dereference paths here
@@ -117,6 +119,7 @@ build_action! { OpenFileDescriptor (par_prog, src_prog, hook, arg_position, args
             None => {
                 do_return = true;
                 return_value = fail(library_basename, symbol);
+                platform::set_errno(libc::ENOENT);
                 return (hook, args, do_return, return_value);
             }
         };
@@ -138,6 +141,7 @@ build_action! { OpenFileDescriptor (par_prog, src_prog, hook, arg_position, args
             }
             do_return = true;
             return_value = fail(library_basename, symbol);
+            platform::reflect_linker_errno();
             return (hook, args, do_return, return_value);
         }
         // Permit whitelisted directories
@@ -153,6 +157,7 @@ build_action! { OpenFileDescriptor (par_prog, src_prog, hook, arg_position, args
             }
             do_return = true;
             return_value = fail(library_basename, symbol);
+            platform::reflect_linker_errno();
             return (hook, args, do_return, return_value);
         }
         // Permit authorized writes
@@ -171,11 +176,14 @@ build_action! { OpenFileDescriptor (par_prog, src_prog, hook, arg_position, args
             }
             do_return = true;
             return_value = fail(library_basename, symbol);
+            platform::reflect_linker_errno();
             return (hook, args, do_return, return_value);
         }
         // Deny by default
         event::send_log_event(libc::LOG_WARNING, format!("Prevention: Blocked {} -> {} from writing to {} (OpenFileDescriptor)", &par_prog, &src_prog, &target_directory));
-        eprintln!("WhiteBeam: {}: Permission denied", &full_path);
+        // TODO: Configurable verbosity here
+        //eprintln!("WhiteBeam: {}: Permission denied", &full_path);
         do_return = true;
         return_value = fail(library_basename, symbol);
+        platform::set_errno(libc::EACCES);
 }}
