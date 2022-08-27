@@ -204,6 +204,7 @@ pub fn get_setting_table(conn: &Connection) -> Result<Vec<SettingRow>, Box<dyn E
 }
 
 pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
+    // TODO: Optimize by checking if length of cache == 0 (just push) or equal to new vec?
     let refresh_lock = REFRESH_LOCK.try_lock()?;
     let conn = db_open()?;
     // Hook cache
