@@ -26,7 +26,7 @@ pub static RULE_CACHE: LazyLock<Mutex<Vec<RuleRow>>> = LazyLock::new(|| Mutex::n
 pub static SET_CACHE: LazyLock<Mutex<Vec<SettingRow>>> = LazyLock::new(|| Mutex::new(vec![]));
 pub static REFRESH_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
-#[derive(Clone)]
+#[derive(Hash, Eq, PartialEq, Clone)]
 pub struct HookRow {
     pub language: String,
     pub library: String,
@@ -34,7 +34,7 @@ pub struct HookRow {
     pub id: i64
 }
 
-#[derive(Clone)]
+#[derive(Hash, Eq, PartialEq, Clone)]
 pub struct ArgumentRow {
     pub hook: i64,
     pub parent: i64,
@@ -48,7 +48,7 @@ pub struct ArgumentRow {
     pub array: bool
 }
 
-#[derive(Clone)]
+#[derive(Hash, Eq, PartialEq, Clone)]
 pub struct WhitelistRow {
     pub class: String,
     pub parent: String,
@@ -56,14 +56,14 @@ pub struct WhitelistRow {
     pub value: String
 }
 
-#[derive(Clone)]
+#[derive(Hash, Eq, PartialEq, Clone)]
 pub struct ActionArgumentRow {
     pub id: i64,
     pub value: String,
     pub next: Option<i64>
 }
 
-#[derive(Clone)]
+#[derive(Hash, Eq, PartialEq, Clone)]
 pub struct RuleRow {
     pub hook: i64,
     pub action: String,
@@ -71,7 +71,7 @@ pub struct RuleRow {
     pub position: Option<i64>
 }
 
-#[derive(Clone)]
+#[derive(Hash, Eq, PartialEq, Clone)]
 pub struct SettingRow {
     pub param: String,
     pub value: String
@@ -209,49 +209,67 @@ pub extern "C" fn populate_cache() -> Result<(), Box<dyn Error>> {
     // Hook cache
     {
         let mut hook_cache_lock = HOOK_CACHE.try_lock()?;
-        hook_cache_lock.clear();
-        for row in get_hook_view(&conn)? {
-            hook_cache_lock.push(row);
+        let new_vec = get_hook_view(&conn)?;
+        hook_cache_lock.retain(|row| new_vec.contains(row));
+        for row in new_vec {
+            if !(hook_cache_lock.contains(&row)) {
+                hook_cache_lock.push(row);
+            }
         }
     };
     // Argument cache
     {
         let mut arg_cache_lock = ARG_CACHE.try_lock()?;
-        arg_cache_lock.clear();
-        for row in get_argument_view(&conn)? {
-            arg_cache_lock.push(row);
+        let new_vec = get_argument_view(&conn)?;
+        arg_cache_lock.retain(|row| new_vec.contains(row));
+        for row in new_vec {
+            if !(arg_cache_lock.contains(&row)) {
+                arg_cache_lock.push(row);
+            }
         }
     };
     // Whitelist cache
     {
         let mut wl_cache_lock = WL_CACHE.try_lock()?;
-        wl_cache_lock.clear();
-        for row in get_whitelist_view(&conn)? {
-            wl_cache_lock.push(row);
+        let new_vec = get_whitelist_view(&conn)?;
+        wl_cache_lock.retain(|row| new_vec.contains(row));
+        for row in new_vec {
+            if !(wl_cache_lock.contains(&row)) {
+                wl_cache_lock.push(row);
+            }
         }
     };
     // Action argument cache
     {
         let mut act_arg_cache_lock = ACT_ARG_CACHE.try_lock()?;
-        act_arg_cache_lock.clear();
-        for row in get_action_argument_table(&conn)? {
-            act_arg_cache_lock.push(row);
+        let new_vec = get_action_argument_table(&conn)?;
+        act_arg_cache_lock.retain(|row| new_vec.contains(row));
+        for row in new_vec {
+            if !(act_arg_cache_lock.contains(&row)) {
+                act_arg_cache_lock.push(row);
+            }
         }
     };
     // Rule cache
     {
         let mut rule_cache_lock = RULE_CACHE.try_lock()?;
-        rule_cache_lock.clear();
-        for row in get_rule_view(&conn)? {
-            rule_cache_lock.push(row);
+        let new_vec = get_rule_view(&conn)?;
+        rule_cache_lock.retain(|row| new_vec.contains(row));
+        for row in new_vec {
+            if !(rule_cache_lock.contains(&row)) {
+                rule_cache_lock.push(row);
+            }
         }
     };
     // Setting cache
     {
         let mut set_cache_lock = SET_CACHE.try_lock()?;
-        set_cache_lock.clear();
-        for row in get_setting_table(&conn)? {
-            set_cache_lock.push(row);
+        let new_vec = get_setting_table(&conn)?;
+        set_cache_lock.retain(|row| new_vec.contains(row));
+        for row in new_vec {
+            if !(set_cache_lock.contains(&row)) {
+                set_cache_lock.push(row);
+            }
         }
     };
     Ok(())
