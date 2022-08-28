@@ -368,18 +368,6 @@ unsafe fn plt_redirect(orig_addr: u64, refcook: *const libc::uintptr_t, defcook:
     }
     // FIXME: Stability exceptions
     match symbol_str {
-        "dlopen" => {
-            if let Ok(exe) = std::env::current_exe() {
-                if let Ok(exe_string) = exe.into_os_string().into_string() {
-                    if exe_string.starts_with("/usr/bin/python") ||
-                       exe_string == String::from("/usr/sbin/rsyslogd") ||
-                       exe_string == String::from("/usr/bin/perl") { return orig_addr; }
-                }
-            }
-            if calling_library_basename_str == "libpam.so.0" {
-                return orig_addr;
-            }
-        },
         "execvp" => {
             if let Ok(exe) = std::env::current_exe() {
                 if let Ok(exe_string) = exe.into_os_string().into_string() {
