@@ -369,8 +369,8 @@ unsafe fn plt_redirect(orig_addr: u64, refcook: *const libc::uintptr_t, defcook:
     // FIXME: Stability exceptions
     match symbol_str {
         "execvp" => {
-            if let Ok(current_exe_str) = std::env::current_exe() {
-                if current_exe_str.to_str().unwrap_or(empty) == "/usr/bin/apt" {
+            if let Ok(current_exe_pathbuf) = std::env::current_exe() {
+                if current_exe_pathbuf.to_str().unwrap_or(empty) == "/usr/bin/apt" {
                     return orig_addr;
                 }
             }
