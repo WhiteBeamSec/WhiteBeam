@@ -84,6 +84,9 @@ pub fn check_build_environment() {
         eprintln!("WhiteBeam: OpenSSL development libraries not detected on this system, consider running: apt update && apt install -y libssl-dev");
         std::process::exit(1);
     }
+    // TODO: Patch libc6 package on Ubuntu to remove local-disable-ld_audit.diff
+    //       It not only breaks glibc compatibility, but it also offers no security benefits.
+    // TODO: Install glibc or patch musl libc on Alpine
     // Toolchains can be more than just "stable" and "nightly" (Docker containers use the Rust version number)
     let rustup_toolchains = Command::new(search_path(OsStr::new("rustup")).unwrap())
             .arg("toolchain")
