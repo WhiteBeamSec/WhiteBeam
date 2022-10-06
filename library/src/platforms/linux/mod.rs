@@ -162,7 +162,7 @@ fn realtime_cache_init() {
     }
     act.sa_sigaction = db::populate_cache as usize;
     unsafe { libc::sigemptyset(&mut act.sa_mask) };
-    act.sa_flags = libc::SA_SIGINFO;
+    act.sa_flags = libc::SA_SIGINFO | libc::SA_RESTART;
     if unsafe { libc::sigaction(notify_signal, &act, std::ptr::null_mut()) } == -1 {
         panic!("WhiteBeam: Lost track of environment");
     };
