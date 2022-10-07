@@ -324,9 +324,9 @@ whitebeam_test!("linux", execution_27_execve_prevention_errno_not_found {
     if pid == 0 {
         // Needed to simulate /etc/ld.so.preload
         let ld_preload_var = format!("LD_PRELOAD={}/target/release/libwhitebeam.so\0", env!("PWD"));
-        unsafe { libc::execve("/bin/sh\0".as_ptr() as *const libc::c_char,
-                              ["/bin/sh\0".as_ptr() as *const libc::c_char, "-c\0".as_ptr() as *const libc::c_char, "exec missingbinary 2>/dev/null\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr(),
-                              [ld_preload_var.as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr()); }
+        unsafe { libc::execve("/bin/bash\0".as_ptr() as *const libc::c_char,
+                              ["/bin/bash\0".as_ptr() as *const libc::c_char, "-c\0".as_ptr() as *const libc::c_char, "exec missingbinary 2>/dev/null\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr(),
+                              [ld_preload_var.as_ptr() as *const libc::c_char, "WB_PROG=/bin/bash\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr()); }
     } else {
         let mut status = 0;
         unsafe { libc::waitpid(pid, &mut status, 0); }
@@ -341,9 +341,9 @@ whitebeam_test!("linux", execution_28_execve_prevention_errno_not_permitted {
     if pid == 0 {
         // Needed to simulate /etc/ld.so.preload
         let ld_preload_var = format!("LD_PRELOAD={}/target/release/libwhitebeam.so\0", env!("PWD"));
-        unsafe { libc::execve("/bin/sh\0".as_ptr() as *const libc::c_char,
-                              ["/bin/sh\0".as_ptr() as *const libc::c_char, "-c\0".as_ptr() as *const libc::c_char, "exec id 2>/dev/null\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr(),
-                              [ld_preload_var.as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr()); }
+        unsafe { libc::execve("/bin/bash\0".as_ptr() as *const libc::c_char,
+                              ["/bin/bash\0".as_ptr() as *const libc::c_char, "-c\0".as_ptr() as *const libc::c_char, "exec id 2>/dev/null\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr(),
+                              [ld_preload_var.as_ptr() as *const libc::c_char, "WB_PROG=/bin/bash\0".as_ptr() as *const libc::c_char, std::ptr::null()].as_ptr()); }
     } else {
         let mut status = 0;
         unsafe { libc::waitpid(pid, &mut status, 0); }
