@@ -366,15 +366,8 @@ unsafe fn plt_redirect(orig_addr: u64, refcook: *const libc::uintptr_t, defcook:
     if (*refcook) == 0 {
         return orig_addr;
     }
-    // FIXME: Stability exceptions
+    // FIXME: Stability exception for fopen64
     match symbol_str {
-        "execvp" => {
-            if let Ok(current_exe_pathbuf) = std::env::current_exe() {
-                if current_exe_pathbuf.to_str().unwrap_or(empty) == "/usr/bin/apt" {
-                    return orig_addr;
-                }
-            }
-        },
         "fopen64" => {
             if calling_library_basename_str == "libcrypto.so.1.1" {
                 return orig_addr;
