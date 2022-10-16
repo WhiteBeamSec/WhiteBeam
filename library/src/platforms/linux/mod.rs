@@ -506,15 +506,19 @@ pub fn get_rtld_audit_lib_path() -> PathBuf {
     rtld_audit_lib_path
 }
 
+pub fn locate_preload_symbol(symbol: &str) -> *mut libc::c_void {
+    let preload_whitebeam_path: std::ffi::CString = crate::common::convert::osstr_to_cstring((get_rtld_audit_lib_path()).as_os_str()).expect("WhiteBeam: Unexpected null reference");
+    let preload_whitebeam = unsafe { libc::dlmopen(libc::LM_ID_BASE, preload_whitebeam_path.as_ptr() as *const libc::c_char, libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
+    unsafe { libc::dlsym(preload_whitebeam, format!("{}\0", symbol).as_ptr() as *const libc::c_char) as *mut libc::c_void }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn errno_location() -> *mut c_int {
     libc::__errno_location()
 }
 
 pub fn set_errno(errno_value: c_int) {
-    let preload_whitebeam_path: std::ffi::CString = crate::common::convert::osstr_to_cstring((get_rtld_audit_lib_path()).as_os_str()).expect("WhiteBeam: Unexpected null reference");
-    let preload_whitebeam = unsafe { libc::dlmopen(libc::LM_ID_BASE, preload_whitebeam_path.as_ptr() as *const libc::c_char, libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
-    let errno_location_addr = unsafe { libc::dlsym(preload_whitebeam, "errno_location\0".as_ptr() as *const libc::c_char) as *const libc::c_int };
+    let errno_location_addr = locate_preload_symbol("errno_location");
     let errno_location_fn: fn() -> *mut libc::c_int = unsafe { std::mem::transmute(errno_location_addr) };
     unsafe { *(errno_location_fn()) = errno_value };
 }
@@ -617,9 +621,23 @@ pub fn procfs_environ() -> Vec<(OsString, OsString)> {
                     .iter().map(|env_osstr_tuple| (env_osstr_tuple.0.to_owned(), env_osstr_tuple.1.to_owned())).collect()
 }
 
-pub unsafe fn environ() -> *const *const c_char {
+pub unsafe fn linker_environ() -> *const *const c_char {
     extern "C" {
         static environ: *const *const c_char;
     }
     environ
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn main_environ() -> *const *const c_char {
+    extern "C" {
+        static environ: *const *const c_char;
+    }
+    environ
+}
+
+pub fn get_environ() -> *const *const c_char {
+    let environ_addr = locate_preload_symbol("main_environ");
+    let environ_fn: fn() -> *const *const c_char = unsafe { std::mem::transmute(environ_addr) };
+    unsafe { environ_fn() }
 }
