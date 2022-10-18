@@ -447,7 +447,7 @@ unsafe extern "C" fn is_hooked(library: *const libc::c_char, symbol: *const libc
 }
 
 pub unsafe fn resolve_symbol(library: &str, symbol: &str) -> *const u8 {
-    // TODO: Traverse link map, only if library isn't loaded run dlmopen, otherwise dlsym in RTLD_DEFAULT
+    // TODO: Traverse link map, only if library isn't loaded run dlmopen (also test RTLD_NOLOAD on <2.35), otherwise dlsym in RTLD_DEFAULT
     // These may no longer be issues with pltenter, more tests needed:
     // - dlmopen() issue with sshd on x86_64
     // - returning libc::execve if symbol == "execve"
@@ -547,12 +547,6 @@ pub fn get_env_path() -> OsString {
             OsString::from("/bin:/usr/bin")
         }
     }
-}
-
-pub fn get_lib_path() -> OsString {
-    // TODO: DT_RPATH/DT_RUNPATH/LD_LIBRARY_PATH/ld.so.cache (?)
-    let lib_path: &str = &format!("/lib/{}-linux-gnu:/usr/lib/{}-linux-gnu", std::env::consts::ARCH, std::env::consts::ARCH);
-    OsString::from(lib_path)
 }
 
 pub fn gettid() -> u64 {

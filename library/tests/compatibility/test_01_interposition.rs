@@ -176,3 +176,5 @@ whitebeam_test!("linux", interposition_16_generic_hook_six_args {
     println!("Hello generic hook six arg test for Linux!");
 });
 */
+
+// TODO: Test for restarting wait() with SA_RESTART

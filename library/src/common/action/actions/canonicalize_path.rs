@@ -6,34 +6,14 @@ build_action! { CanonicalizePath (_par_prog, _src_prog, hook, arg_position, args
         let file_argument: crate::common::db::ArgumentRow = args[file_index].clone();
         let file_value = file_argument.real as *const libc::c_char;
         let file_osstring = unsafe { crate::common::convert::c_char_to_osstring(file_value) };
-        let new_file_value: std::ffi::OsString = match (library_basename, symbol) {
-            ("libdl.so.2", "dlopen") |
-            ("libdl.so.2", "dlmopen") => {
-                // TODO: Eliminate repetition if possible
-                if file_argument.real == 0 {
-                    args[file_index+1].real |= libc::RTLD_NOLOAD as usize;
-                    return (hook, args, do_return, return_value);
-                }
-                let lib_path: std::ffi::OsString = platform::get_lib_path();
-                match platform::search_path(&file_osstring, &lib_path) {
-                    Some(abspath) => abspath.as_os_str().to_owned(),
-                    None => {
-                        args[file_index+1].real |= libc::RTLD_NOLOAD as usize;
-                        return (hook, args, do_return, return_value);
-                    }
-                }
-            },
-            _ => {
-                let env_path: std::ffi::OsString = platform::get_env_path();
-                match platform::search_path(&file_osstring, &env_path) {
-                    Some(abspath) => abspath.as_os_str().to_owned(),
-                    None => {
-                        do_return = true;
-                        return_value = -1;
-                        platform::set_errno(libc::ENOENT);
-                        return (hook, args, do_return, return_value);
-                    }
-                }
+        let env_path: std::ffi::OsString = platform::get_env_path();
+        let new_file_value: std::ffi::OsString = match platform::search_path(&file_osstring, &env_path) {
+            Some(abspath) => abspath.as_os_str().to_owned(),
+            None => {
+                do_return = true;
+                return_value = -1;
+                platform::set_errno(libc::ENOENT);
+                return (hook, args, do_return, return_value);
             }
         };
         let new_file_value_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(&new_file_value).expect("WhiteBeam: Unexpected null reference"));
