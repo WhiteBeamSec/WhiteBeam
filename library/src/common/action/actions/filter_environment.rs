@@ -1,5 +1,7 @@
 fn get_restricted() -> Vec<std::ffi::OsString> {
     vec!(
+        // TODO: Filter these for whitelisted paths, don't outright block them
+        std::ffi::OsString::from("LD_LIBRARY_PATH"),
         std::ffi::OsString::from("LD_PROFILE"),
         std::ffi::OsString::from("LD_PROFILE_OUTPUT"),
         std::ffi::OsString::from("LD_DEBUG_OUTPUT")
