@@ -323,7 +323,6 @@ unsafe extern "C" fn la_objopen(map: *const LinkMap, _lmid: libc::c_long, cookie
 unsafe extern "C" fn la_symbind64(sym: *const libc::Elf64_Sym, _ndx: libc::c_uint,
                                       refcook: *const libc::uintptr_t, defcook: *const libc::uintptr_t,
                                       _flags: *const libc::c_uint, symname: *const libc::c_char) -> libc::uintptr_t {
-    // TODO: Necessary?
     let symbol_str = CStr::from_ptr(symname).to_str().expect("WhiteBeam: Unexpected null reference");
     if symbol_str == "is_hooked" {
         return is_hooked as usize;
