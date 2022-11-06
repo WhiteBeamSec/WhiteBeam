@@ -98,8 +98,8 @@ pub fn check_build_environment() {
     if !rustup_toolchains_string.contains("stable") {
         eprintln!("WhiteBeam: No stable Rust found in toolchain, consider running: rustup toolchain install stable");
         std::process::exit(1);
-    } else */ if !(rustup_toolchains_string.contains("nightly-2022-07-23")) {
-        eprintln!("WhiteBeam: No pinned nightly Rust found in toolchain, consider running: rustup toolchain install nightly-2022-07-23");
+    } else */ if !(rustup_toolchains_string.contains("nightly-2022-11-05")) {
+        eprintln!("WhiteBeam: No pinned nightly Rust found in toolchain, consider running: rustup toolchain install nightly-2022-11-05");
         std::process::exit(1);
     }
 }

@@ -4,9 +4,10 @@ use std::{ffi::OsString,
           sync::LazyLock,
           sync::Mutex};
 
+// We could use a Vec here to remove LazyLock, but it would be hack. OsString::new() should be const, Rust issue?
 pub static PAR_PROG: LazyLock<Mutex<OsString>> = LazyLock::new(|| Mutex::new(OsString::new()));
 pub static CUR_PROG: LazyLock<Mutex<OsString>> = LazyLock::new(|| Mutex::new(OsString::new()));
-pub static FN_STACK: LazyLock<Mutex<Vec<(i64, usize)>>> = LazyLock::new(|| Mutex::new(vec![]));
+pub static FN_STACK: Mutex<Vec<(i64, usize)>> = Mutex::new(vec![]);
 
 #[allow(unused_mut)]
 pub unsafe extern "C" fn generic_hook(mut arg1: usize, mut args: ...) -> isize {

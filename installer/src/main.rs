@@ -56,7 +56,7 @@ fn build(args: Vec<String>) {
         },
         "library" => {
             message = "WhiteBeam: Building library";
-            cargo_command.args(&["+nightly-2022-07-23", "build", "--package", "libwhitebeam", "--lib", "--release", "-q"]);
+            cargo_command.args(&["+nightly-2022-11-05", "build", "--package", "libwhitebeam", "--lib", "--release", "-q"]);
             lib_target_path
         },
         "binary-test" => {
@@ -67,7 +67,7 @@ fn build(args: Vec<String>) {
         },
         "library-test" => {
             message = "WhiteBeam: Building test library";
-            cargo_command.args(&["+nightly-2022-07-23", "build", "--package", "libwhitebeam", "--lib", "--release",
+            cargo_command.args(&["+nightly-2022-11-05", "build", "--package", "libwhitebeam", "--lib", "--release",
                                  "--features", "whitelist_test", "-q"]);
             lib_target_path
         },
@@ -124,7 +124,7 @@ fn test(args: Vec<String>) {
     // Build integration tests
     let mut sp_integration = spinners::Spinner::new(SPINNER_CHOICE.clone(), "WhiteBeam: Building integration tests".into());
     let _exit_status_tests = Command::new("cargo")
-        .arg("+nightly-2022-07-23").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test").arg("--test").arg("test_integration").arg("-q").arg("--no-run")
+        .arg("+nightly-2022-11-05").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test").arg("--test").arg("test_integration").arg("-q").arg("--no-run")
         // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
         .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
         .status()
@@ -132,7 +132,7 @@ fn test(args: Vec<String>) {
     sp_integration.stop_with_newline();
     // Run integration tests
     let _exit_status_tests = Command::new("cargo")
-        .arg("+nightly-2022-07-23").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test").arg("--test").arg("test_integration").arg("-q")
+        .arg("+nightly-2022-11-05").arg("test").arg("--package").arg("libwhitebeam").arg("--release").arg("--features").arg("whitelist_test").arg("--test").arg("test_integration").arg("-q")
         // TODO: Replace with https://github.com/rust-lang/cargo/blob/master/src/doc/src/reference/unstable.md#profile-strip-option once stabilized
         .env("RUSTFLAGS", "-C link-arg=-s -Z plt=yes")
         .status()

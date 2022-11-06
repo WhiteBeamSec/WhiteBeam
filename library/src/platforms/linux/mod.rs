@@ -15,11 +15,10 @@ use std::{collections::BTreeMap,
           os::unix::ffi::OsStrExt,
           os::unix::ffi::OsStringExt,
           path::PathBuf,
-          sync::LazyLock,
           sync::RwLock};
 
-static LIB_MAP: LazyLock<RwLock<BTreeMap<usize, &str>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
-pub static RT_SIGNAL: LazyLock<RwLock<i32>> = LazyLock::new(|| RwLock::new(0));
+static LIB_MAP: RwLock<BTreeMap<usize, &str>> = RwLock::new(BTreeMap::new());
+pub static RT_SIGNAL: RwLock<i32> = RwLock::new(0);
 
 // Debug: Cause a breakpoint exception by invoking the `int3` instruction.
 //pub fn int3() { unsafe { asm!("int3"); } }

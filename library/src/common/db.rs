@@ -10,21 +10,20 @@ use std::{collections::BTreeMap,
           env,
           error::Error,
           path::Path,
-          sync::LazyLock,
           sync::Mutex,
           sync::RwLock};
 use rusqlite::{params, Connection, OpenFlags};
 
 // TODO: Hashmap/BTreemap to avoid race conditions, clean up of pthread_self() keys:
 // Timestamp attribute, vec. len>0, check timestamp, pthread_equal, RefCell/Cell (?)
-pub static HOOK_CACHE: LazyLock<Mutex<Vec<HookRow>>> = LazyLock::new(|| Mutex::new(vec![]));
-pub static ARG_CACHE: LazyLock<Mutex<Vec<ArgumentRow>>> = LazyLock::new(|| Mutex::new(vec![]));
-pub static WL_CACHE: LazyLock<Mutex<Vec<WhitelistRow>>> = LazyLock::new(|| Mutex::new(vec![]));
-pub static ACT_ARG_CACHE: LazyLock<Mutex<Vec<ActionArgumentRow>>> = LazyLock::new(|| Mutex::new(vec![]));
-pub static RULE_CACHE: LazyLock<Mutex<Vec<RuleRow>>> = LazyLock::new(|| Mutex::new(vec![]));
+pub static HOOK_CACHE: Mutex<Vec<HookRow>> = Mutex::new(vec![]);
+pub static ARG_CACHE: Mutex<Vec<ArgumentRow>> = Mutex::new(vec![]);
+pub static WL_CACHE: Mutex<Vec<WhitelistRow>> = Mutex::new(vec![]);
+pub static ACT_ARG_CACHE: Mutex<Vec<ActionArgumentRow>> = Mutex::new(vec![]);
+pub static RULE_CACHE: Mutex<Vec<RuleRow>> = Mutex::new(vec![]);
 // TODO: BTreemap for Settings?
-pub static SET_CACHE: LazyLock<Mutex<Vec<SettingRow>>> = LazyLock::new(|| Mutex::new(vec![]));
-pub static REFRESH_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+pub static SET_CACHE: Mutex<Vec<SettingRow>> = Mutex::new(vec![]);
+pub static REFRESH_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Hash, Eq, PartialEq, Clone)]
 pub struct HookRow {
