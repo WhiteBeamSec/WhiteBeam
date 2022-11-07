@@ -17,7 +17,7 @@ use std::{error::Error,
           path::Path,
           fmt::Write as FmtWrite,
           num::ParseIntError};
-use crypto_box::{ChaChaBox, PublicKey, SecretKey, aead::{Aead, generic_array::GenericArray}, KEY_SIZE};
+use crypto_box::{ChaChaBox, PublicKey, SecretKey, aead::{Aead, AeadCore, generic_array::GenericArray}, KEY_SIZE};
 pub const NONCE_SIZE: usize = 24;
 
 // TODO: Test, probably doesn't work as-is. Especially the ChaChaBox without the postfix tag: https://stackoverflow.com/a/62140062
@@ -167,7 +167,7 @@ pub fn generate_crypto_box_message(action: String, parameters: Vec<String>) -> R
     let (client_public_key, _client_private_key) = get_client_public_private_key()?;
     let message = json_encode_message(action, parameters)?;
     let mut rng = rand::thread_rng();
-    let nonce = crypto_box::generate_nonce(&mut rng);
+    let nonce = ChaChaBox::generate_nonce(&mut rng);
     let nonce_slice = nonce.as_slice();
     let ciphertext: Vec<u8> = generate_ciphertext(message.as_bytes(), nonce_slice)?;
     Ok(json_encode_crypto_box(hex::encode(client_public_key.as_bytes()), hex::encode(nonce), hex::encode(ciphertext))?)
