@@ -125,8 +125,12 @@ pub fn recursive_library_scan(elf_path_str: &str, collected_library_paths_opt: O
     let search_paths: Vec<String> = match search_paths_opt {
         Some(paths) => paths,
         None => {
-            // TODO: Missing default library_paths for 64 bit?
-            parse_ld_so_conf("/etc/ld.so.conf").unwrap_or(vec![String::from("/lib"), String::from("/usr/lib")])
+            let default_library_paths: Vec<String> = if PathBuf::from("/lib64").exists() {
+                vec![String::from("/lib64"), String::from("/usr/lib64")]
+            } else {
+                vec![String::from("/lib"), String::from("/usr/lib")]
+            };
+            parse_ld_so_conf("/etc/ld.so.conf").unwrap_or(default_library_paths)
         }
     };
     let mut collected_library_paths: Vec<String> = match collected_library_paths_opt {
