@@ -508,10 +508,21 @@ pub unsafe extern "C" fn errno_location() -> *mut c_int {
     libc::__errno_location()
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn main_putenv(env_value: *mut c_char) -> c_int {
+    libc::putenv(env_value as *mut c_char)
+}
+
 pub fn set_errno(errno_value: c_int) {
     let errno_location_addr = locate_preload_symbol("errno_location");
     let errno_location_fn: fn() -> *mut libc::c_int = unsafe { std::mem::transmute(errno_location_addr) };
     unsafe { *(errno_location_fn()) = errno_value };
+}
+
+pub fn put_env(env_value: *mut c_char) -> c_int {
+    let putenv_addr = locate_preload_symbol("main_putenv");
+    let putenv_fn: fn(*mut c_char) -> c_int = unsafe { std::mem::transmute(putenv_addr) };
+    unsafe { putenv_fn(env_value) }
 }
 
 pub fn reflect_linker_errno() {

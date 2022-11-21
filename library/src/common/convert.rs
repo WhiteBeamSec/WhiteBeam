@@ -80,6 +80,11 @@ pub fn u8_slice_as_os_str(s: &[u8]) -> &OsStr {
     unsafe { &*(s as *const [u8] as *const OsStr) }
 }
 
+#[cfg(not(target_os = "windows"))]
+pub fn u8_slice_as_os_string(s: &[u8]) -> OsString {
+    OsString::from_vec(s.to_vec())
+}
+
 pub fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
     let mut components = path.components().peekable();
     let mut ret = if let Some(c @ std::path::Component::Prefix(..)) = components.peek().cloned() {

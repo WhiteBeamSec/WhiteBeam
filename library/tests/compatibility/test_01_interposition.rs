@@ -6,11 +6,11 @@ whitebeam_test!("linux", interposition_00_execve {
     assert!(crate::common::is_hooked(&libc, "execve"));
 });
 
-whitebeam_test!("linux", interposition_01_system {
-    // system() is not hooked by WhiteBeam by default
+whitebeam_test!("linux", interposition_01_mmap {
+    // mmap() is not hooked by WhiteBeam by default
     let libc: String = if std::path::PathBuf::from("/lib64").exists() { String::from("/lib64/libc.so.6") }
                        else { format!("/lib/{}-linux-gnu/libc.so.6", std::env::consts::ARCH) };
-    assert!(!(crate::common::is_hooked(&libc, "system")));
+    assert!(!(crate::common::is_hooked(&libc, "mmap")));
 });
 
 // Tests live reloading of hooks

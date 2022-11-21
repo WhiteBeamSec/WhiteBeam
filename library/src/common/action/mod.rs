@@ -82,6 +82,12 @@ pub fn process_post_action(_par_prog: String, _src_prog: String, hook_orig: db::
         ("truncate", "ftruncate") => {
             unsafe { libc::close(args[0].real as i32) };
         },
+        ("popen", "popen") |
+        ("system", "system") |
+        ("wordexp", "wordexp") => {
+            std::env::remove_var("WB_PARENT");
+            std::env::remove_var("WB_PROG");
+        },
         _ => ()
     };
     (do_return, return_value)

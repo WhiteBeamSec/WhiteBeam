@@ -62,10 +62,24 @@ build_action! { FilterEnvironment (par_prog, src_prog, hook, arg_position, args,
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
-        let envp_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;
-        let envp_argument: crate::common::db::ArgumentRow = args[envp_index].clone();
-        let envp = envp_argument.real as *const *const libc::c_char;
+        let env_inherited: bool = match (library_basename, symbol) {
+            ("libc.so.6", "popen") | ("libc.so.6", "system") | ("libc.so.6", "wordexp") => true,
+            _ => false
+        };
+        let envp_index: usize = if env_inherited {
+            0 as usize
+        } else {
+            arg_position.expect("WhiteBeam: Lost track of environment") as usize
+        };
+        let mut envp_argument: crate::common::db::ArgumentRow;
+        let mut envp: *const *const libc::c_char = std::ptr::null();
         let orig_env_vec = unsafe {
+            if env_inherited {
+                envp = platform::get_environ();
+            } else {
+                envp_argument = args[envp_index].clone();
+                envp = envp_argument.real as *const *const libc::c_char;
+            }
             let mut env: Vec<(&std::ffi::OsStr, &std::ffi::OsStr)> = Vec::new();
             if !(envp.is_null()) {
                 let mut envp_iter = envp;
@@ -121,6 +135,7 @@ build_action! { FilterEnvironment (par_prog, src_prog, hook, arg_position, args,
                 if val.1.len() == 0 {
                     std::ffi::OsString::new()
                 } else {
+                    // TODO: Should we always update LD_LIBRARY_PATH when it is found? Do we unique the paths?
                     update_ld_library_path = true;
                     // Collect whitelisted Filesystem/Path/Library entries
                     let library_class = String::from("Filesystem/Path/Library");
@@ -268,7 +283,12 @@ build_action! { FilterEnvironment (par_prog, src_prog, hook, arg_position, args,
             ("libc.so.6", "posix_spawn") |
             ("libc.so.6", "posix_spawnp") => {
                 unsafe { crate::common::convert::c_char_to_osstring(args[1].real as *const libc::c_char) }
-            }
+            },
+            ("libc.so.6", "popen") |
+            ("libc.so.6", "system") |
+            ("libc.so.6", "wordexp") => {
+                std::ffi::OsString::from("/bin/sh")
+            },
             _ => unsafe { crate::common::convert::c_char_to_osstring(args[0].real as *const libc::c_char) }
         };
         if update_ld_audit {
@@ -305,6 +325,12 @@ build_action! { FilterEnvironment (par_prog, src_prog, hook, arg_position, args,
         program_path_env.push(&program_path);
         let program_path_env_cstring: Box<std::ffi::CString> = Box::new(crate::common::convert::osstr_to_cstring(&program_path_env).expect("WhiteBeam: Unexpected null reference"));
         env_vec.push(Box::leak(program_path_env_cstring).as_ptr());
+        if env_inherited {
+            for new_env in env_vec.iter() {
+                unsafe { platform::put_env(*new_env as *mut libc::c_char) };
+            }
+            return (hook, args, do_return, return_value);
+        }
         unsafe {
         if !(envp.is_null()) {
             let mut envp_iter = envp;
