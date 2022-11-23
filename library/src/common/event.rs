@@ -4,6 +4,15 @@ pub fn send_log_event(class: i32, mut log: String) {
     // TODO: Multiplatform support
     #[cfg(feature = "whitelist_test")]
     return;
+    let socket = match std::os::unix::net::UnixDatagram::unbound() {
+        Ok(socket) => socket,
+        Err(_) => return
+    };
+    // Check is syslog is available
+    match socket.connect("/dev/log") {
+        Ok(_) => (),
+        Err(_) => return
+    };
     let log_severity = match db::get_setting(String::from("LogSeverity")).parse::<i64>() {
         Ok(severity) => {
             match severity {
