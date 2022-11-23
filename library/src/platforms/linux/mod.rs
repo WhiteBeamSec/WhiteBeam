@@ -177,7 +177,11 @@ fn realtime_cache_init() {
             panic!("WhiteBeam: Lost track of environment");
         };
         if libc::fcntl(fd, libc::F_NOTIFY, DN_CREATE | DN_MULTISHOT) == -1 {
-            panic!("WhiteBeam: Lost track of environment");
+            // TODO: What condition causes this? Namespaces? Log main errno.
+            let par_prog: String = { crate::common::hook::PAR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
+            let src_prog: String = { crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex").clone().into_string().expect("WhiteBeam: Invalid executable name") };
+            crate::common::event::send_log_event(libc::LOG_ERR, format!("Real-time cache: Failed to setup dnotify signaling in {} -> {}", &par_prog, &src_prog));
+            //panic!("WhiteBeam: Lost track of environment");
         };
     }
 }
