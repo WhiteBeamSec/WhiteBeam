@@ -1,9 +1,28 @@
+use std::{io::Write, os::unix::prelude::OpenOptionsExt};
 use crate::common::db;
 
 pub fn send_log_event(class: i32, mut log: String) {
     // TODO: Multiplatform support
     #[cfg(feature = "whitelist_test")]
     return;
+    // Avoid hanging boot process, syslog may be unavailable
+    if unsafe { libc::getpid() } < 1000 {
+        let formatted_log_string = format!("WhiteBeam: {}\n", log);
+        let mut log_file = match std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            // Protected by Filesystem hooks
+            .mode(0o666)
+            .open("/opt/WhiteBeam/log/whitebeam.log")
+        {
+            Ok(f) => f,
+            Err(e) => {
+                return;
+            }
+        };
+        let _res = log_file.write_all(formatted_log_string.as_bytes());
+        return;
+    }
     let socket = match std::os::unix::net::UnixDatagram::unbound() {
         Ok(socket) => socket,
         Err(_) => return
