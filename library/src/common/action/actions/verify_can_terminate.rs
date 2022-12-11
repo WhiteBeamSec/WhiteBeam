@@ -1,4 +1,5 @@
 build_action! { VerifyCanTerminate (par_prog, src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
+        // TODO: This can panic if the service is not running, but the local WhiteBeam service is planned to be removed
         #[cfg(feature = "whitelist_test")]
         return (hook, args, do_return, return_value);
         let pid_index = arg_position.expect("WhiteBeam: Lost track of environment") as usize;

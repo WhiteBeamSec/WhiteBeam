@@ -16,13 +16,12 @@ gpg --keyserver hkp://pgp.mit.edu:80 --recv-keys 4A3F1233C01563F808B8355125ECFD1
 
 Rewards will be provided at the discretion of the lead developers. All vulnerabilities must be demonstrated in the challenge environment to be eligible for payment.
 
-| Vulnerability                                                                               | Reward         |
-| ------------------------------------------------------------------------------------------- | -------------- |
-| Remote code execution (RCE)                                                                 | $5000, Credits |
-| Local privilege escalation (LPE)                                                            | $2000, Credits |
-| Bypass whitelisting<sup>\*</sup> ([Try the challenge!](http://challenge.whitebeamsec.com))  | $1000, Credits |
-| Cryptographic vulnerability                                                                 | $250, Credits  |
-| WhiteBeam service crash (DoS)                                                               | $50            |
+| Vulnerability                                                                              | Reward                  |
+| ------------------------------------------------------------------------------------------ | ----------------------- |
+| Remote code execution (RCE)                                                                | $5000, T-shirt, Credits |
+| Local privilege escalation (LPE)                                                           | $2000, T-shirt, Credits |
+| Bypass whitelisting<sup>\*</sup> ([Try the challenge!](http://challenge.whitebeamsec.com)) | $1000, T-shirt, Credits |
+| Cryptographic vulnerability                                                                | $250, Credits           |
 
 <sup>\* Must be a program presently whitelisted by WhiteBeam Security, Inc. exhibiting documented behavior or a common OS kernel/dynamic linker feature that bypasses WhiteBeam. Please report vulnerabilities in third party software to their respective vendors.</sup>
 

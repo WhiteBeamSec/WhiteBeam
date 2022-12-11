@@ -17,6 +17,7 @@ use std::{collections::BTreeMap,
           path::PathBuf,
           sync::RwLock};
 
+pub static IS_PRELOAD: RwLock<Option<bool>> = RwLock::new(None);
 static LIB_MAP: RwLock<BTreeMap<usize, &str>> = RwLock::new(BTreeMap::new());
 pub static RT_SIGNAL: RwLock<i32> = RwLock::new(0);
 
@@ -31,7 +32,6 @@ pub static RT_SIGNAL: RwLock<i32> = RwLock::new(0);
 static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *const libc::c_char, *const *const libc::c_char) = {
     #[link_section = ".text.startup"]
     unsafe extern "C" fn init_rtld_audit_interface(argc: libc::c_int, argv: *const *const libc::c_char, envp: *const *const libc::c_char) {
-        // TODO: Is there a way to detect LD_AUDIT vs LD_PRELOAD initialization here?
         let mut update_ld_audit: bool = false;
         let mut update_ld_bind_not: bool = false;
         let rtld_audit_lib_path = get_rtld_audit_lib_path();
@@ -91,23 +91,19 @@ static init_rtld_audit_interface: unsafe extern "C" fn(libc::c_int, *const *cons
         // This variable is protected by WhiteBeam's Essential hooks/rules
         let program_path: OsString = match env::var_os("WB_PROG") {
             Some(val) => {
-                let mut cur_prog_lock = crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex");
-                cur_prog_lock.clear();
-                cur_prog_lock.push(&val);
                 val
             },
             None => {
-                // TODO: Is proc mounted early enough? May need some combination of the canonicalized argv[0] and exe
-                match std::env::current_exe() {
-                    Ok(v) => {
-                        v.into_os_string()
-                    },
-                    Err(_e) => {
-                        panic!("WhiteBeam: Lost track of environment");
-                    }
-                }
+                let execfn = libc::getauxval(libc::AT_EXECFN) as *const libc::c_char;
+                // A null pointer here will return an empty OsString, resulting in a strict whitelist
+                crate::common::convert::c_char_to_osstring(execfn)
             }
         };
+        if !(is_preload_lib()) {
+            let mut cur_prog_lock = crate::common::hook::CUR_PROG.lock().expect("WhiteBeam: Failed to lock mutex");
+            cur_prog_lock.clear();
+            cur_prog_lock.push(&program_path);
+        }
         if !(update_ld_audit) && !(update_ld_bind_not) {
             // Nothing to do, continue execution
             return;
@@ -640,4 +636,25 @@ pub fn get_environ() -> *const *const c_char {
     let environ_addr = locate_preload_symbol("main_environ");
     let environ_fn: fn() -> *const *const c_char = unsafe { std::mem::transmute(environ_addr) };
     unsafe { environ_fn() }
+}
+
+extern "C" fn dl_iterate_phdr_callback(info: *mut libc::dl_phdr_info, size: libc::size_t, data: *mut libc::c_void) -> libc::c_int {
+    let mut phdr_name = unsafe { CStr::from_ptr((*info).dlpi_name) };
+    let vdso = CString::new("linux-vdso.so.1").expect("WhiteBeam: Unexpected null reference");
+    if phdr_name == vdso.as_ref() {
+        let mut is_preload_lock = IS_PRELOAD.write().expect("WhiteBeam: Failed to lock mutex");
+        *is_preload_lock = Some(true);
+        return 1
+    }
+    0
+}
+
+pub fn is_preload_lib() -> bool {
+    if let Ok(is_preload_lock) = IS_PRELOAD.read() {
+        if let Some(is_preload) = *is_preload_lock {
+            return is_preload;
+        }
+    }
+    // Search for linux-vdso.so.1
+    unsafe { libc::dl_iterate_phdr(Some(dl_iterate_phdr_callback), std::ptr::null_mut()) == 1 }
 }
