@@ -78,6 +78,7 @@ pub fn process_post_action(_par_prog: String, _src_prog: String, hook_orig: db::
         ("open", "openat") |
         ("creat64", "openat") |
         ("open64", "openat") |
+        ("mkstemp", "openat") |
         ("mknod", "mknodat") |
         ("truncate", "ftruncate") => {
             unsafe { libc::close(args[0].real as i32) };

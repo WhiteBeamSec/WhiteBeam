@@ -1,4 +1,5 @@
 build_action! { CanonicalizePath (_par_prog, _src_prog, hook, arg_position, args, _act_args, do_return, return_value) {
+        // TODO: Unused variables
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;

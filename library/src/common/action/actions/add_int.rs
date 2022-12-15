@@ -13,6 +13,15 @@ build_action! { AddInt (_par_prog, _src_prog, hook, arg_position, args, _act_arg
             ("libc.so.6", "lchown") => {
                 libc::AT_SYMLINK_NOFOLLOW
             },
+            ("libc.so.6", "mkstemp") => {
+                if arg_position == Some(2) {
+                    libc::O_RDWR | libc::O_CREAT | libc::O_EXCL
+                } else if arg_position == Some(3) {
+                    (libc::S_IRUSR | libc::S_IWUSR) as i32
+                } else {
+                    panic!("WhiteBeam: Lost track of environment");
+                }
+            },
             ("libc.so.6", "rmdir") => {
                 libc::AT_REMOVEDIR
             },
