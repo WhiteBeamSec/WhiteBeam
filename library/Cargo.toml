@@ -26,6 +26,7 @@ rusqlite = { version = "0.28", features = ["bundled"] }
 linkme = { version = "0.3" }
 automod = { version = "1.0" }
 glob = { version = "0.3" }
+ipnet = { version = "2.7.0" }
 # Cryptographic dependencies
 sha3 = { version = "0.10" }
 blake3 = { version = "1.0" }

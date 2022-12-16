@@ -111,3 +111,24 @@ pub fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
     }
     ret
 }
+
+pub fn ipv4_to_string(ip: u32) -> String {
+    let octets = [
+        ip as u8,
+        (ip >> 8) as u8,
+        (ip >> 16) as u8,
+        (ip >> 24) as u8
+    ];
+    octets.iter().map(|octet| octet.to_string()).collect::<Vec<String>>().join(".")
+}
+
+pub fn ipv6_to_string(ip: [u8; 16]) -> String {
+    let mut ret = String::new();
+    for (i, octet) in ip.iter().enumerate() {
+        if (i % 2 == 0) && (i != 0) {
+            ret.push(':');
+        }
+        ret.push_str(&format!("{:02x}", octet));
+    }
+    ret
+}
