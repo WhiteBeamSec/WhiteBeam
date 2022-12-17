@@ -196,7 +196,7 @@ whitebeam_test!("linux", execution_13_dlopen_now {
 });
 
 whitebeam_test!("linux", execution_14_dlopen_absolute_path {
-    let libc: String = if std::path::PathBuf::from("/lib64").exists() { String::from("/lib64/libc.so.6\0") }
+    let libc: String = if std::path::PathBuf::from("/lib64/libc.so.6").exists() { String::from("/lib64/libc.so.6\0") }
                        else { format!("/lib/{}-linux-gnu/libc.so.6\0", std::env::consts::ARCH) };
     let handle = unsafe { libc::dlopen(libc.as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());
@@ -269,7 +269,7 @@ whitebeam_test!("linux", execution_22_dlmopen_base {
 });
 
 whitebeam_test!("linux", execution_23_dlmopen_absolute_path {
-    let libcap: String = if std::path::PathBuf::from("/lib64").exists() { String::from("/lib64/libcap.so.2\0") }
+    let libcap: String = if std::path::PathBuf::from("/lib64/libc.so.6").exists() { String::from("/lib64/libcap.so.2\0") }
                          else { format!("/lib/{}-linux-gnu/libcap.so.2\0", std::env::consts::ARCH) };
     let handle = unsafe { libc::dlmopen(libc::LM_ID_BASE, libcap.as_ptr() as *const libc::c_char, libc::RTLD_LAZY) };
     assert!(handle != std::ptr::null_mut());

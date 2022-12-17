@@ -14,7 +14,7 @@ fn db_init() -> Result<(), Box<dyn Error>> {
     db_load("Default")?;
     let bin_target_path: PathBuf = PathBuf::from(format!("{}/target/release/whitebeam", env!("PWD")));
     let _status = Command::new(&bin_target_path).args(&["--setting", "SystemArchitecture", std::env::consts::ARCH]).stdout(Stdio::null()).stderr(Stdio::null()).status()?;
-    if PathBuf::from("/lib64").exists() {
+    if PathBuf::from("/lib64/libc.so.6").exists() {
         let _status_lib_path = Command::new(&bin_target_path).args(&["--setting", "SystemLibraryPath", "/lib64/"]).stdout(Stdio::null()).stderr(Stdio::null()).status()?;
     } else {
         let _status_lib_path = Command::new(&bin_target_path).args(&["--setting", "SystemLibraryPath", &format!("/lib/{}-linux-gnu/", std::env::consts::ARCH)]).stdout(Stdio::null()).stderr(Stdio::null()).status()?;

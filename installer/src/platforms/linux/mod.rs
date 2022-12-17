@@ -158,18 +158,18 @@ pub fn run_install() {
         std::process::exit(1);
     }
     installation_cmd.push_str(concat!("ln -s /etc/init.d/whitebeam /etc/rc3.d/S01whitebeam;",
-                                      "ln -s /opt/WhiteBeam/libwhitebeam.so $(if [ -e /lib64 ]; then echo \"/lib64/\"; else echo \"/lib/\"; fi)libwhitebeam.so;",
+                                      "ln -s /opt/WhiteBeam/libwhitebeam.so $(if [ -e /lib64/libc.so.6 ]; then echo \"/lib64/\"; else echo \"/lib/\"; fi)libwhitebeam.so;",
                                       "ln -s /opt/WhiteBeam/whitebeam /usr/local/bin/whitebeam;",
                                       "chmod 775 /etc/init.d/whitebeam;",
                                       "chmod 4555 /opt/WhiteBeam/libwhitebeam.so;",
                                       "whitebeam --load Schema;",
                                       "whitebeam --load Default;",
                                       "whitebeam --setting SystemArchitecture `arch`;",
-                                      "whitebeam --setting SystemLibraryPath $(if [ -e /lib64 ]; then echo \"/lib64/\"; else echo \"/lib/`arch`-linux-gnu/\"; fi);",
+                                      "whitebeam --setting SystemLibraryPath $(if [ -e /lib64/libc.so.6 ]; then echo \"/lib64/\"; else echo \"/lib/`arch`-linux-gnu/\"; fi);",
                                       "whitebeam --load Essential;",
                                       "whitebeam --load Base;",
                                       "/etc/init.d/whitebeam start;",
-                                      "echo $(if [ -e /lib64 ]; then echo \"/lib64/\"; else echo \"/lib/\"; fi)libwhitebeam.so | tee -a /etc/ld.so.preload;"));
+                                      "echo $(if [ -e /lib64/libc.so.6 ]; then echo \"/lib64/\"; else echo \"/lib/\"; fi)libwhitebeam.so | tee -a /etc/ld.so.preload;"));
     println!("WhiteBeam: Installing");
     Command::new(search_path(OsStr::new("bash")).unwrap())
             .arg("-c")

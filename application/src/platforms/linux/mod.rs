@@ -125,7 +125,7 @@ pub fn recursive_library_scan(elf_path_str: &str, collected_library_paths_opt: O
     let search_paths: Vec<String> = match search_paths_opt {
         Some(paths) => paths,
         None => {
-            let default_library_paths: Vec<String> = if PathBuf::from("/lib64").exists() {
+            let default_library_paths: Vec<String> = if PathBuf::from("/lib64/libc.so.6").exists() {
                 vec![String::from("/lib64"), String::from("/usr/lib64")]
             } else {
                 vec![String::from("/lib"), String::from("/usr/lib")]

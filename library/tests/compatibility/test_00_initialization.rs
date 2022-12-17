@@ -65,13 +65,11 @@ pub unsafe fn gnu_get_libc_version() -> *const libc::c_char {
 }
 
 whitebeam_test!("linux", initialization_05_stable_ld_audit {
-    if std::env::consts::ARCH == "aarch64" {
-        let libc_version = unsafe { gnu_get_libc_version() };
-        let libc_version_str = unsafe { std::ffi::CStr::from_ptr(libc_version).to_str().expect("WhiteBeam: Failed to determine libc version") };
-        let libc_version_split: Vec<u32> = libc_version_str.split('.').map(|n| n.parse::<u32>().expect("WhiteBeam: Failed to parse libc version")).collect::<Vec<u32>>();
-        assert!(libc_version_split.len() >= 2, "WhiteBeam: Failed to parse libc version");
-        let libc_version_major = libc_version_split[0];
-        let libc_version_minor = libc_version_split[1];
-        assert!(((libc_version_major > 2) || ((libc_version_major == 2) && (libc_version_minor >= 35))), "WhiteBeam: libc version 2.35 or higher required on aarch64");
-    }
+    let libc_version = unsafe { gnu_get_libc_version() };
+    let libc_version_str = unsafe { std::ffi::CStr::from_ptr(libc_version).to_str().expect("WhiteBeam: Failed to determine libc version") };
+    let libc_version_split: Vec<u32> = libc_version_str.split('.').map(|n| n.parse::<u32>().expect("WhiteBeam: Failed to parse libc version")).collect::<Vec<u32>>();
+    assert!(libc_version_split.len() >= 2, "WhiteBeam: Failed to parse libc version");
+    let libc_version_major = libc_version_split[0];
+    let libc_version_minor = libc_version_split[1];
+    assert!(((libc_version_major > 2) || ((libc_version_major == 2) && (libc_version_minor >= 35))), "WhiteBeam: libc version 2.35 or higher required");
 });

@@ -1,14 +1,14 @@
 // Tests basic interposition
 whitebeam_test!("linux", interposition_00_execve {
     // execve() is hooked by WhiteBeam by default
-    let libc: String = if std::path::PathBuf::from("/lib64").exists() { String::from("/lib64/libc.so.6") }
+    let libc: String = if std::path::PathBuf::from("/lib64/libc.so.6").exists() { String::from("/lib64/libc.so.6") }
                        else { format!("/lib/{}-linux-gnu/libc.so.6", std::env::consts::ARCH) };
     assert!(crate::common::is_hooked(&libc, "execve"));
 });
 
 whitebeam_test!("linux", interposition_01_mmap {
     // mmap() is not hooked by WhiteBeam by default
-    let libc: String = if std::path::PathBuf::from("/lib64").exists() { String::from("/lib64/libc.so.6") }
+    let libc: String = if std::path::PathBuf::from("/lib64/libc.so.6").exists() { String::from("/lib64/libc.so.6") }
                        else { format!("/lib/{}-linux-gnu/libc.so.6", std::env::consts::ARCH) };
     assert!(!(crate::common::is_hooked(&libc, "mmap")));
 });
@@ -18,7 +18,7 @@ whitebeam_test!("linux", interposition_02_toggle_hook {
     // Waits up to ~100 milliseconds for dnotify signal to be delivered
     let mut enable_checks = 0;
     let mut disable_checks = 0;
-    let libc: String = if std::path::PathBuf::from("/lib64").exists() { String::from("/lib64/libc.so.6") }
+    let libc: String = if std::path::PathBuf::from("/lib64/libc.so.6").exists() { String::from("/lib64/libc.so.6") }
                        else { format!("/lib/{}-linux-gnu/libc.so.6", std::env::consts::ARCH) };
     let sql_create = r#"BEGIN;
                         INSERT OR IGNORE INTO Hook (symbol, library, enabled, language, class)
@@ -49,7 +49,7 @@ whitebeam_test!("linux", interposition_02_toggle_hook {
 
 // Tests generic hook
 whitebeam_test!("linux", interposition_03_generic_hook_string {
-    let libc: String = if std::path::PathBuf::from("/lib64").exists() { String::from("/lib64/libc.so.6") }
+    let libc: String = if std::path::PathBuf::from("/lib64/libc.so.6").exists() { String::from("/lib64/libc.so.6") }
                        else { format!("/lib/{}-linux-gnu/libc.so.6", std::env::consts::ARCH) };
     // Load strdup hook
     let sql_create = r#"BEGIN;
@@ -146,7 +146,7 @@ whitebeam_test!("linux", interposition_14_generic_hook_struct_pointer {
 */
 
 whitebeam_test!("linux", interposition_15_generic_hook_zero_args {
-    let libc: String = if std::path::PathBuf::from("/lib64").exists() { String::from("/lib64/libc.so.6") }
+    let libc: String = if std::path::PathBuf::from("/lib64/libc.so.6").exists() { String::from("/lib64/libc.so.6") }
                        else { format!("/lib/{}-linux-gnu/libc.so.6", std::env::consts::ARCH) };
     let getlogin_result_unhooked = unsafe { libc::getlogin() } as *mut libc::c_char;
     assert!(!(getlogin_result_unhooked.is_null()));
