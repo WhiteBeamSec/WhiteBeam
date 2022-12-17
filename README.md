@@ -17,7 +17,7 @@ Copyright 2020, WhiteBeam Security, Inc.
 <i>Transparent endpoint security</i>
 <br><br>
 <a href="https://github.com/WhiteBeamSec/WhiteBeam/releases" title="Releases"><img src="https://img.shields.io/github/v/tag/WhiteBeamSec/WhiteBeam.svg?style=for-the-badge&label=release&color=blue" alt="Latest Release"></a>
-<img src="https://img.shields.io/github/workflow/status/WhiteBeamSec/WhiteBeam/Daily%20cargo-audit?label=audit&style=for-the-badge" alt="Daily cargo-audit">
+<img src="https://img.shields.io/github/actions/workflow/status/WhiteBeamSec/WhiteBeam/cargo-audit.yml?branch=master&label=audit&style=for-the-badge" alt="Daily cargo-audit">
 <a href="https://github.com/WhiteBeamSec/WhiteBeam/security/policy" title="Security"><img src="https://img.shields.io/badge/bounty-$5,000-blue?style=for-the-badge" alt="Bounty $5,000"></a>
 <a href="https://discord.gg/GYSVqYx" target="_blank" title="Chat"><img src="https://img.shields.io/discord/641744447289294859?style=for-the-badge" alt="Chat"></a>
 </p>
