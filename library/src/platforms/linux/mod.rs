@@ -192,6 +192,12 @@ unsafe extern "C" fn la_version(version: libc::c_uint) -> libc::c_uint {
         par_prog_lock.clear();
         par_prog_lock.push(&val);
         env::remove_var("WB_PARENT");
+    } else {
+        if libc::getppid() == 1 {
+            let mut par_prog_lock = crate::common::hook::PAR_PROG.lock().expect("WhiteBeam: Failed to lock mutex");
+            par_prog_lock.clear();
+            par_prog_lock.push("init");
+        }
     }
     // This variable is protected by WhiteBeam's Essential hooks/rules
     if env::var_os("WB_PROG").is_some() {
