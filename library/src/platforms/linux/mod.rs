@@ -568,6 +568,14 @@ pub fn gettid() -> u64 {
     unsafe { libc::syscall(libc::SYS_gettid) as u64 }
 }
 
+pub fn get_default_library_paths() -> OsString {
+    if PathBuf::from("/lib64/libc.so.6").exists() {
+        OsString::from("/lib64:/usr/lib64")
+    } else {
+        OsString::from("/lib:/usr/lib")
+    }
+}
+
 pub fn search_path(program: &OsStr, paths: &OsStr) -> Option<PathBuf> {
     let mut paths_vec: Vec<PathBuf> = env::split_paths(paths).collect();
     if program.as_bytes()[0] == b'/' {

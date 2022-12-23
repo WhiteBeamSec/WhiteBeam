@@ -1,5 +1,28 @@
 use std::os::unix::ffi::OsStrExt;
 
+fn collect_ld_audit_paths(osstr_input: &std::ffi::OsStr) -> Vec<std::ffi::OsString> {
+    let mut vec: Vec<std::ffi::OsString> = Vec::new();
+    let mut osstr_in = osstr_input;
+    loop {
+        let (osstr_left, osstr_right) = crate::common::convert::osstr_split_at_byte(osstr_in, b':');
+        if osstr_left.len() > 0 {
+            // TODO: Expand search path?
+            let default_library_paths: std::ffi::OsString = platform::get_default_library_paths();
+            if let Some(abspath) = platform::search_path(&osstr_left, &default_library_paths) {
+                let normalized_path = crate::common::convert::normalize_path(&abspath).into_os_string();
+                if !(vec.contains(&normalized_path)) {
+                    vec.push(normalized_path)
+                }
+            };
+        }
+        if osstr_right.is_empty() {
+            break;
+        }
+        osstr_in = osstr_right;
+    }
+    vec
+}
+
 fn osstr_split_at_colon_or_semicolon(osstr_input: &std::ffi::OsStr) -> (&std::ffi::OsStr, &std::ffi::OsStr) {
     for (i, b) in osstr_input.as_bytes().iter().enumerate() {
         if b == &b':' || b == &b';' {
@@ -15,7 +38,7 @@ fn collect_ld_library_paths(osstr_input: &std::ffi::OsStr) -> Vec<std::ffi::OsSt
     let mut osstr_in = osstr_input;
     loop {
         let (osstr_left, osstr_right) = osstr_split_at_colon_or_semicolon(osstr_in);
-        if osstr_left.len() == 0 {
+        if osstr_left.is_empty() {
             match std::env::current_dir() {
                 Ok(cwd) => {
                     let mut cwd_osstring = crate::common::convert::normalize_path(&std::path::PathBuf::from(cwd)).into_os_string();
@@ -33,7 +56,7 @@ fn collect_ld_library_paths(osstr_input: &std::ffi::OsStr) -> Vec<std::ffi::OsSt
                 vec.push(osstring_left)
             }
         }
-        if osstr_right.len() == 0 {
+        if osstr_right.is_empty() {
             break;
         }
         osstr_in = osstr_right;
@@ -59,6 +82,7 @@ build_action! { FilterEnvironment (par_prog, src_prog, hook, arg_position, args,
         // TODO: Eliminate code repetition
         // Enforce LD_AUDIT, LD_LIBRARY_PATH, LD_PROFILE, LD_PROFILE_OUTPUT, LD_DEBUG_OUTPUT, LD_BIND_NOT, WB_PARENT, and WB_PROG
         // TODO: Avoid leaking memory (NB: this action is often called before execve on Linux)
+        // TODO: Support linker dynamic string tokens
         let library: &str = &hook.library;
         let library_basename: &str = library.rsplit('/').next().unwrap_or(library);
         let symbol: &str = &hook.symbol;
@@ -109,16 +133,43 @@ build_action! { FilterEnvironment (par_prog, src_prog, hook, arg_position, args,
         let mut update_ld_bind_not: bool = false;
         // TODO: Support more platforms here
         let rtld_audit_lib_path = crate::platforms::linux::get_rtld_audit_lib_path();
+        let any = String::from("ANY");
         let new_ld_audit_var: std::ffi::OsString = match orig_env_vec.iter().find(|var| var.0 == "LD_AUDIT") {
             Some(val) => {
-                if crate::common::convert::osstr_split_at_byte(val.1, b':').0 == rtld_audit_lib_path {
+                if val.1 == rtld_audit_lib_path {
                     std::ffi::OsString::new()
                 } else {
+                    // TODO: Should we always update LD_AUDIT when it is found? Do we unique the paths?
                     update_ld_audit = true;
+                    // Collect whitelisted Filesystem/Path/Library entries
+                    let library_class = String::from("Filesystem/Path/Library");
+                    let all_allowed_libraries: Vec<String> = {
+                        let whitelist_cache_lock = crate::common::db::WL_CACHE.lock().expect("WhiteBeam: Failed to lock mutex");
+                        whitelist_cache_lock.iter().filter(|whitelist| (whitelist.class == library_class) && ((whitelist.parent == par_prog) || (whitelist.parent == any)) && ((whitelist.path == src_prog) || (whitelist.path == any))).map(|whitelist| whitelist.value.clone()).collect()
+                    };
+                    let lib_paths: Vec<std::ffi::OsString> = collect_ld_audit_paths(val.1);
+                    let mut permitted_lib_paths: Vec<std::ffi::OsString> = vec![rtld_audit_lib_path.into_os_string()];
+                    // Permit whitelisted library paths
+                    for lib_path in lib_paths.iter() {
+                        if std::path::PathBuf::from(lib_path).ends_with("libwhitebeam.so") {
+                            // Ignore any duplicate libwhitebeam.so audit libraries
+                            continue;
+                        }
+                        if all_allowed_libraries.iter().any(|allowed_library| glob::Pattern::new(allowed_library).expect("WhiteBeam: Invalid glob pattern").matches_path(&std::path::PathBuf::from(&lib_path))) {
+                            permitted_lib_paths.push(lib_path.clone());
+                        } else if !(crate::common::db::get_prevention()) {
+                            let lib_path_string = lib_path.clone().into_string().expect("WhiteBeam: Unexpected null reference");
+                            event::send_log_event(libc::LOG_NOTICE, format!("Detection: {} -> {} inserted LD_AUDIT library {} (FilterEnvironment)", &par_prog, &src_prog, lib_path_string));
+                            permitted_lib_paths.push(lib_path.clone());
+                        } else {
+                            let lib_path_string = lib_path.clone().into_string().expect("WhiteBeam: Unexpected null reference");
+                            event::send_log_event(libc::LOG_WARNING, format!("Prevention: Blocked {} -> {} from inserting LD_AUDIT library {} (FilterEnvironment)", &par_prog, &src_prog, lib_path_string));
+                        }
+                    }
+                    // Concatenate permitted paths
                     let mut new_ld_audit_osstring = std::ffi::OsString::from("LD_AUDIT=");
-                    new_ld_audit_osstring.push(rtld_audit_lib_path.as_os_str());
-                    new_ld_audit_osstring.push(std::ffi::OsStr::new(":"));
-                    new_ld_audit_osstring.push(val.1);
+                    let new_ld_audit_value: std::ffi::OsString = permitted_lib_paths.join(std::ffi::OsString::from(":").as_ref());
+                    new_ld_audit_osstring.push(new_ld_audit_value);
                     new_ld_audit_osstring
                 }
             }
@@ -129,10 +180,9 @@ build_action! { FilterEnvironment (par_prog, src_prog, hook, arg_position, args,
                 new_ld_audit_osstring
             }
         };
-        let any = String::from("ANY");
         let new_ld_library_path_var: std::ffi::OsString = match orig_env_vec.iter().find(|var| var.0 == "LD_LIBRARY_PATH") {
             Some(val) => {
-                if val.1.len() == 0 {
+                if val.1.is_empty() {
                     std::ffi::OsString::new()
                 } else {
                     // TODO: Should we always update LD_LIBRARY_PATH when it is found? Do we unique the paths?
