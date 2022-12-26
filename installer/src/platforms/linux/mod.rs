@@ -194,7 +194,7 @@ pub fn run_package() {
     let package_cmd: String = format!(concat!("tar --transform='s%.*/%%' --transform 'flags=r;s|^|WhiteBeam/|' --numeric-owner --owner 0 --group 0 -cvzf ./target/release/{}.tar.gz ",
                                                    "./target/debug/whitebeam-installer ./target/release/libwhitebeam.so ./installer/src/platforms/linux/resources/service.sh ./target/release/whitebeam;",
                                               "sha256sum ",
-                                                   "./target/release/{}.tar.gz > ./target/release/{}.SHA256;"), package_name, package_name, package_name);
+                                              "./target/release/{}.tar.gz | awk \'{{print $1\"  {}.tar.gz\"}}\' > ./target/release/{}.SHA256;"), package_name, package_name, package_name, package_name);
     println!("WhiteBeam: Packaging");
     Command::new(search_path(OsStr::new("bash")).unwrap())
             .arg("-c")
